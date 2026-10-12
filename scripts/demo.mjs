@@ -79,6 +79,28 @@ if (process.env.LENSCMP) {
     await Promise.race([done, sleep(6000)]);
     note("done", name);
   };
+  if (process.env.LENSCMP8) {
+    // 렌즈 애니메이션을 끄고(탭 전환 효과 없음) 탭만 전환: 렌즈 이동과 덧칠을 분리. 묶음·마스크 변형 비교
+    note("vault-pill", await ev(`const e = document.querySelector(".mod-left-split .workspace-drawer-vault-switcher, .mod-left-split .workspace-sidedock-vault-profile"); if (!e) return null; const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height };`));
+    note("split", await ev(`const r = document.querySelector(".mod-left-split").getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height };`));
+    const nud = async () => { await sleep(700); await ev(`app.plugins.plugins["glass-shelf"].vibNudge();`); await sleep(900); };
+    const setAnim = async (v) => { await ev(`const p = app.plugins.plugins["glass-shelf"]; p.settings.tabAnim = ${JSON.stringify(v)}; await p.saveSettings(); p.applySettings && p.applySettings();`); await sleep(800); };
+    const variant = async (name, css) => {
+      await ev(`const o = document.getElementById("v8"); if (o) o.remove(); if (${JSON.stringify(css)}) { const st = document.createElement("style"); st.id = "v8"; st.textContent = ${JSON.stringify(css)}; document.head.append(st); }`);
+      await nud();
+      try { execSync(`screencapture -x "${OUT}/look-${name}.png"`); } catch {}
+      await run(name);
+    };
+    const X = ":not(#lg):not(#lg):not(#lg)";
+    await variant("L0-lens", "");
+    await setAnim("none");
+    await variant("N0-plain", "");
+    await variant("N1-panel", `.workspace-split.mod-sidedock${X} { opacity: 0.999; }`);
+    await variant("N2-leaf", `.workspace-split.mod-sidedock .workspace-leaf-content${X}, .workspace-split.mod-sidedock .workspace-tab-header-container${X} { opacity: 0.999; }`);
+    await variant("N3-nomask", `.workspace-split.mod-sidedock .workspace-tab-container${X} { -webkit-mask-image: none !important; mask-image: none !important; }`);
+    await variant("N0b-plain", "");
+    save(); ws.close(); process.exit(0);
+  }
   if (process.env.LENSCMP7) {
     // 반투명 장식(줄무늬·선택 줄·렌즈)이 속한 층 확인 → 묶음(.999)을 패널·잎·요소에 걸거나 층을 평평하게 해서 탭 전환 밝아짐 비교
     note("ancestors", await ev(`
