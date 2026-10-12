@@ -79,6 +79,53 @@ if (process.env.LENSCMP) {
     await Promise.race([done, sleep(6000)]);
     note("done", name);
   };
+  if (process.env.LENSCMP7) {
+    // 반투명 장식(줄무늬·선택 줄·렌즈)이 속한 층 확인 → 묶음(.999)을 패널·잎·요소에 걸거나 층을 평평하게 해서 탭 전환 밝아짐 비교
+    note("ancestors", await ev(`
+      const props = (el) => { const c = getComputedStyle(el); const o = {}; if (c.opacity !== "1") o.opacity = c.opacity; if (c.transform !== "none") o.transform = c.transform.slice(0, 30); if (c.willChange !== "auto") o.willChange = c.willChange; if (c.filter !== "none") o.filter = c.filter.slice(0, 30); if (c.backdropFilter && c.backdropFilter !== "none") o.bf = c.backdropFilter.slice(0, 30); if (c.maskImage && c.maskImage !== "none") o.mask = 1; if (c.mixBlendMode !== "normal") o.blend = c.mixBlendMode; if (c.isolation !== "auto") o.iso = c.isolation; if (c.contain !== "none") o.contain = c.contain; if (c.position === "fixed" || c.position === "sticky") o.pos = c.position; if (c.overflow !== "visible") o.overflow = c.overflow; return o; };
+      const name = (e) => (e.tagName.toLowerCase() + "." + [...e.classList].slice(0, 3).join(".")).slice(0, 70);
+      const out = {};
+      for (const sel of [".mod-left-split .lg-stripe-bar", ".mod-left-split .tree-item-self.is-active", ".mod-left-split .lg-seg-indicator", ".mod-left-split .workspace-tab-header.is-active"]) {
+        const e = document.querySelector(sel); if (!e) { out[sel] = null; continue; }
+        const chain = []; for (let a = e; a && a !== document.documentElement; a = a.parentElement) { const p = props(a); if (Object.keys(p).length) chain.push([name(a), p]); }
+        out[sel] = chain;
+      }
+      return out;`));
+    const evs = [];
+    ws.addEventListener("message", (e) => { const m = JSON.parse(e.data); if (m.method === "LayerTree.layerTreeDidChange") evs.push(m.params); });
+    await send("DOM.getDocument", { depth: -1 });
+    await send("LayerTree.enable");
+    await sleep(1500);
+    const last = evs.filter((p) => p.layers).pop();
+    if (last) {
+      const left = await ev(`const r = document.querySelector(".mod-left-split").getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height };`);
+      const inLeft = last.layers.filter((l) => l.drawsContent && l.offsetX < left.x + left.w && l.offsetX + l.width > left.x && l.width < left.w + 40);
+      const rows = [];
+      for (const l of inLeft.slice(0, 60)) {
+        const cr = await send("LayerTree.compositingReasons", { layerId: l.layerId });
+        let node = null;
+        if (l.backendNodeId) { const d = await send("DOM.describeNode", { backendNodeId: l.backendNodeId }); const n = d.result && d.result.node; if (n) node = n.localName + "." + ((n.attributes || []).join(" ").match(/class ([^ ]+( [^ ]+){0,2})/) || [, ""])[1]; }
+        rows.push({ id: l.layerId, x: l.offsetX, y: l.offsetY, w: l.width, h: l.height, node, why: cr.result && (cr.result.compositingReasonIds || cr.result.compositingReasons) });
+      }
+      note("layers", { total: last.layers.length, left: inLeft.length, rows });
+    } else note("layers", "none");
+    await send("LayerTree.disable");
+    const nud = async () => { await sleep(700); await ev(`app.plugins.plugins["glass-shelf"].vibNudge();`); await sleep(900); };
+    const variant = async (name, css) => {
+      await ev(`const o = document.getElementById("v7"); if (o) o.remove(); if (${JSON.stringify(css)}) { const st = document.createElement("style"); st.id = "v7"; st.textContent = ${JSON.stringify(css)}; document.head.append(st); }`);
+      await nud();
+      try { execSync(`screencapture -x "${OUT}/look-${name}.png"`); } catch {}
+      await run(name);
+    };
+    const X = ":not(#lg):not(#lg):not(#lg)";
+    await variant("V0-base", "");
+    await variant("V1-panel", `.workspace-split.mod-sidedock${X} { opacity: 0.999; }`);
+    await variant("V2-leaf", `.workspace-split.mod-sidedock .workspace-leaf-content${X}, .workspace-split.mod-sidedock .workspace-tab-header-container${X} { opacity: 0.999; }`);
+    await variant("V3-elems", `.lg-stripe-bar${X}, .workspace-split.mod-sidedock .tree-item-self${X}, .workspace-split.mod-sidedock .lg-seg-indicator${X}, .workspace-split.mod-sidedock .workspace-tab-header${X} { opacity: 0.999; will-change: opacity; }`);
+    await variant("V4-flat", `.workspace-split.mod-sidedock *${X}, .workspace-split.mod-sidedock *${X}::before, .workspace-split.mod-sidedock *${X}::after { will-change: auto !important; }`);
+    await variant("V0b-base", "");
+    save(); ws.close(); process.exit(0);
+  }
   if (process.env.LENSCMP6) {
     await ev(`app.plugins.plugins["glass-shelf"].acrylicHoles(false); const st = document.createElement("style"); st.id = "zero"; st.textContent = "body.lg-acrylic .workspace-split.mod-sidedock:not(#lg):not(#lg) { background-color: transparent !important; }"; document.head.append(st); require("electron").remote.getCurrentWindow().setVibrancy("sidebar");`);
     const nud = async () => { await sleep(700); await ev(`document.body.classList.add("lg-vib-nudge"); requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.remove("lg-vib-nudge")));`); await sleep(900); };
