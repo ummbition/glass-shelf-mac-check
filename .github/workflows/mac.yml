@@ -134,11 +134,12 @@ jobs:
           TEST3: ${{ inputs.hovertest == 'test3' && '1' || '' }}
           LENSONLY: ${{ inputs.hovertest == 'lensonly' && '1' || '' }}
           AUDIT: ${{ inputs.hovertest == 'audit' && '1' || '' }}
-          LENSCMP: ${{ (inputs.hovertest == 'lenscmp' || inputs.hovertest == 'lenscmp2' || inputs.hovertest == 'lenscmp3' || inputs.hovertest == 'lenscmp4' || inputs.hovertest == 'lenscmp5') && '1' || '' }}
+          LENSCMP: ${{ (inputs.hovertest == 'lenscmp' || inputs.hovertest == 'lenscmp2' || inputs.hovertest == 'lenscmp3' || inputs.hovertest == 'lenscmp4' || inputs.hovertest == 'lenscmp5' || inputs.hovertest == 'lenscmp6') && '1' || '' }}
           LENSCMP2: ${{ inputs.hovertest == 'lenscmp2' && '1' || '' }}
           LENSCMP3: ${{ inputs.hovertest == 'lenscmp3' && '1' || '' }}
           LENSCMP4: ${{ inputs.hovertest == 'lenscmp4' && '1' || '' }}
           LENSCMP5: ${{ inputs.hovertest == 'lenscmp5' && '1' || '' }}
+          LENSCMP6: ${{ inputs.hovertest == 'lenscmp6' && '1' || '' }}
         run: |
           /Applications/Obsidian.app/Contents/MacOS/Obsidian --remote-debugging-port=9222 > obsidian.log 2>&1 &
           sleep 8

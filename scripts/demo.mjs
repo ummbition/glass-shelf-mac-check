@@ -79,6 +79,20 @@ if (process.env.LENSCMP) {
     await Promise.race([done, sleep(6000)]);
     note("done", name);
   };
+  if (process.env.LENSCMP6) {
+    await ev(`app.plugins.plugins["glass-shelf"].acrylicHoles(false); const st = document.createElement("style"); st.id = "zero"; st.textContent = "body.lg-acrylic .workspace-split.mod-sidedock:not(#lg):not(#lg) { background-color: transparent !important; }"; document.head.append(st); require("electron").remote.getCurrentWindow().setVibrancy("sidebar");`);
+    const nud = async () => { await sleep(700); await ev(`document.body.classList.add("lg-vib-nudge"); requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.remove("lg-vib-nudge")));`); await sleep(900); };
+    await nud();
+    await run("N0-base");
+    await ev(`const st = document.createElement("style"); st.id = "t1"; st.textContent = ".workspace-split.mod-sidedock .workspace-tab-header-container-inner:not(#lg):not(#lg):not(#lg) { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }"; document.head.append(st);`);
+    await nud();
+    await run("N1-track-nobf");
+    await ev(`document.getElementById("t1").remove(); const st = document.createElement("style"); st.id = "t2"; st.textContent = ".workspace-split.mod-sidedock .workspace-tab-header-container-inner .workspace-tab-header::before, .workspace-split.mod-sidedock .workspace-tab-header-container-inner .workspace-tab-header::after { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }"; document.head.append(st);`);
+    await nud();
+    await run("N2-tabs-nobf");
+    await run("N0b-base-again-tabs-nobf");
+    save(); ws.close(); process.exit(0);
+  }
   if (process.env.LENSCMP5) {
     // 패널 바탕 0% + sidebar 재질 + 줄무늬·선택 줄을 점묘(픽셀마다 완전 불투명 또는 완전 투명)로
     await ev(`app.plugins.plugins["glass-shelf"].acrylicHoles(false); const st = document.createElement("style"); st.id = "zero"; st.textContent = "body.lg-acrylic .workspace-split.mod-sidedock:not(#lg):not(#lg) { background-color: transparent !important; }"; document.head.append(st); require("electron").remote.getCurrentWindow().setVibrancy("sidebar");`);
