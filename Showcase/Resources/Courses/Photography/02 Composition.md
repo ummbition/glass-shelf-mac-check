@@ -1,0 +1,3 @@
+- Rule of thirds
+- Leading lines
+- Negative space

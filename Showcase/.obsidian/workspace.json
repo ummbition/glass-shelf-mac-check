@@ -1,0 +1,301 @@
+{
+  "main": {
+    "id": "9c54ab4a634db0f8",
+    "type": "split",
+    "children": [
+      {
+        "id": "0a6ff7f60e3c9f58",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "1c57aa3097e5f75a",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Notes/Design Principles.md",
+                "mode": "preview",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Design Principles"
+            }
+          },
+          {
+            "id": "fa9cbfcfdb110b43",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Notes/유리 질감 메모.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "유리 질감 메모"
+            }
+          },
+          {
+            "id": "d088eadcf53cc662",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Areas/Finance/Subscriptions.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Subscriptions"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "65a0875ba74f76aa",
+    "type": "split",
+    "children": [
+      {
+        "id": "d7a6ce813229d2ec",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "104ace4fe0cd4d9c",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "61e84232734a29c1",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "cfdf7cfb3858e999",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 493.53741455078125
+  },
+  "right": {
+    "id": "b81c635286d56d96",
+    "type": "split",
+    "children": [
+      {
+        "id": "cc9e7e569c4c9985",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "b1c0c87c355ee839",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "Notes/Design Principles.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline"
+            }
+          },
+          {
+            "id": "1f3d702495ab8ba7",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "c7df2be4079a7fd4",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "Notes/Design Principles.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks"
+            }
+          },
+          {
+            "id": "3da7245d5ed45e64",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "Notes/Design Principles.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links"
+            }
+          },
+          {
+            "id": "62615051c7f0224b",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          }
+        ]
+      },
+      {
+        "id": "7936dfa2b5c6a3b5",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "a03a29e8bb783b26",
+            "type": "leaf",
+            "state": {
+              "type": "localgraph",
+              "state": {
+                "file": "Notes/Design Principles.md",
+                "options": {
+                  "collapse-filter": false,
+                  "search": "",
+                  "localJumps": 2,
+                  "localBacklinks": true,
+                  "localForelinks": false,
+                  "localInterlinks": false,
+                  "showTags": false,
+                  "showAttachments": false,
+                  "hideUnresolved": false,
+                  "collapse-color-groups": true,
+                  "colorGroups": [],
+                  "collapse-display": true,
+                  "showArrow": false,
+                  "textFadeMultiplier": 0,
+                  "nodeSizeMultiplier": 1,
+                  "lineSizeMultiplier": 1,
+                  "collapse-forces": true,
+                  "centerStrength": 0.518713248970312,
+                  "repelStrength": 10,
+                  "linkStrength": 1,
+                  "linkDistance": 250,
+                  "scale": 1,
+                  "close": true
+                }
+              },
+              "icon": "lucide-git-fork",
+              "title": "Local graph"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 502.9539794921875
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "1c57aa3097e5f75a",
+  "lastOpenFiles": [
+    "Areas/Finance/Subscriptions.md",
+    "Notes/Design Principles.md",
+    "Notes/유리 질감 메모.md",
+    "Areas/Finance/Budget 2026.md",
+    "Notes/Color Notes.md",
+    "Pasted image 20261008202308.png",
+    "Notes/Typography.md",
+    "Journal/2026-10-08.md",
+    "Journal/2026-10-07.md",
+    "Archive/2024/Trip - Lisbon.md",
+    "Projects/Website Redesign/Wireframes/Landing Page.md",
+    "Projects/Website Redesign/Wireframes/Blog Layout.md",
+    "Projects/Website Redesign/Meeting Notes/2026-10-06 Review.md",
+    "Projects/Website Redesign/Meeting Notes/2026-10-01 Kickoff.md",
+    "Projects/Website Redesign/Wireframes",
+    "Projects/Website Redesign/Overview.md",
+    "Projects/Website Redesign/Meeting Notes",
+    "Projects/Website Redesign",
+    "Projects/Podcast/Episodes/Ep 03 - Designing calm tools.md",
+    "Projects/Podcast/Episodes/Ep 02 - Folders vs tags.md",
+    "Projects/Podcast/Episodes/Ep 01 - Why notes matter.md",
+    "Projects/Podcast/Episodes",
+    "Projects/Podcast/Episode Plan.md",
+    "Projects/Podcast",
+    "Notes/Essays/On Glass Interfaces.md",
+    "Notes/Essays/Calm Software.md",
+    "Notes/Essays",
+    "Archive/2025/Reading 2025.md",
+    "Archive/2025/Old Project - Notebook App.md",
+    "Archive/2025",
+    "Archive/2024",
+    "Archive",
+    "Journal/2026-09/2026-09-30.md",
+    "Journal/2026-09/2026-09-29.md",
+    "Journal/2026-09/2026-09-28.md",
+    "Journal/2026-09/2026-09-26.md",
+    "Journal/2026-09"
+  ]
+}

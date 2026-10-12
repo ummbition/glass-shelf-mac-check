@@ -1,0 +1,3 @@
+- Golden hour
+- Window light
+- Overcast days

@@ -1,0 +1,80 @@
+{
+  "glassLevel": 5,
+  "hoverLarge": false,
+  "showPath": true,
+  "webTint": true,
+  "miniBar": true,
+  "popupOpaque": false,
+  "refraction": true,
+  "toggleColor": "green",
+  "tint": "none",
+  "tintColor": "#ffffff",
+  "tintLevel": 5,
+  "tintWhiteInk": false,
+  "taskStyle": "check",
+  "taskColor": "accent",
+  "taskColorCustom": "#fac800",
+  "folderColor": "blue",
+  "folderColorCustom": "#5fb0eb",
+  "compactWindowControls": true,
+  "tabAnim": "lens",
+  "tabWide": true,
+  "tabNames": true,
+  "headingRule": true,
+  "fileStripes": true,
+  "navCompact": true,
+  "activeTabColor": "accent",
+  "activeTabColorCustom": "#6b7f94",
+  "folderColorsByName": {
+    "Areas": "#D85D4D",
+    "Journal": "#E4A367",
+    "Notes": "#D6B86D",
+    "Projects": "#5CA95F"
+  },
+  "folderPalette": [
+    [
+      "빨강",
+      "#D85D4D"
+    ],
+    [
+      "주황",
+      "#E4A367"
+    ],
+    [
+      "노랑",
+      "#D6B86D"
+    ],
+    [
+      "올리브",
+      "#969859"
+    ],
+    [
+      "초록",
+      "#5CA95F"
+    ],
+    [
+      "청록",
+      "#6AB9B0"
+    ],
+    [
+      "파랑",
+      "#4981D0"
+    ],
+    [
+      "남색",
+      "#5D63AF"
+    ],
+    [
+      "분홍",
+      "#D95D8A"
+    ],
+    [
+      "보라",
+      "#9F6BBD"
+    ],
+    [
+      "회색",
+      "#84848F"
+    ]
+  ]
+}

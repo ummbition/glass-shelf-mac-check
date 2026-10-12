@@ -1,0 +1,8 @@
+{
+  "cssTheme": "Glass Shelf",
+  "theme": "moonstone",
+  "showRibbon": true,
+  "showViewHeader": true,
+  "nativeMenus": false,
+  "translucency": true
+}

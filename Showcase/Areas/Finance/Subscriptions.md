@@ -1,0 +1,4 @@
+- [x] Music
+- [x] Cloud storage
+- [x] Video service (cancelled)
+- [x] Do I still need the news app?

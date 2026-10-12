@@ -1,0 +1,153 @@
+name: mac-vibrancy
+on:
+  workflow_dispatch:
+    inputs:
+      demo:
+        type: boolean
+        default: false
+      store:
+        type: boolean
+        default: false
+      recperf:
+        type: string
+        default: ''
+      iso:
+        type: boolean
+        default: false
+      hovertest:
+        type: string
+        default: ''
+      impl:
+        type: boolean
+        default: false
+      find:
+        type: boolean
+        default: false
+      viba:
+        type: boolean
+        default: false
+      materials:
+        type: boolean
+        default: false
+      os:
+        type: string
+        default: '["macos-26", "macos-15"]'
+jobs:
+  shot:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(inputs.os) }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 시스템 정보
+        run: |
+          sw_vers
+          system_profiler SPDisplaysDataType | head -30 || true
+          defaults read com.apple.universalaccess reduceTransparency 2>/dev/null || echo "reduceTransparency: (없음)"
+      - name: 화면 해상도 키우기 (되는 만큼)
+        run: |
+          brew install displayplacer > /dev/null 2>&1 || true
+          displayplacer list | head -60 || true
+          ID=$(displayplacer list | awk '/Persistent screen id/{print $4; exit}')
+          for R in 1920x1200 1920x1080 1680x1050 1440x900 1280x1024; do
+            displayplacer "id:$ID res:$R scaling:off" && echo "해상도 $R" && break
+          done
+          system_profiler SPDisplaysDataType | grep -i resolution || true
+      - name: 투명도 줄이기 끄기 (되는 만큼)
+        run: |
+          defaults write com.apple.universalaccess reduceTransparency -bool false || true
+          defaults read com.apple.universalaccess reduceTransparency || true
+      - name: Obsidian 설치
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          URL=$(gh api repos/obsidianmd/obsidian-releases/releases/latest --jq '.assets[] | select(.name | test("^Obsidian-[0-9.]+\\.dmg$")) | .browser_download_url')
+          echo "$URL"
+          curl -sL -o obsidian.dmg "$URL"
+          hdiutil attach obsidian.dmg -nobrowse -mountpoint /Volumes/Obsidian
+          cp -R /Volumes/Obsidian/Obsidian.app /Applications/
+          hdiutil detach /Volumes/Obsidian
+      - name: 무늬 바탕 (뒤에 깔 그림)
+        if: ${{ !inputs.store }}
+        run: |
+          python3 - <<'EOF'
+          W, H = 1600, 1000
+          cols = [(230, 60, 60), (60, 160, 240), (250, 200, 40), (60, 190, 90), (150, 70, 200)]
+          rows = []
+          for y in range(H):
+              row = bytearray()
+              for x in range(W):
+                  c = cols[((x + y) // 80) % len(cols)]
+                  row += bytes(c)
+              rows.append(bytes(row))
+          with open("bg.ppm", "wb") as f:
+              f.write(b"P6 %d %d 255\n" % (W, H))
+              f.write(b"".join(rows))
+          EOF
+          sips -s format png bg.ppm --out bg.png
+          osascript -e 'tell application "System Events" to tell every desktop to set picture to POSIX file "'"$PWD"'/bg.png"' || echo "바탕화면 변경 실패"
+          open -a Preview bg.png
+          sleep 3
+      - name: 자연 풍경 바탕화면 (스토어 촬영)
+        if: ${{ inputs.store }}
+        run: |
+          [ "${{ inputs.demo }}" = "true" ] && (brew install cliclick > /dev/null 2>&1 || true)
+          defaults write com.apple.dock autohide -bool true && defaults write com.apple.dock autohide-delay -float 1000 && killall Dock || true
+          ls -1 "/System/Library/Desktop Pictures" | head -80 || true
+          ls -1 "/System/Library/Desktop Pictures/.thumbnails" 2>/dev/null | head -20 || true
+          PIC=""
+          if [ -f wallpaper.jpg ]; then
+            osascript -e "tell application \"System Events\" to tell every desktop to set picture to POSIX file \"$PWD/wallpaper.jpg\"" && PIC=wallpaper.jpg
+          fi
+          [ -z "$PIC" ] && for k in "Big Sur" "Coastline" "Mountain" "Valley" "Lake" "Hill" "Horizon" "Yosemite" "Sierra" "Mojave Day" "Catalina" "Monterey" "Sonoma Horizon" "Sequoia" "Tahoe"; do
+            PIC=$(ls -1 "/System/Library/Desktop Pictures" | grep -i "$k" | grep -iv "dark\|night" | grep -i "\.\(heic\|jpg\|png\)$" | head -1)
+            [ -n "$PIC" ] && break
+          done
+          echo "PIC=$PIC"
+          [ -n "$PIC" ] && [ "$PIC" != wallpaper.jpg ] && osascript -e "tell application \"System Events\" to tell every desktop to set picture to POSIX file \"/System/Library/Desktop Pictures/$PIC\"" || echo "바탕화면 변경 실패"
+          mkdir -p shots-${{ matrix.os }}
+          echo "$PIC" > shots-${{ matrix.os }}/wallpaper.txt
+          sleep 3
+      - name: 보관함 등록
+        run: |
+          mkdir -p "$HOME/Library/Application Support/obsidian"
+          V="$GITHUB_WORKSPACE/${{ inputs.store && 'Showcase' || 'vault' }}"
+          cat > "$HOME/Library/Application Support/obsidian/obsidian.json" <<EOF
+          {"vaults":{"a1b2c3d4e5f60718":{"path":"$V","ts":1700000000000,"open":true}}}
+          EOF
+          cat "$HOME/Library/Application Support/obsidian/obsidian.json"
+      - name: Obsidian 실행과 촬영
+        env:
+          OUT: ${{ github.workspace }}/shots-${{ matrix.os }}
+          MATERIALS: ${{ inputs.materials && '1' || '' }}
+          VIBA: ${{ inputs.viba && '1' || '' }}
+          FIND: ${{ inputs.find && '1' || '' }}
+          HOVERTEST: ${{ inputs.hovertest }}
+          ISO_ONLY_FILL: ${{ inputs.iso && '1' || '' }}
+          TEST2: ${{ inputs.hovertest == 'test2' && '1' || '' }}
+          TEST3: ${{ inputs.hovertest == 'test3' && '1' || '' }}
+          LENSONLY: ${{ inputs.hovertest == 'lensonly' && '1' || '' }}
+          AUDIT: ${{ inputs.hovertest == 'audit' && '1' || '' }}
+          LENSCMP: ${{ (inputs.hovertest == 'lenscmp' || inputs.hovertest == 'lenscmp2' || inputs.hovertest == 'lenscmp3' || inputs.hovertest == 'lenscmp4' || inputs.hovertest == 'lenscmp5') && '1' || '' }}
+          LENSCMP2: ${{ inputs.hovertest == 'lenscmp2' && '1' || '' }}
+          LENSCMP3: ${{ inputs.hovertest == 'lenscmp3' && '1' || '' }}
+          LENSCMP4: ${{ inputs.hovertest == 'lenscmp4' && '1' || '' }}
+          LENSCMP5: ${{ inputs.hovertest == 'lenscmp5' && '1' || '' }}
+        run: |
+          /Applications/Obsidian.app/Contents/MacOS/Obsidian --remote-debugging-port=9222 > obsidian.log 2>&1 &
+          sleep 8
+          if [ "${{ inputs.hovertest }}" = "webcheck" ]; then node scripts/webcheck.mjs || true; elif [ "${{ inputs.hovertest }}" = "reccmp" ]; then RECCMP=1 node scripts/cursor.mjs || true; elif [ "${{ inputs.hovertest }}" = "cursor" ]; then node scripts/cursor.mjs || true; elif [ "${{ inputs.hovertest }}" = "outside" ]; then node scripts/outside.mjs || true; elif [ "${{ inputs.hovertest }}" = "firstuse" ]; then node scripts/firstuse.mjs || true; elif [ "${{ inputs.demo }}" = "true" ]; then node scripts/demo.mjs || true; elif [ "${{ inputs.store }}" = "true" ]; then node scripts/store.mjs || true; elif [ -n "${{ inputs.recperf }}" ]; then REC=$(echo "${{ inputs.recperf }}" | grep -q rec && echo 1) PERF=$(echo "${{ inputs.recperf }}" | grep -q perf && echo 1) node scripts/recperf.mjs || true; elif [ "${{ inputs.iso }}" = "true" ]; then node scripts/iso.mjs || true; elif [ "${{ inputs.impl }}" = "true" ]; then node scripts/impl.mjs || true; else node scripts/drive.mjs || true; fi
+          screencapture -x "$OUT/Z-end.png" || true
+          tail -50 obsidian.log || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shots-${{ matrix.os }}
+          path: shots-${{ matrix.os }}
+          retention-days: 1

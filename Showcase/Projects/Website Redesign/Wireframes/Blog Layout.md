@@ -1,0 +1,3 @@
+- Wide reading column
+- Sticky table of contents
+- Related posts at the end

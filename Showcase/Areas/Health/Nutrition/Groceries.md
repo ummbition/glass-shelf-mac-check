@@ -1,0 +1,10 @@
+- [x] Oats
+- [ ] Berries
+- [ ] Eggs
+- [ ] Spinach
+- [x] Salmon
+- [ ] Tofu
+- [ ] Rice
+- [ ] Lemons
+- [ ] Olive oil
+- [x] Yogurt

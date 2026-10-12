@@ -1,0 +1,3 @@
+- [ ] Replace air filter
+- [x] Clean gutters
+- [>] Paint the hallway (next month)

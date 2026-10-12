@@ -1,0 +1,3 @@
+- [x] Monstera: water weekly
+- [x] Pothos: water when dry
+- [ ] Fiddle leaf fig: move closer to the window

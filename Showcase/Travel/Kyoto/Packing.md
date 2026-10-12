@@ -1,0 +1,5 @@
+- [x] Passport
+- [x] Charger
+- [ ] Rain jacket
+- [ ] Walking shoes
+- [ ] Camera
