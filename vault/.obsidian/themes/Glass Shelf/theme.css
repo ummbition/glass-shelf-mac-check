@@ -2327,9 +2327,16 @@ body.lg-acrylic.is-translucent .app-container:not(#lg) {
   opacity: 0.999;
 }
 
-/* 맥: 재질이나 창 라이트·다크가 바뀐 뒤 패널이 불투명하게 남았다(측정). 플러그인이 두 프레임 붙이는 클래스로 바탕 층을 빼서 새로 만든다 */
-body.lg-vib-nudge .lg-panel-under {
-  display: none;
+/* 맥: 패널 바탕을 칠하지 않는다(0%). 패널 색은 Obsidian 이 까는 사이드바 재질이 정한다 (사용자 결정).
+   반투명 바탕(70%)은 유리(뒤 필터)를 다시 그리는 프레임에 macOS 가 지우지 않고 이전 화면 위에 덧칠해, 탭을 바꿀 때마다 패널이
+   불투명하게 깜빡였다(맥 러너 측정). 투명은 덧칠돼도 투명이다. 바탕 층과 구멍도 쓰지 않는다(플러그인) */
+body.lg-acrylic.is-translucent .workspace-split.mod-sidedock:not(#lg):not(#lg) {
+  background-color: transparent;
+}
+
+/* 맥: 재질이나 창 라이트·다크가 바뀐 뒤 예전 화면이 남았다(측정). 플러그인이 두 프레임 붙이는 클래스로 앱 화면을 다시 그리게 한다 */
+body.lg-vib-nudge.is-translucent .app-container:not(#lg):not(#lg) {
+  opacity: 0.998;
 }
 
 .lg-holes-svg {

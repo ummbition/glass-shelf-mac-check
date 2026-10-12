@@ -1473,7 +1473,8 @@ var coreMethods = {
   // 테마는 body.lg-acrylic 에서 body 바탕을 비우고 좌우 패널 바탕만 반투명하게 둔다(편집창은 불투명 그대로).
   // 끌 때(allow 가 false 이거나 설정 꺼짐) 원래 창 바탕색으로 되돌린다. 재질을 못 거는 환경이면 클래스도 붙이지 않는다.
   // 맥은 따로 켜는 설정 없이 Obsidian 의 반투명 창(body.is-translucent)을 따른다 (사용자 결정). Obsidian 이 창을 투명하게 하고
-  // setVibrancy("sidebar")를 거는데, 그 재질은 거의 비치지 않아(측정) 더 비치는 "hud"로 바꾼다. 끌 때는 Obsidian 재질로 되돌린다
+  // 사이드바 재질(setVibrancy("sidebar"))을 깐다. 맥은 패널 바탕을 칠하지 않고(테마 0%) 패널 색을 그 재질에 맡긴다: 반투명 바탕은
+  // 유리(뒤 필터)를 다시 그리는 프레임에 macOS 가 지우지 않고 덧칠해 패널이 불투명하게 깜빡였다(측정). 그래서 구멍도 쓰지 않는다
   applyAcrylic(allow) {
     const mac = import_obsidian5.Platform.isMacOS && import_obsidian5.Platform.isDesktopApp;
     if (mac) this.watchTranslucent(allow);
@@ -1484,8 +1485,7 @@ var coreMethods = {
     if (!w) return;
     if (mac) {
       if (typeof w.setVibrancy !== "function") return;
-      if (want) w.setVibrancy("hud");
-      else if (document.body.classList.contains("is-translucent")) w.setVibrancy("sidebar");
+      if (want) w.setVibrancy("sidebar");
       this.acrylicPrev = want ? "vibrancy" : null;
     } else {
       if (typeof w.setBackgroundMaterial !== "function") return;
@@ -1501,11 +1501,11 @@ var coreMethods = {
     }
     document.body.classList.toggle("lg-acrylic", want);
     this.acrylicTheme(want);
-    this.acrylicHoles(want);
+    this.acrylicHoles(want && !mac);
     if (mac && want) this.vibNudge();
   },
-  // 맥: 재질을 바꾸거나 창 라이트·다크가 바뀐 뒤 패널이 불투명하게 남았다(측정: 그동안 Chromium 화면은 투명). 바탕 층(.lg-panel-under)을
-  // 한 프레임 빼서 새로 만들면 풀렸다(측정). 조금 뒤 한 번 그렇게 한다
+  // 맥: 재질을 바꾸거나 창 라이트·다크가 바뀐 뒤 패널이 예전 화면으로 남았다(측정: 그동안 Chromium 화면은 투명). 화면을 한 번 새로
+  // 그리면 풀렸다(측정). 조금 뒤 두 프레임 동안 앱 화면 층을 바꿔 다시 그리게 한다(테마 body.lg-vib-nudge)
   vibNudge() {
     window.setTimeout(() => {
       if (this.unloaded) return;
