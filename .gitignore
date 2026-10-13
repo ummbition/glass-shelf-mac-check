@@ -13,3 +13,8 @@ fl*/
 *.mov
 ab*/
 scripts/ab/node_modules/
+op*/
+im*/
+*.png
+!Showcase/**
+!vault/**
