@@ -123,8 +123,7 @@ jobs:
                   row += bytes((int(r / wsum * k + 250 * (1 - k)), int(g / wsum * k + 250 * (1 - k)), int(b / wsum * k + 250 * (1 - k))))
               rows.append(bytes(row))
           with open("bright.ppm", "wb") as f:
-              f.write(b"P6 %d %d 255
-" % (W, H))
+              f.write(("P6 %d %d 255" % (W, H)).encode() + bytes([10]))
               f.write(b"".join(rows))
           PY
             sips -s format png bright.ppm --out bright.png > /dev/null && osascript -e "tell application \"System Events\" to tell every desktop to set picture to POSIX file \"$PWD/bright.png\"" && PIC=bright.png
