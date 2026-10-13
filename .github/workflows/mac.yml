@@ -105,12 +105,36 @@ jobs:
           if [ -f wallpaper.jpg ]; then
             osascript -e "tell application \"System Events\" to tell every desktop to set picture to POSIX file \"$PWD/wallpaper.jpg\"" && PIC=wallpaper.jpg
           fi
+          if [ -z "$PIC" ]; then
+            python3 - <<'PY'
+          import math
+          W, H = 1600, 1000
+          blobs = [(0.2, 0.3, (255, 214, 224)), (0.75, 0.25, (200, 228, 255)), (0.55, 0.8, (214, 245, 222)), (0.9, 0.85, (255, 240, 200))]
+          rows = []
+          for y in range(H):
+              row = bytearray()
+              for x in range(W):
+                  r = g = b = 0.0; wsum = 0.0
+                  for bx, by, c in blobs:
+                      d = math.hypot(x / W - bx, y / H - by)
+                      w = math.exp(-d * d * 6)
+                      r += c[0] * w; g += c[1] * w; b += c[2] * w; wsum += w
+                  k = wsum / (wsum + 0.15)
+                  row += bytes((int(r / wsum * k + 250 * (1 - k)), int(g / wsum * k + 250 * (1 - k)), int(b / wsum * k + 250 * (1 - k))))
+              rows.append(bytes(row))
+          with open("bright.ppm", "wb") as f:
+              f.write(b"P6 %d %d 255
+" % (W, H))
+              f.write(b"".join(rows))
+          PY
+            sips -s format png bright.ppm --out bright.png > /dev/null && osascript -e "tell application \"System Events\" to tell every desktop to set picture to POSIX file \"$PWD/bright.png\"" && PIC=bright.png
+          fi
           [ -z "$PIC" ] && for k in "Big Sur" "Coastline" "Mountain" "Valley" "Lake" "Hill" "Horizon" "Yosemite" "Sierra" "Mojave Day" "Catalina" "Monterey" "Sonoma Horizon" "Sequoia" "Tahoe"; do
             PIC=$(ls -1 "/System/Library/Desktop Pictures" | grep -i "$k" | grep -iv "dark\|night" | grep -i "\.\(heic\|jpg\|png\)$" | head -1)
             [ -n "$PIC" ] && break
           done
           echo "PIC=$PIC"
-          [ -n "$PIC" ] && [ "$PIC" != wallpaper.jpg ] && osascript -e "tell application \"System Events\" to tell every desktop to set picture to POSIX file \"/System/Library/Desktop Pictures/$PIC\"" || echo "바탕화면 변경 실패"
+          [ -n "$PIC" ] && [ "$PIC" != wallpaper.jpg ] && [ "$PIC" != bright.png ] && osascript -e "tell application \"System Events\" to tell every desktop to set picture to POSIX file \"/System/Library/Desktop Pictures/$PIC\"" || echo "바탕화면 변경 실패"
           mkdir -p shots-${{ matrix.os }}
           echo "$PIC" > shots-${{ matrix.os }}/wallpaper.txt
           sleep 3
@@ -134,7 +158,7 @@ jobs:
           TEST3: ${{ inputs.hovertest == 'test3' && '1' || '' }}
           LENSONLY: ${{ inputs.hovertest == 'lensonly' && '1' || '' }}
           AUDIT: ${{ inputs.hovertest == 'audit' && '1' || '' }}
-          LENSCMP: ${{ (inputs.hovertest == 'lenscmp' || inputs.hovertest == 'lenscmp2' || inputs.hovertest == 'lenscmp3' || inputs.hovertest == 'lenscmp4' || inputs.hovertest == 'lenscmp5' || inputs.hovertest == 'lenscmp6' || inputs.hovertest == 'lenscmp7' || inputs.hovertest == 'lenscmp8') && '1' || '' }}
+          LENSCMP: ${{ (inputs.hovertest == 'lenscmp' || inputs.hovertest == 'lenscmp2' || inputs.hovertest == 'lenscmp3' || inputs.hovertest == 'lenscmp4' || inputs.hovertest == 'lenscmp5' || inputs.hovertest == 'lenscmp6' || inputs.hovertest == 'lenscmp7' || inputs.hovertest == 'lenscmp8' || inputs.hovertest == 'lenscmp9') && '1' || '' }}
           LENSCMP2: ${{ inputs.hovertest == 'lenscmp2' && '1' || '' }}
           LENSCMP3: ${{ inputs.hovertest == 'lenscmp3' && '1' || '' }}
           LENSCMP4: ${{ inputs.hovertest == 'lenscmp4' && '1' || '' }}
@@ -142,6 +166,7 @@ jobs:
           LENSCMP6: ${{ inputs.hovertest == 'lenscmp6' && '1' || '' }}
           LENSCMP7: ${{ inputs.hovertest == 'lenscmp7' && '1' || '' }}
           LENSCMP8: ${{ inputs.hovertest == 'lenscmp8' && '1' || '' }}
+          LENSCMP9: ${{ inputs.hovertest == 'lenscmp9' && '1' || '' }}
         run: |
           /Applications/Obsidian.app/Contents/MacOS/Obsidian --remote-debugging-port=9222 > obsidian.log 2>&1 &
           sleep 8

@@ -644,6 +644,35 @@ body.lg-fc-sorting * {
   opacity: 0;
 }
 
+/* 탭 렌즈 글자 전용 굴절 층 (플러그인 SegmentLens.textLens): 렌즈 자리에 탭 복사본을 렌즈 모양으로 잘라 렌즈 위에 올린다 */
+.lg-seg-text {
+  position: absolute;
+  z-index: 3;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.lg-seg-text.lg-seg-text-off {
+  display: none;
+}
+
+.lg-seg-text > div {
+  position: absolute;
+}
+
+.lg-seg-text .workspace-tab-header:not(#lg):not(#lg) {
+  position: absolute;
+  margin: 0;
+  background: none;
+  box-shadow: none;
+  transform: none;
+}
+
+.lg-seg-text .workspace-tab-header:not(#lg):not(#lg)::before,
+.lg-seg-text .workspace-tab-header:not(#lg):not(#lg)::after {
+  content: none;
+}
+
 /* 창 제어 알약 크기 재기용 임시 요소 */
 .lg-wc-probe:not(#lg):not(#lg) {
   position: absolute;

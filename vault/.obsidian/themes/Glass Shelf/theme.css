@@ -2243,9 +2243,15 @@ body.lg-ui:not(.is-phone) .workspace-split.mod-root.lg-split-multi .workspace-ta
 }
 
 /* 좌우 패널 투명 (플러그인 설정, body.lg-acrylic, Windows 11, 사용자 요청): 플러그인이 창 바탕을 투명하게 하고 시스템 아크릴 재질을 깐다.
-   body 바탕을 비우고 좌우 패널 바탕을 70%만 남겨 뒤의 바탕화면·창이 흐리게 비친다. 편집창은 제 바탕(불투명)을 그대로 쓴다 */
+   body 바탕을 비우고 좌우 패널 바탕을 70%만 남겨 뒤의 바탕화면·창이 흐리게 비친다. 편집창은 제 바탕(불투명)을 그대로 쓴다.
+   패널 바탕색은 라이트는 흰색(사용자 요청, 패널색 #f6f6f6 은 아크릴 위에서 회색으로 보였다), 다크는 패널색 */
 body.lg-acrylic:not(#lg) {
+  --lg-acrylic-base: #fff;
   background-color: transparent;
+}
+
+body.lg-acrylic.theme-dark:not(#lg) {
+  --lg-acrylic-base: var(--background-secondary);
 }
 
 /* 좌우 패널 위 알약 유리 효과에서 채도 낮추기(--lg-tone)는 뺀다. 굴절은 그대로 (사용자 요청, 패널 투명을 켜고 끄는 것과 관계없이).
@@ -2255,7 +2261,7 @@ body.lg-acrylic:not(#lg) {
 }
 
 body.lg-acrylic .workspace-split.mod-sidedock:not(#lg) {
-  background-color: color-mix(in srgb, var(--background-secondary) 70%, transparent);
+  background-color: color-mix(in srgb, var(--lg-acrylic-base) 70%, transparent);
 }
 
 /* 패널 위 알약·버튼 밑 구멍 (플러그인 .lg-holes, 사용자 요청). 패널 바탕은 패널 밖 바로 뒤의 층(플러그인 .lg-panel-under, 패널 자리·크기를 따라간다)에
@@ -2299,7 +2305,7 @@ body.lg-acrylic .workspace-split.mod-sidedock.lg-holes:not(#lg) {
   position: fixed;
   z-index: 4;
   pointer-events: none;
-  background-color: color-mix(in srgb, var(--background-secondary) 70%, transparent);
+  background-color: color-mix(in srgb, var(--lg-acrylic-base) 70%, transparent);
   mask-image: url("#lg-holes-left");
 }
 

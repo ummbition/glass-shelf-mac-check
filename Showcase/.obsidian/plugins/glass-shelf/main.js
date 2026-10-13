@@ -471,7 +471,8 @@ var LENS_DEFAULT = { minify: LENS_MINIFY, flat: LENS_MINIFY_FLAT, edge: LENS_MIN
 var LENS_TOGGLE = { minify: 1.2, flat: 0.9, edge: 0.1, reach: 0.86, shape: 1 };
 var LENS_SLIDER = { minify: 1, flat: 0.9, edge: 0.2, reach: 0.55, shape: 1 };
 var MAP_CACHE = 200;
-var LENS_TAB = { minify: 1.2, flat: 0.94, edge: 2, reach: 1.1, shape: 1 };
+var LENS_TAB = { minify: 1.2, flat: 0.94, edge: 2, reach: 1.1, shape: 1, line: true, box: true };
+var LENS_TAB_TEXT = { minify: 1, flat: 0.6, edge: 0.2, reach: 0.9, shape: 1 };
 var PRESS_WHITE = "color(srgb 1 1 1)";
 var Refractor = class {
   constructor() {
@@ -562,7 +563,7 @@ var Refractor = class {
   filterFor(w, h, strength, chroma, outward, doc = document, bezel = BEZEL_RATIO, spread = REFRACT_SPREAD, lens = LENS_DEFAULT, bezelMax = BEZEL_MAX) {
     const bz = Math.round(bezel * 100);
     const sp = Math.round(spread * 100);
-    const lensTag = lens === LENS_DEFAULT ? "lens" : `lens-${[lens.minify, lens.flat, lens.edge, lens.reach, lens.shape || 2].join("-").replace(/\./g, "p")}`;
+    const lensTag = lens === LENS_DEFAULT ? "lens" : `lens-${[lens.minify, lens.flat, lens.edge, lens.reach, lens.shape || 2].join("-").replace(/\./g, "p")}${lens.line ? "-ln" : ""}${lens.box ? "-bx" : ""}`;
     const bm = Math.round(bezelMax * 10);
     const mapKey = outward ? `${w}x${h}-${lensTag}` : `${w}x${h}-b${bz}-s${sp}-m${bm}`;
     let baked = this.maps.get(mapKey);
@@ -758,16 +759,22 @@ var Refractor = class {
     const ox = new Float32Array(w * h);
     const oy = new Float32Array(w * h);
     let max = 0;
+    const C = Math.max(0, ax - ay);
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         const px = x + 0.5 - ax;
         const py = y + 0.5 - ay;
-        const t = S <= 1 ? pillT(px, py, ax, ay, RXR) : S === 2 ? Math.hypot(px / ax, py / ay) : (Math.abs(px / ax) ** S + Math.abs(py / ay) ** S) ** (1 / S);
+        const j = y * w + x;
+        const qx = lens.line ? Math.max(-C, Math.min(C, px)) : 0;
+        const t = lens.line ? Math.hypot(px - qx, py) / ay : S <= 1 ? pillT(px, py, ax, ay, RXR) : S === 2 ? Math.hypot(px / ax, py / ay) : (Math.abs(px / ax) ** S + Math.abs(py / ay) ** S) ** (1 / S);
         if (t >= 1 || t < 1e-6) continue;
         const k = ratio(t);
-        const j = y * w + x;
-        ox[j] = px * k;
+        ox[j] = (px - qx) * k;
         oy[j] = py * k;
+        if (lens.box) {
+          ox[j] = Math.max(0.5 - ax, Math.min(ax - 0.5, px + ox[j])) - px;
+          oy[j] = Math.max(0.5 - ay, Math.min(ay - 0.5, py + oy[j])) - py;
+        }
         max = Math.max(max, Math.abs(ox[j]), Math.abs(oy[j]));
       }
     }
@@ -2514,9 +2521,10 @@ var LENS_CLEAR_K = 2.2;
 var LENS_TG_TALL = 3;
 var TAB_LENS_MS = 80;
 var TAB_PRESS_K = 0.5;
-var TAB_LENS_W = 1.15;
+var TAB_LENS_W = 1.2;
 var TAB_GROW_MS = 90;
-var TAB_LENS_H2 = 1.08;
+var TAB_GROW_FWD = 9;
+var TAB_LENS_H2 = 1.2;
 var TAB_SHRINK_MS = 280;
 var TAB_SQUASH = 0.414;
 var TAB_SQUASH_AT = 0.25;
@@ -2577,9 +2585,78 @@ var SegmentLens = class {
     if (!this.raf) this.raf = window.requestAnimationFrame((t) => this.step(t));
   }
   // 렌즈 크기에 맞는 굴절 필터 (2px 단위로 묶어 지도 수를 줄인다)
-  filterAt(w, h) {
+  filterAt(w, h, look = LENS_TAB) {
     const q = (v) => Math.max(4, Math.round(v / 2) * 2);
-    return this.plugin.refractor.filterFor(q(w), q(h), 42, false, true, this.header.ownerDocument, void 0, void 0, LENS_TAB);
+    return this.plugin.refractor.filterFor(q(w), q(h), 42, false, true, this.header.ownerDocument, void 0, void 0, look);
+  }
+  // 렌즈 안 글자는 탭 줄과 따로 굴절한다 (사용자 요청: 한 굴절로 같이 휘면 가운데 선 방식에서 글자가 옆으로 늘어진다).
+  // 원래 탭 글자(.workspace-tab-header-inner)는 렌즈 모양만큼 잘라 숨겨 렌즈 유리가 탭 줄만 떠 오게 하고,
+  // 렌즈 자리에 탭 복사본을 렌즈 모양으로 잘라 올려 글자 전용 굴절(LENS_TAB_TEXT)을 건다. 굴절 세기는 렌즈 정도 g 를 따른다
+  textLens(x0, y0, vw, vh, g) {
+    const tabs = Array.from(this.inner.querySelectorAll(":scope > .workspace-tab-header")).filter((t) => t.offsetWidth > 0);
+    if (!this.refract || g <= 0 || !tabs.length) return this.textOff();
+    const hr = this.header.getBoundingClientRect();
+    const r = vh / 2;
+    const n = (v2) => v2.toFixed(2);
+    for (const tab of tabs) {
+      const ti = tab.querySelector(":scope > .workspace-tab-header-inner");
+      if (!ti) continue;
+      const tr2 = ti.getBoundingClientRect();
+      const ax = x0 - (tr2.left - hr.left);
+      const ay = y0 - (tr2.top - hr.top);
+      ti.style.clipPath = `path(evenodd, "M-9999 -9999H9999V9999H-9999Z M${n(ax + r)} ${n(ay)}H${n(ax + vw - r)}A${n(r)} ${n(r)} 0 0 1 ${n(ax + vw - r)} ${n(ay + vh)}H${n(ax + r)}A${n(r)} ${n(r)} 0 0 1 ${n(ax + r)} ${n(ay)}Z")`;
+    }
+    if (!this.textEl || !this.textEl.isConnected) {
+      this.textEl = this.header.createDiv({ cls: ["lg-seg-text", INJECTED] });
+      this.textInner = this.textEl.createDiv();
+      this.textSig = "";
+    }
+    const sig = tabs.map((t) => t.hasClass("is-active") ? "1" : "0").join("");
+    if (sig !== this.textSig) {
+      this.textSig = sig;
+      this.textInner.empty();
+      for (const tab of tabs) {
+        const c = tab.cloneNode(true);
+        const tr2 = tab.getBoundingClientRect();
+        c.style.left = `${tr2.left - hr.left}px`;
+        c.style.top = `${tr2.top - hr.top}px`;
+        c.style.width = `${tr2.width}px`;
+        c.style.height = `${tr2.height}px`;
+        const src = [tab, ...Array.from(tab.querySelectorAll("*"))];
+        const dst = [c, ...Array.from(c.querySelectorAll("*"))];
+        src.forEach((s2, i) => {
+          const d = dst[i];
+          if (!d) return;
+          const cs = getComputedStyle(s2);
+          d.style.color = cs.color;
+          d.style.opacity = cs.opacity;
+          d.style.removeProperty("clip-path");
+        });
+        this.textInner.appendChild(c);
+      }
+    }
+    const s = this.textEl.style;
+    this.textEl.classList.toggle("lg-seg-text-off", false);
+    s.left = `${n(x0)}px`;
+    s.top = `${n(y0)}px`;
+    s.width = `${n(vw)}px`;
+    s.height = `${n(vh)}px`;
+    s.borderRadius = `${n(vh * this.rx)}px / ${n(r)}px`;
+    this.textInner.style.left = `${n(-x0)}px`;
+    this.textInner.style.top = `${n(-y0)}px`;
+    const id = this.filterAt(vw, vh, LENS_TAB_TEXT);
+    const f = this.header.ownerDocument.getElementById(id);
+    const dm = f && f.querySelector("feDisplacementMap");
+    if (dm) {
+      if (!dm.getAttribute("data-base")) dm.setAttribute("data-base", dm.getAttribute("scale") || "0");
+      dm.setAttribute("scale", (parseFloat(dm.getAttribute("data-base")) * g).toFixed(2));
+    }
+    const v = `url(#${id})`;
+    if (s.filter !== v) s.filter = v;
+  }
+  textOff() {
+    this.inner.querySelectorAll(":scope > .workspace-tab-header > .workspace-tab-header-inner").forEach((ti) => ti.style.removeProperty("clip-path"));
+    if (this.textEl) this.textEl.classList.toggle("lg-seg-text-off", true);
   }
   // 탭 하나가 지나는 렌즈 크기들의 지도를 쉬는 틈에 미리 굽는다. 처음 탭을 바꿀 때 매 프레임 새 지도를 굽느라 끊기던 것 (측정 확인)
   prebake(tab) {
@@ -2595,25 +2672,27 @@ var SegmentLens = class {
     const w1 = r.width + R * (TAB_LENS_W - 1);
     const h1 = this.keepH ? r.height : Hc;
     const h2 = this.keepH ? r.height * MOBILE_TAB_GROW : Hc * TAB_LENS_H2;
-    const w2 = r.width + h2 * TAB_REF_RATIO - R;
+    const w2 = r.width + h2 * TAB_REF_RATIO - R + TAB_GROW_FWD;
     const legs = [[r.width, r.height, w1, h1], [w1, h1, w2, h2], [w2, h2, r.width, r.height]];
     const sizes = [];
     for (const [w0, h0, wa, ha] of legs) for (let k = 0; k <= 1.0001; k += 0.05) sizes.push([w0 + (wa - w0) * k, h0 + (ha - h0) * k]);
+    const texts = sizes.map(([w, h]) => [w, h, 1]);
     const win = this.header.ownerDocument.defaultView || window;
     const ref = this.plugin.refractor;
     const idle = (fn) => win.requestIdleCallback ? win.requestIdleCallback(fn, { timeout: 2e3 }) : win.setTimeout(fn, 50);
     const next = () => idle((dl) => {
       if (this.plugin.unloaded || this.plugin.refractor !== ref) return;
-      while (sizes.length && (!dl || dl.timeRemaining() > 4)) {
-        const [w, h] = sizes.shift();
+      while ((sizes.length || texts.length) && (!dl || dl.timeRemaining() > 4)) {
+        const sz = sizes.shift();
+        const [w, h, txt] = sz ? [sz[0], sz[1], 0] : texts.shift();
         try {
-          this.filterAt(w, h);
+          this.filterAt(w, h, txt ? LENS_TAB_TEXT : LENS_TAB);
         } catch (err) {
           console.error("[glass-shelf] prebake", err);
           return;
         }
       }
-      if (sizes.length) next();
+      if (sizes.length || texts.length) next();
     });
     next();
   }
@@ -2628,6 +2707,7 @@ var SegmentLens = class {
       this.el.style.removeProperty("--lg-g");
     }
     this.header.removeClass("lg-seg-moving");
+    this.textOff();
   }
   step(now) {
     try {
@@ -2654,8 +2734,8 @@ var SegmentLens = class {
     const h1 = this.keepH ? b.h : Hc;
     const h2 = this.keepH ? b.h * MOBILE_TAB_GROW : Hc * TAB_LENS_H2;
     const SQ = this.keepH ? MOBILE_TAB_SQUASH : TAB_SQUASH;
-    const w2 = b.w + h2 * TAB_REF_RATIO - R;
-    const lead = b.cx + dir * b.w / 2;
+    const w2 = b.w + h2 * TAB_REF_RATIO - R + TAB_GROW_FWD;
+    const lead = b.cx + dir * b.w / 2 + dir * TAB_GROW_FWD * (1 - smooth(clamp01((t - D) / TAB_SHRINK_MS)));
     let bw;
     let bh;
     let sx = 1;
@@ -2731,6 +2811,7 @@ var SegmentLens = class {
       const v = `url(#${this.filterAt(bw, bh)})`;
       if (this.lensEl.style.getPropertyValue("--lg-refract") !== v) this.lensEl.style.setProperty("--lg-refract", v);
     }
+    this.textLens(cx - bw * sx / 2, cy - bh * sy / 2, bw * sx, bh * sy, g);
     this.raf = window.requestAnimationFrame((tt) => this.step(tt));
   }
 };

@@ -79,6 +79,18 @@ if (process.env.LENSCMP) {
     await Promise.race([done, sleep(6000)]);
     note("done", name);
   };
+  if (process.env.LENSCMP9) {
+    // 탭 전환 효과를 목록으로 바꾸고 탭 전환 녹화 (밝은 바탕화면). 비교로 렌즈도 한 번
+    const setAnim = async (v) => { await ev(`const p = app.plugins.plugins["glass-shelf"]; p.settings.tabAnim = ${JSON.stringify(v)}; await p.saveSettings(); p.applySettings && p.applySettings();`); await sleep(1200); await ev(`app.plugins.plugins["glass-shelf"].vibNudge();`); await sleep(900); };
+    const reTabs = async () => { for (const k of ["files", "search", "bookmarks"]) tabs[k] = await leftTab({ files: "Files", search: "Search", bookmarks: "Bookmarks" }[k]); note("tabs2", tabs); };
+    await setAnim("list"); await reTabs();
+    try { execSync(`screencapture -x "${OUT}/look-list.png"`); } catch {}
+    await run("LIST");
+    await run("LIST2");
+    await setAnim("lens"); await reTabs();
+    await run("LENS");
+    save(); ws.close(); process.exit(0);
+  }
   if (process.env.LENSCMP8) {
     // 렌즈 애니메이션을 끄고(탭 전환 효과 없음) 탭만 전환: 렌즈 이동과 덧칠을 분리. 묶음·마스크 변형 비교
     note("vault-pill", await ev(`const e = document.querySelector(".mod-left-split .workspace-drawer-vault-switcher, .mod-left-split .workspace-sidedock-vault-profile"); if (!e) return null; const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height };`));
