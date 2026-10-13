@@ -22,7 +22,14 @@ app.whenReady().then(async () => {
   a.setBackgroundColor("#00000000"); a.setVibrancy("sidebar");
   b.setBackgroundColor("#00000000");
   note("bounds", { a: a.getBounds(), b: b.getBounds(), a2: a.getContentBounds(), b2: b.getContentBounds() });
+  const c = new BrowserWindow({ width: 420, height: 300, x: 1360, y: 120, titleBarStyle: "hidden" });
+  await c.loadFile(path.join(__dirname, "page.html"), { query: { name: "C: 반투명 없음" } });
   await sleep(4000);
+  for (const [k, w] of [["a", a], ["b", b], ["c", c]]) {
+    try { note("text-" + k, await w.webContents.executeJavaScript("document.body.innerText.slice(0, 80)")); } catch (e) { note("text-err-" + k, String(e)); }
+    try { const im = await w.webContents.capturePage(); fs.writeFileSync(`${OUT}/cap-${k}.png`, im.toPNG()); note("cap-" + k, im.getSize()); } catch (e) { note("cap-err-" + k, String(e)); }
+  }
+  shot("0-diag");
   const rec = spawn("screencapture", ["-x", "-V", "26", `${OUT}/ab.mov`]);
   const done = new Promise((r) => rec.on("exit", r));
   await sleep(1500);
