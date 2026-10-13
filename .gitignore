@@ -11,3 +11,5 @@ fw*/
 fl*/
 *.mp4
 *.mov
+ab*/
+scripts/ab/node_modules/
