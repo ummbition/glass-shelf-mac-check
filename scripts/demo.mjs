@@ -79,6 +79,30 @@ if (process.env.LENSCMP) {
     await Promise.race([done, sleep(6000)]);
     note("done", name);
   };
+  if (process.env.LENSCMP11) {
+    // 반투명 창 끔: 지금 빌드 전반 확인. 상태, 정지 화면 몇 장, 패널 탭 렌즈 전환 녹화, 빠른 전환 녹화
+    note("state", await ev(`return { cls: [...document.body.classList].filter((c) => /translucent|acrylic|lg-tab|theme-/.test(c)), anim: app.plugins.plugins["glass-shelf"].settings.tabAnim, ver: app.plugins.plugins["glass-shelf"].manifest.version, dpr: devicePixelRatio, snap: [...document.querySelectorAll(".workspace-split.mod-sidedock .workspace-tab-header-container-inner")].map((e) => e.style.getPropertyValue("--lg-snap-y")) };`));
+    note("errors", await ev(`return (window.__lgErr || []).slice(0, 5);`));
+    try { execSync(`screencapture -x "${OUT}/look-plain.png"`); } catch {}
+    await move(tabs.search.x, tabs.search.y); await sleep(700);
+    try { execSync(`screencapture -x "${OUT}/look-hover-tab.png"`); } catch {}
+    const more = await center(".mod-left-split .lg-tab-menu, .mod-left-split .workspace-tab-header-tab-list");
+    if (more) { await click(more.x, more.y); await sleep(900); try { execSync(`screencapture -x "${OUT}/look-menu.png"`); } catch {} await key("Escape", "Escape", 27); await sleep(500); }
+    await run("LENS");
+    const fast = async (name, gap) => {
+      await move(900, 700); await sleep(1500);
+      const proc = spawn("screencapture", ["-x", "-V", "10", `${OUT}/${name}.mov`]);
+      const done = new Promise((r) => proc.on("exit", r));
+      await sleep(1200);
+      for (const t of ["search", "bookmarks", "files", "search", "bookmarks", "files"]) { await click(tabs[t].x, tabs[t].y); await sleep(gap); }
+      await move(900, 700);
+      await Promise.race([done, sleep(9000)]);
+      note("done", name);
+    };
+    await fast("FAST", 250);
+    note("errors2", await ev(`return document.querySelectorAll(".lg-seg-text:not(.lg-seg-text-off)").length;`));
+    save(); ws.close(); process.exit(0);
+  }
   if (process.env.LENSCMP10) {
     // 투명 상태(심플)에서 탭을 빠르게 연달아 전환 (밝은 바탕화면)
     note("state", await ev(`return { cls: ["lg-acrylic", "lg-tab-plain", "is-translucent"].filter((c) => document.body.classList.contains(c)), anim: app.plugins.plugins["glass-shelf"].settings.tabAnim };`));

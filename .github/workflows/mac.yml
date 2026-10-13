@@ -29,6 +29,9 @@ on:
       materials:
         type: boolean
         default: false
+      opaque:
+        type: boolean
+        default: false
       os:
         type: string
         default: '["macos-26", "macos-15"]'
@@ -145,6 +148,7 @@ jobs:
           {"vaults":{"a1b2c3d4e5f60718":{"path":"$V","ts":1700000000000,"open":true}}}
           EOF
           cat "$HOME/Library/Application Support/obsidian/obsidian.json"
+          if [ "${{ inputs.opaque }}" = "true" ]; then sed -i '' 's/"translucency": true/"translucency": false/' "$V/.obsidian/appearance.json"; cat "$V/.obsidian/appearance.json"; fi
       - name: Obsidian 실행과 촬영
         env:
           OUT: ${{ github.workspace }}/shots-${{ matrix.os }}
@@ -157,7 +161,7 @@ jobs:
           TEST3: ${{ inputs.hovertest == 'test3' && '1' || '' }}
           LENSONLY: ${{ inputs.hovertest == 'lensonly' && '1' || '' }}
           AUDIT: ${{ inputs.hovertest == 'audit' && '1' || '' }}
-          LENSCMP: ${{ (inputs.hovertest == 'lenscmp' || inputs.hovertest == 'lenscmp2' || inputs.hovertest == 'lenscmp3' || inputs.hovertest == 'lenscmp4' || inputs.hovertest == 'lenscmp5' || inputs.hovertest == 'lenscmp6' || inputs.hovertest == 'lenscmp7' || inputs.hovertest == 'lenscmp8' || inputs.hovertest == 'lenscmp9' || inputs.hovertest == 'lenscmp10') && '1' || '' }}
+          LENSCMP: ${{ (inputs.hovertest == 'lenscmp' || inputs.hovertest == 'lenscmp2' || inputs.hovertest == 'lenscmp3' || inputs.hovertest == 'lenscmp4' || inputs.hovertest == 'lenscmp5' || inputs.hovertest == 'lenscmp6' || inputs.hovertest == 'lenscmp7' || inputs.hovertest == 'lenscmp8' || inputs.hovertest == 'lenscmp9' || inputs.hovertest == 'lenscmp10' || inputs.hovertest == 'lenscmp11') && '1' || '' }}
           LENSCMP2: ${{ inputs.hovertest == 'lenscmp2' && '1' || '' }}
           LENSCMP3: ${{ inputs.hovertest == 'lenscmp3' && '1' || '' }}
           LENSCMP4: ${{ inputs.hovertest == 'lenscmp4' && '1' || '' }}
@@ -167,6 +171,7 @@ jobs:
           LENSCMP8: ${{ inputs.hovertest == 'lenscmp8' && '1' || '' }}
           LENSCMP9: ${{ inputs.hovertest == 'lenscmp9' && '1' || '' }}
           LENSCMP10: ${{ inputs.hovertest == 'lenscmp10' && '1' || '' }}
+          LENSCMP11: ${{ inputs.hovertest == 'lenscmp11' && '1' || '' }}
         run: |
           if [ "${{ inputs.hovertest }}" = "electronab" ]; then
             cd scripts/ab && npm i electron@43.7.7 --no-save --no-audit --no-fund > /dev/null 2>&1; npx electron --version

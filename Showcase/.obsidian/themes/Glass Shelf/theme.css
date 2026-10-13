@@ -2354,16 +2354,6 @@ body.lg-acrylic.is-translucent .workspace-split.mod-sidedock:not(#lg):not(#lg) {
   background-color: transparent;
 }
 
-/* 맥 반투명 창: 좌우 패널 안 유리(흐림·굴절)를 끈다. 알약은 채움·테두리·그림자만 (사용자 결정).
-   바탕 0% 패널 위의 유리가 다시 그려지는 프레임마다 반투명 그림자·채움이 덧칠되어 진해졌고(탭을 빠르게 바꾸면 쌓였다),
-   유리 다시 계산이 탭 전환을 무겁게 했다(맥 러너 녹화). 편집창 쪽 유리는 밑에 불투명한 바탕이 있어 그대로 둔다 */
-body.lg-acrylic.is-translucent .workspace-split.mod-sidedock:not(#lg) *:not(#lg):not(#lg):not(#lg),
-body.lg-acrylic.is-translucent .workspace-split.mod-sidedock:not(#lg) *:not(#lg):not(#lg):not(#lg)::before,
-body.lg-acrylic.is-translucent .workspace-split.mod-sidedock:not(#lg) *:not(#lg):not(#lg):not(#lg)::after {
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
-
 /* 맥: 재질이나 창 라이트·다크가 바뀐 뒤 예전 화면이 남았다(측정). 플러그인이 두 프레임 붙이는 클래스로 앱 화면을 다시 그리게 한다 */
 body.lg-vib-nudge.is-translucent .app-container:not(#lg):not(#lg) {
   opacity: 0.998;
@@ -6806,13 +6796,15 @@ body.lg-ui:not(.is-phone) .mod-root .workspace-leaf-content[data-type="kanban"] 
   margin-top: 8px;
 }
 
+/* 두께·자리는 화면 픽셀 배수로 반올림한다(--lg-dpx, 제목 밑 가로줄과 같다): 125% 배율에서 1px 은 1.25픽셀이라 놓인 높이에 따라
+   1픽셀·2픽셀로 그려져 줄마다 두께가 달라 보였다 (사용자 지적) */
 .kanban-plugin__lane-items > .kanban-plugin__item-wrapper + .kanban-plugin__item-wrapper:not(#lg)::before {
   content: "";
   position: absolute;
-  top: -4.5px;
+  top: round(-4.5px, var(--lg-dpx, 1px));
   left: 12px;
   right: 12px;
-  height: 1px;
+  height: round(1px, var(--lg-dpx, 1px));
   background-color: var(--lg-divider);
   pointer-events: none;
 }

@@ -1431,6 +1431,9 @@ var coreMethods = {
     if (!import_obsidian5.Platform.isPhone) this.registerInterval(window.setInterval(() => this.webMiniTick(), WEB_MINI_POLL_MS));
     this.app.workspace.onLayoutReady(refresh);
     this.registerEvent(this.app.workspace.on("layout-change", refresh));
+    this.registerEvent(this.app.workspace.on("layout-change", () => {
+      for (const doc of this.docs) this.snapTabBars(doc);
+    }));
     this.registerEvent(this.app.workspace.on("active-leaf-change", refresh));
     this.registerEvent(this.app.workspace.on("file-open", refresh));
     this.registerEvent(this.app.workspace.on("css-change", refresh));
@@ -1476,6 +1479,21 @@ var coreMethods = {
     if (!doc.body || !win) return;
     const v = `${+(1 / (win.devicePixelRatio || 1)).toFixed(4)}px`;
     if (doc.body.style.getPropertyValue("--lg-dpx") !== v) doc.body.style.setProperty("--lg-dpx", v);
+    this.snapTabBars(doc);
+  },
+  // 좌우 패널 탭 줄 알약을 화면 픽셀 경계에 맞춘다(--lg-snap-y 만큼 세로로 옮김). 소수 픽셀에 있으면 누름 효과(scale 애니메이션)
+  // 동안 따로 그려지는 층이 픽셀에 맞춰지며 글자가 내려갔다 올라왔다 (capturePage 측정: 0.47 → 0.1 화면 픽셀, 사용자 녹화)
+  snapTabBars(doc) {
+    const win = doc.defaultView;
+    if (!win || import_obsidian5.Platform.isMobile) return;
+    const dpr = win.devicePixelRatio || 1;
+    doc.querySelectorAll(".workspace-split.mod-sidedock .workspace-tab-header-container-inner").forEach((el) => {
+      if (!el.offsetHeight || el.getAnimations().length) return;
+      const cur = parseFloat(el.style.getPropertyValue("--lg-snap-y")) || 0;
+      const top = Math.round((el.getBoundingClientRect().top - cur) * 64) / 64 * dpr;
+      const off = +((Math.round(top) - top) / dpr).toFixed(4);
+      if (Math.abs(off - cur) > 1e-3) el.setCssProps({ "--lg-snap-y": `${off}px` });
+    });
   },
   // 좌우 패널 아크릴 (Windows 11 22H2 이상, 사용자 요청): 창 바탕을 투명하게 하고 시스템 아크릴 재질을 깐다(Electron 공개 API).
   // 테마는 body.lg-acrylic 에서 body 바탕을 비우고 좌우 패널 바탕만 반투명하게 둔다(편집창은 불투명 그대로).
@@ -1649,6 +1667,7 @@ var coreMethods = {
     this.refractor.destroy();
     for (const doc of this.docs) {
       if (!doc.body) continue;
+      doc.querySelectorAll(".workspace-tab-header-container-inner").forEach((el) => el.style.removeProperty("--lg-snap-y"));
       doc.querySelectorAll(".lg-kb-group").forEach((g) => {
         while (g.firstChild) g.parentElement.insertBefore(g.firstChild, g);
       });
@@ -2614,13 +2633,15 @@ var SegmentLens = class {
     const hr = this.header.getBoundingClientRect();
     const r = vh / 2;
     const n = (v2) => v2.toFixed(2);
+    const sc = this.inner.offsetWidth ? this.inner.getBoundingClientRect().width / this.inner.offsetWidth : 1;
     for (const tab of tabs) {
       const ti = tab.querySelector(":scope > .workspace-tab-header-inner");
       if (!ti) continue;
       const tr2 = ti.getBoundingClientRect();
-      const ax = x0 - (tr2.left - hr.left);
-      const ay = y0 - (tr2.top - hr.top);
-      ti.style.clipPath = `path(evenodd, "M-9999 -9999H9999V9999H-9999Z M${n(ax + r)} ${n(ay)}H${n(ax + vw - r)}A${n(r)} ${n(r)} 0 0 1 ${n(ax + vw - r)} ${n(ay + vh)}H${n(ax + r)}A${n(r)} ${n(r)} 0 0 1 ${n(ax + r)} ${n(ay)}Z")`;
+      const ax = (x0 - (tr2.left - hr.left)) / sc;
+      const ay = (y0 - (tr2.top - hr.top)) / sc;
+      const w = vw / sc, h = vh / sc, rr = r / sc;
+      ti.style.clipPath = `path(evenodd, "M-9999 -9999H9999V9999H-9999Z M${n(ax + rr)} ${n(ay)}H${n(ax + w - rr)}A${n(rr)} ${n(rr)} 0 0 1 ${n(ax + w - rr)} ${n(ay + h)}H${n(ax + rr)}A${n(rr)} ${n(rr)} 0 0 1 ${n(ax + rr)} ${n(ay)}Z")`;
     }
     if (!this.textEl || !this.textEl.isConnected) {
       this.textEl = this.header.createDiv({ cls: ["lg-seg-text", INJECTED] });
@@ -2633,11 +2654,6 @@ var SegmentLens = class {
       this.textInner.empty();
       for (const tab of tabs) {
         const c = tab.cloneNode(true);
-        const tr2 = tab.getBoundingClientRect();
-        c.style.left = `${tr2.left - hr.left}px`;
-        c.style.top = `${tr2.top - hr.top}px`;
-        c.style.width = `${tr2.width}px`;
-        c.style.height = `${tr2.height}px`;
         const src = [tab, ...Array.from(tab.querySelectorAll("*"))];
         const dst = [c, ...Array.from(c.querySelectorAll("*"))];
         src.forEach((s2, i) => {
@@ -2651,15 +2667,33 @@ var SegmentLens = class {
         this.textInner.appendChild(c);
       }
     }
+    const clones = Array.from(this.textInner.children);
+    tabs.forEach((tab, i) => {
+      const c = clones[i];
+      if (!c) return;
+      const tr2 = tab.getBoundingClientRect();
+      c.style.left = `${(tr2.left - hr.left).toFixed(3)}px`;
+      c.style.top = `${(tr2.top - hr.top).toFixed(3)}px`;
+      c.style.width = `${(tr2.width / sc).toFixed(3)}px`;
+      c.style.height = `${(tr2.height / sc).toFixed(3)}px`;
+      c.style.transform = sc !== 1 ? `scale(${sc.toFixed(4)})` : "";
+      for (const k of ["--lg-mx", "--lg-my"]) {
+        const v2 = tab.style.getPropertyValue(k);
+        if (v2) c.style.setProperty(k, v2);
+        else c.style.removeProperty(k);
+      }
+    });
     const s = this.textEl.style;
     this.textEl.classList.toggle("lg-seg-text-off", false);
-    s.left = `${n(x0)}px`;
-    s.top = `${n(y0)}px`;
+    const dpr = this.header.win.devicePixelRatio || 1;
+    const px0 = Math.round(x0 * dpr) / dpr, py0 = Math.round(y0 * dpr) / dpr;
+    s.left = `${n(px0)}px`;
+    s.top = `${n(py0)}px`;
     s.width = `${n(vw)}px`;
     s.height = `${n(vh)}px`;
     s.borderRadius = `${n(vh * this.rx)}px / ${n(r)}px`;
-    this.textInner.style.left = `${n(-x0)}px`;
-    this.textInner.style.top = `${n(-y0)}px`;
+    this.textInner.style.left = `${(-px0).toFixed(3)}px`;
+    this.textInner.style.top = `${(-py0).toFixed(3)}px`;
     const id = this.filterAt(vw, vh, LENS_TAB_TEXT);
     const f = this.header.ownerDocument.getElementById(id);
     const dm = f && f.querySelector("feDisplacementMap");
