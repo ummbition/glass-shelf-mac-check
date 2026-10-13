@@ -102,7 +102,7 @@ body {
   --lg-gap-btn: calc(var(--lg-pill-h) - var(--lg-inner));
   --lg-tab-w: 320px; /* 편집창 탭 기본 폭 */
   --lg-tab-gap: 4px; /* 편집창 탭 사이 (가운데에 세로 구분선) */
-  --lg-row-radius: 11px;    /* 글자 항목(파일 목록·개요·검색 결과·설정 목록) 호버·선택 */
+  --lg-row-radius: 12px;    /* 글자 항목(파일 목록·개요·검색 결과·설정 목록) 호버·선택 */
   --lg-item-radius: 16px;  /* 메뉴 항목 호버 (항목 높이 32px 의 절반이 최대) */
   /* 모서리 모양 (렌즈 조율기에서 사용자가 고른 값): 알약 1.1, 둥근 사각형 1.4. 1 = 원형, 2 = 스퀘어클 */
   --lg-pill-shape: superellipse(1.1);
@@ -985,9 +985,15 @@ body.lg-wc-compact.mod-linux {
 
 /* 올려도 탭 줄 자리는 그대로다: 커진 알약이 왼쪽 버튼 위에 겹쳐 생긴다 */
 
+/* 전환은 오른쪽 위 자리 표시(.mod-top-right-space)가 없는 탭 줄에도 둔다. Obsidian 이 탭을 닫거나 창 크기를 바꿀 때 그 표시를
+   잠깐 뗐다 다시 붙이는데, 뗄 때는 전환이 없어 여백이 한 번에 빠지고 붙일 때만 천천히 돌아와 오른쪽 버튼 묶음이 창 제어 쪽으로
+   튀었다 돌아왔다 (사용자 지적, 측정: 67px → 10px → 260ms 동안 67px) */
+.is-hidden-frameless:not(.is-fullscreen) .workspace-tabs .workspace-tab-header-container:not(#lg) {
+  transition: padding-right 260ms var(--lg-ease-settle);
+}
+
 .is-hidden-frameless:not(.is-fullscreen) .workspace-tabs.mod-top-right-space .workspace-tab-header-container:not(#lg) {
   padding-right: calc(var(--lg-gap) + var(--frame-right-space));
-  transition: padding-right 260ms var(--lg-ease-settle);
 }
 
 .is-hidden-frameless:not(.is-fullscreen) .workspace-tabs.mod-top-left-space .workspace-tab-header-container:not(#lg) {
@@ -1539,11 +1545,54 @@ body.lg-tab-plain.is-mobile .workspace-drawer-tab-options-list > .workspace-tab-
   --lg-list-row: var(--lg-pill-h);
   --lg-list-gap: 2px;
   --lg-list-h: calc(var(--lg-tab-n, 1) * var(--lg-list-row) + (var(--lg-tab-n, 1) - 1) * var(--lg-list-gap));
-  --header-height: calc(var(--lg-pill-h) + var(--lg-list-h) + var(--lg-gap) * 3);
+  /* 맨 밑 구역 제목(고른 탭 이름) 줄 높이 */
+  --lg-sec-h: 20px;
+  --lg-sec-add: 0px;
+  --header-height: calc(var(--lg-pill-h) + var(--lg-list-h) + var(--lg-sec-add) + var(--lg-gap) * 3);
+}
+
+/* 구역 제목이 있는 묶음(탭 둘 이상, 플러그인 .lg-sec)만 그 줄 높이를 더한다 */
+.workspace-split.lg-tab-list .workspace-tabs.lg-sec:not(#lg) {
+  --lg-sec-add: calc(var(--lg-sec-h) + var(--lg-gap));
 }
 
 .workspace-split.lg-tab-list .workspace-tabs:not(.mod-top):not(.lg-nav-two):not(#lg) {
-  --header-height: calc(var(--lg-list-h) + var(--lg-gap) * 2);
+  --header-height: calc(var(--lg-list-h) + var(--lg-sec-add) + var(--lg-gap) * 2);
+}
+
+/* 검색 칸이 머리 바로 밑에 붙어 위 테두리·그림자가 머리에 가려졌다 (사용자 지적). 목록 방식 패널에서는 조금 띄우고,
+   그림자는 아래로만 퍼지게 한다(퍼짐을 줄이고 아래로 옮겨 위로는 몇 px 만): 칸 안 내용은 머리보다 아래 층이라 위로 퍼진 그림자는 머리 바탕판에 덮인다 */
+.workspace-split.lg-tab-list .workspace-leaf-content[data-type="search"] .search-row:not(#lg):not(#lg):not(#lg) {
+  margin-top: 6px;
+}
+
+.workspace-split.lg-tab-list .workspace-leaf-content[data-type="search"] {
+  --lg-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.06), 0 8px 16px -4px rgb(0 0 0 / 0.075);
+  --lg-menu-shadow: 0 3px 6px -1px rgb(0 0 0 / 0.06), 0 30px 60px -24px rgb(0 0 0 / 0.09);
+}
+
+body.theme-dark .workspace-split.lg-tab-list .workspace-leaf-content[data-type="search"] {
+  --lg-shadow-sm: 0 0 0 1px rgb(0 0 0 / 0.28), 0 8px 14px -4px rgb(0 0 0 / 0.3);
+  --lg-menu-shadow: 0 0 0 1px rgb(0 0 0 / 0.28), 0 30px 60px -24px rgb(0 0 0 / 0.29);
+}
+
+/* 맨 밑 구역 제목: 고른 탭 이름을 옅은 회색 작은 굵은 글자로 (macOS 사이드바 구역 제목, 플러그인 .lg-list-section, 사용자 요청).
+   왼쪽 여백은 목록 줄(20px)보다 좁게, 자리는 목록보다 아래 내용 쪽으로 6px 내린다 (사용자 요청) */
+.workspace-split.lg-tab-list .workspace-tabs > .workspace-tab-header-container > .lg-list-section:not(#lg) {
+  order: 20;
+  flex: 0 0 100%;
+  height: var(--lg-sec-h);
+  line-height: var(--lg-sec-h);
+  position: relative;
+  top: 6px;
+  padding-inline: 12px;
+  font-size: var(--font-ui-small);
+  font-weight: 500;
+  color: var(--text-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
 }
 
 .workspace-split.lg-tab-list .workspace-tabs > .workspace-tab-header-container:not(#lg):not(#lg) {
@@ -1601,9 +1650,11 @@ body.is-hidden-frameless:not(.is-fullscreen) .workspace-split.lg-tab-list .works
   width: auto;
   min-width: 0;
   height: var(--lg-list-row);
-  padding-inline: 12px;
-  border-radius: calc(var(--lg-list-row) * var(--lg-pill-rx)) / calc(var(--lg-list-row) / 2);
-  corner-shape: var(--lg-pill-shape);
+  /* 기호 왼쪽 여백을 넓힌다 (사용자 요청) */
+  padding-inline: 20px 12px;
+  /* 하이라이트 곡률은 파일 탐색기 줄무늬·줄 하이라이트와 같게 (사용자 요청) */
+  border-radius: var(--lg-row-radius);
+  corner-shape: var(--lg-rect-shape);
   background-color: transparent;
 }
 
@@ -1660,6 +1711,21 @@ body.is-hidden-frameless:not(.is-fullscreen) .workspace-split.lg-tab-list .works
 .workspace-split.lg-tab-list .workspace-tab-header-container-inner > .workspace-tab-header.is-active :is(.workspace-tab-header-inner-icon, .workspace-tab-header-inner-title):not(#lg):not(#lg):not(#lg):not(#lg) {
   --icon-color: var(--lg-tab-on-ink, #fff);
   color: var(--lg-tab-on-ink, #fff);
+}
+
+/* 파일 탐색기 선택 줄처럼: 그 패널을 마지막으로 누른 게 아니면(플러그인 .lg-split-on 없음) 선택 탭은 호버 회색, 글자·기호는 평소 색 (사용자 요청) */
+/* 회색은 파일 탐색기 선택 줄 회색(--lg-row-hover)과 같은 진하기 */
+.workspace-split.lg-tab-list:not(.lg-split-on) .workspace-tab-header-container-inner > .workspace-tab-header.is-active:not(#lg):not(#lg):not(#lg):not(#lg):not(#lg) {
+  background-color: color-mix(in srgb, var(--lg-hl) calc(var(--lg-row-hl-a) * 100%), transparent);
+}
+
+.workspace-split.lg-tab-list:not(.lg-split-on) .workspace-tab-header-container-inner > .workspace-tab-header.is-active .workspace-tab-header-inner-icon:not(#lg):not(#lg):not(#lg):not(#lg):not(#lg) {
+  --icon-color: var(--interactive-accent);
+  color: var(--interactive-accent);
+}
+
+.workspace-split.lg-tab-list:not(.lg-split-on) .workspace-tab-header-container-inner > .workspace-tab-header.is-active .workspace-tab-header-inner-title:not(#lg):not(#lg):not(#lg):not(#lg):not(#lg) {
+  color: var(--text-normal);
 }
 
 /* 탭이 하나뿐이면 고를 게 없으니 하이라이트하지 않는다 (사용자 요청) */
@@ -1985,12 +2051,6 @@ body:not(.lg-ui) .workspace-leaf-content[data-type="outline"] > .view-content {
   border-radius: var(--lg-row-radius);
   corner-shape: var(--lg-rect-shape);
   pointer-events: none;
-}
-
-/* 파일 탐색기 스타일 심플(플러그인 body.lg-ficon-line): 선택·호버 하이라이트를 알약으로 (사용자 요청) */
-body.lg-ficon-line .workspace-leaf-content[data-type="file-explorer"] .tree-item-self::before {
-  border-radius: 999px;
-  corner-shape: var(--lg-pill-shape);
 }
 
 /* 들여쓰기 세로줄 끄기 (플러그인 설정, body.lg-no-guides, 사용자 요청). 파일 탐색기만 */
@@ -4038,6 +4098,15 @@ body:not(.is-mobile) .workspace-sidedock-vault-profile .workspace-drawer-vault-s
 body:not(.is-mobile) .workspace-sidedock-vault-profile .workspace-drawer-vault-switcher > * {
   transform: translate(calc(var(--lg-mx, 0px) * 0.45), calc(var(--lg-my, 0px) * 0.45));
   transition: transform 460ms var(--lg-spring);
+}
+
+/* 알약·원형 버튼 안 기호 크기: Obsidian 기본 16px 에서 18px 로 (사용자 요청, 애플식으로 기호를 크게) */
+/* Obsidian 은 기호(svg)에 크기 변수를 직접 두므로 svg 에 건다 */
+body:not(.is-mobile) .clickable-icon > .svg-icon:not(#lg),
+body:not(.is-mobile) :is(.mod-left-split, .mod-right-split) .workspace-tab-header-container .workspace-tab-header-inner-icon > .svg-icon:not(#lg) {
+  --icon-size: 18px;
+  width: var(--icon-size);
+  height: var(--icon-size);
 }
 
 /* 아이콘(기호)도 커서를 따라 조금 끌려간다 */
@@ -6717,7 +6786,7 @@ body.lg-ficon-line .nav-folder-title > .nav-folder-title-content:not(#lg):not(#l
    여백은 화면 픽셀 배수로 반올림한다(--lg-dpx: 플러그인이 주는 화면 한 픽셀 길이): 125% 화면에서 들여쓰기 세로줄(1px = 화면 1.25칸)이
    픽셀 경계에서 더 어긋나 두껍게 번져 보였다 (사용자 지적) */
 body.lg-ficon-line .workspace-leaf-content[data-type="file-explorer"] > .nav-files-container:not(#lg):not(#lg) {
-  padding-inline-start: round(19.7px, var(--lg-dpx, 1px));
+  padding-inline-start: round(27.1px, var(--lg-dpx, 1px));
 }
 
 /* 맨 위 단계 문서(담은 폴더 없음) 이름은 같은 단계 폴더 이름 시작에 맞춘다: 폴더 이름 = 줄 여백 + 위 당김 + 기호 폭 + 6px */

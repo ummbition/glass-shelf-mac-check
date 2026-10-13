@@ -409,7 +409,7 @@ body.lg-menu-snap .menu:not(.lg-menu-ghost):not(#lg):not(#lg) {
 }
 
 /* ---------- 폴더 색 (플러그인이 색 지정 폴더에 .lg-fc 와 --lg-fc·--lg-folder-icon 을 붙인다) ----------
-   하위 폴더는 변수를 물려받아 같은 색: 폴더 이름 글자·펼침 화살표·들여쓰기 세로줄·폴더 기호. 배경은 칠하지 않는다 (사용자 요청).
+   하위 폴더는 변수를 물려받아 같은 색: 펼침 화살표·들여쓰기 세로줄·폴더 기호. 폴더 이름 글자는 색을 넣지 않는다(애플식, 사용자 요청). 배경은 칠하지 않는다 (사용자 요청).
    선택된 줄(강조색 바탕)의 글자는 테마가 정한 잉크를 그대로 쓴다 */
 .nav-folder.lg-fc {
   --nav-indentation-guide-color: var(--lg-fc);
@@ -418,7 +418,7 @@ body.lg-menu-snap .menu:not(.lg-menu-ghost):not(#lg):not(#lg) {
   --nav-collapse-icon-color-collapsed: var(--lg-fc);
 }
 
-.lg-fc .nav-folder-title:not(.is-active):not(.is-selected):not(.is-being-dragged) :is(.nav-folder-title-content, .collapse-icon, .collapse-icon svg) {
+.lg-fc .nav-folder-title:not(.is-active):not(.is-selected):not(.is-being-dragged) :is(.collapse-icon, .collapse-icon svg) {
   color: var(--lg-fc);
 }
 
@@ -684,6 +684,14 @@ body.lg-fc-sorting * {
   box-shadow: none;
   transform: none;
   transform-origin: 0 0; /* 누름 배율은 플러그인이 인라인 transform 으로 건다 */
+}
+
+/* 복사본 이름은 말줄임하지 않는다: 원래 탭 폭이 이름 길이에 딱 맞는 좁은 패널에서 소수 오차만큼만 모자라도 "모든 속..."으로 잘렸다 (사용자 지적).
+   복사본은 렌즈 모양으로 잘려 보이므로 넘쳐도 상관없다 */
+.lg-seg-text .workspace-tab-header-inner-title:not(#lg):not(#lg):not(#lg) {
+  overflow: visible;
+  text-overflow: clip;
+  max-width: none;
 }
 
 .lg-seg-text .workspace-tab-header:not(#lg):not(#lg)::before,

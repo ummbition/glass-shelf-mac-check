@@ -3,7 +3,6 @@ var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __export = (target, all) => {
   for (var name in all)
     __defProp(target, name, { get: all[name], enumerable: true });
@@ -17,7 +16,6 @@ var __copyProps = (to, from, except, desc) => {
   return to;
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
-var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
 // src/main.ts
 var main_exports = {};
@@ -960,7 +958,7 @@ var GlassShelfSettingTab = class extends import_obsidian4.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     // 드롭다운 설정마다 이 기기에서 보여 주는 선택지
-    __publicField(this, "options", /* @__PURE__ */ new Map());
+    this.options = /* @__PURE__ */ new Map();
     this.plugin = plugin;
     this.containerEl.addClass("lg-settings");
   }
@@ -1945,10 +1943,15 @@ var eventsMethods = {
         const t = e.target;
         if (!isEl(t) || t.closest(".menu, .modal-container, .notice-container, .tooltip")) return;
         doc.body.classList.toggle("lg-explorer-on", !!t.closest('.workspace-leaf-content[data-type="file-explorer"]'));
+        const sp = t.closest(".workspace-split.mod-sidedock");
+        doc.querySelectorAll(".workspace-split.mod-sidedock").forEach((s) => s.classList.toggle("lg-split-on", s === sp));
       },
       true
     );
-    this.register(() => doc.body.classList.remove("lg-explorer-on"));
+    this.register(() => {
+      doc.body.classList.remove("lg-explorer-on");
+      doc.querySelectorAll(".lg-split-on").forEach((s) => s.classList.remove("lg-split-on"));
+    });
     if (!import_obsidian6.Platform.isPhone) this.registerDomEvent(doc, "scroll", (e) => this.onMiniScroll(e.target), { capture: true, passive: true });
     if (!import_obsidian6.Platform.isPhone)
       this.registerDomEvent(
@@ -2561,7 +2564,7 @@ var TAB_GROW_MS = 90;
 var TAB_GROW_FWD = 9;
 var TAB_LENS_H2 = 1.2;
 var TAB_SHRINK_MS = 280;
-var TAB_SQUASH = 0.414;
+var TAB_SQUASH = 0.5;
 var TAB_SQUASH_AT = 0.25;
 var TAB_SQUASH_HOLD = 0.25;
 var TAB_STRETCH = 0.08;
@@ -5419,6 +5422,14 @@ var sidebarMethods = {
     tabsEl.classList.toggle("lg-one", !listed && count === 1);
     const n = String(Math.max(1, count));
     if (tabsEl.style.getPropertyValue("--lg-tab-n") !== n) tabsEl.setCssProps({ "--lg-tab-n": n });
+    let sec = header.querySelector(":scope > .lg-list-section");
+    const withSec = listed && count > 1;
+    tabsEl.classList.toggle("lg-sec", withSec);
+    if (withSec) {
+      if (!sec) sec = header.createDiv({ cls: ["lg-list-section", INJECTED] });
+      const name = leaf ? leaf.getDisplayText() : "";
+      if (sec.textContent !== name) sec.setText(name);
+    } else if (sec) sec.remove();
     this.navSearchSync(tabsEl);
   },
   // 패널 검색 (넓게 모드, 사용자 요청): 버튼 줄에 자리가 넉넉하면 돋보기 버튼이 알약으로 넓어지고 Obsidian 검색 칸이 그 안에 들어간다
