@@ -82,6 +82,7 @@ if (process.env.LENSCMP) {
   if (process.env.LENSCMP10) {
     // 투명 상태(심플)에서 탭을 빠르게 연달아 전환 (밝은 바탕화면)
     note("state", await ev(`return { cls: ["lg-acrylic", "lg-tab-plain", "is-translucent"].filter((c) => document.body.classList.contains(c)), anim: app.plugins.plugins["glass-shelf"].settings.tabAnim };`));
+    note("panelGlass", await ev(`const out = []; for (const e of document.querySelectorAll(".workspace-split.mod-sidedock *")) for (const pe of [null, "::before", "::after"]) { const c = getComputedStyle(e, pe); if (c.backdropFilter && c.backdropFilter !== "none" && e.getBoundingClientRect().width) out.push((e.className || e.tagName).toString().slice(0, 60) + (pe || "") + " " + c.backdropFilter.slice(0, 40)); } return { n: out.length, sample: out.slice(0, 12) };`));
     const fast = async (name, gap) => {
       await move(900, 700); await sleep(1500);
       const proc = spawn("screencapture", ["-x", "-V", "10", `${OUT}/${name}.mov`]);
