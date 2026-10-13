@@ -30,19 +30,19 @@ app.whenReady().then(async () => {
     try { const im = await w.webContents.capturePage(); fs.writeFileSync(`${OUT}/cap-${k}.png`, im.toPNG()); note("cap-" + k, im.getSize()); } catch (e) { note("cap-err-" + k, String(e)); }
   }
   shot("0-diag");
-  const rec = spawn("screencapture", ["-x", "-V", "26", `${OUT}/ab.mov`]);
+  const rec = spawn("screencapture", ["-x", "-V", "24", `${OUT}/ab.mov`]);
   const done = new Promise((r) => rec.on("exit", r));
   await sleep(1500);
   shot("1-before");
   const go = (phase) => { for (const w of [a, b]) w.webContents.executeJavaScript(`setPhase(${JSON.stringify(phase)})`); note("phase", phase); };
-  // 1) 호버처럼 반투명 칠만 깜빡임 (유리 없음)
-  go("hover"); await sleep(2500); shot("2-hover"); await sleep(2500);
-  go("idle"); await sleep(1500); shot("3-after-hover");
-  // 2) 유리(backdrop-filter) 렌즈가 알약 위를 움직임
-  go("lens"); await sleep(2500); shot("4-lens"); await sleep(2500);
-  go("idle"); await sleep(1500); shot("5-after-lens");
-  // 3) 유리 + 호버 같이
-  go("both"); await sleep(2500); shot("6-both"); await sleep(2500);
+  // 1) 호버만 (기준)
+  go("hover"); await sleep(2500); shot("2-hover"); await sleep(1500);
+  go("idle"); await sleep(1500);
+  // 2) 불투명한 오른쪽 절반 안에서만 유리가 움직임
+  go("right"); await sleep(2500); shot("4-right"); await sleep(1500);
+  go("idle"); await sleep(1500);
+  // 3) 오른쪽 유리 + 왼쪽(반투명 자리) 호버
+  go("rightboth"); await sleep(2500); shot("6-rightboth"); await sleep(2500);
   go("idle"); await sleep(2000); shot("7-end");
   await Promise.race([done, sleep(8000)]);
   note("done", true);

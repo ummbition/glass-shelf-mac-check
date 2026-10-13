@@ -6,6 +6,10 @@ h1 { font-size: 15px; margin: 40px 20px 10px; }
 .stripe { margin: 6px 20px; height: 18px; border-radius: 4px; background: rgba(40,80,200,0.18); }
 .lens { position: absolute; left: 20px; top: 90px; width: 140px; height: 48px; border-radius: 24px; backdrop-filter: blur(6px) saturate(1.6); background: rgba(255,255,255,0.12); display: none; }
 body.lens .lens, body.both .lens { display: block; animation: slide 1.2s ease-in-out infinite alternate; }
+.lens2 { position: absolute; right: 30px; top: 90px; width: 180px; height: 48px; border-radius: 24px; backdrop-filter: blur(6px) saturate(1.6); background: rgba(255,255,255,0.12); display: none; z-index: 2; }
+body.right .lens2, body.rightboth .lens2 { display: block; animation: slide2 1.2s ease-in-out infinite alternate; }
+@keyframes slide2 { from { transform: translateY(0); } to { transform: translateY(420px); } }
+.half p { position: relative; z-index: 1; }
 @keyframes slide { from { transform: translate(0, 0); } to { transform: translate(420px, 160px); } }
 .half { position: absolute; right: 0; top: 0; bottom: 0; width: 45%; background: #f4f4f4; }
 .half p { margin: 50px 16px; }
@@ -13,7 +17,7 @@ body.lens .lens, body.both .lens { display: block; animation: slide 1.2s ease-in
 <h1 id="t"></h1>
 <div class="half"><p>오른쪽 절반: 불투명 바탕 (비교)</p></div>
 <div id="list"></div>
-<div class="lens"></div>
+<div class="lens"></div><div class="lens2"></div>
 <script>
 document.getElementById("t").textContent = new URLSearchParams(location.search).get("name");
 const list = document.getElementById("list");
@@ -23,6 +27,6 @@ let timer = 0, k = 0;
 window.setPhase = (ph) => {
   document.body.className = ph;
   clearInterval(timer); pills.forEach((p) => p.classList.remove("on"));
-  if (ph === "hover" || ph === "both") timer = setInterval(() => { pills.forEach((p) => p.classList.remove("on")); pills[k++ % pills.length].classList.add("on"); }, 120);
+  if (ph === "hover" || ph === "both" || ph === "rightboth") timer = setInterval(() => { pills.forEach((p) => p.classList.remove("on")); pills[k++ % pills.length].classList.add("on"); }, 120);
 };
 </script></body></html>
