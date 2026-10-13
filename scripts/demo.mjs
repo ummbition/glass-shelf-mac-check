@@ -88,6 +88,17 @@ if (process.env.LENSCMP) {
     try { execSync(`screencapture -x "${OUT}/look-hover-tab.png"`); } catch {}
     const more = await center(".mod-left-split .lg-tab-menu, .mod-left-split .workspace-tab-header-tab-list");
     if (more) { await click(more.x, more.y); await sleep(900); try { execSync(`screencapture -x "${OUT}/look-menu.png"`); } catch {} await key("Escape", "Escape", 27); await sleep(500); }
+    // 전환 중 렌즈 상태를 직접 잰다 (가상머신 녹화는 프레임이 빠져 렌즈가 안 보일 수 있다)
+    for (const t of ["search", "bookmarks", "files"]) {
+      await click(tabs[t].x, tabs[t].y);
+      const probe = [];
+      for (const ms of [40, 100, 160, 240, 400]) {
+        probe.push(await ev(`const ind = document.querySelector(".mod-left-split .lg-seg-indicator"); const tx = document.querySelector(".mod-left-split .lg-seg-text"); const w = require("electron").remote.getCurrentWebContents(); const r = document.querySelector(".mod-left-split .workspace-tab-header-container").getBoundingClientRect(); const img = await w.capturePage({ x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height) }); require("fs").writeFileSync(${JSON.stringify(OUT)} + "/probe-${t}-" + ${ms} + ".png", img.toPNG()); return { ms: ${ms}, ind: ind ? { cls: ind.className, tf: ind.style.transform, w: ind.style.width, g: getComputedStyle(ind.querySelector(".lg-seg-lens") || ind).opacity } : null, text: tx ? { off: tx.classList.contains("lg-seg-text-off"), f: tx.style.filter } : null };`));
+        await sleep(ms === 40 ? 60 : ms === 100 ? 60 : ms === 160 ? 80 : 160);
+      }
+      note("probe-" + t, probe);
+      await sleep(1200);
+    }
     await run("LENS");
     const fast = async (name, gap) => {
       await move(900, 700); await sleep(1500);

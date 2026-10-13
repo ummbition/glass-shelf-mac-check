@@ -1,0 +1,167 @@
+[
+ {
+  "k": "workArea",
+  "v": {
+   "x": 0,
+   "y": 30,
+   "width": 1920,
+   "height": 972
+  }
+ },
+ {
+  "k": "enable",
+  "v": [
+   "glass-shelf"
+  ]
+ },
+ {
+  "k": "s1",
+  "v": {
+   "alpha": 0,
+   "cls": [
+    "theme-light",
+    "is-translucent",
+    "lg-acrylic"
+   ],
+   "appc": "rgba(0, 0, 0, 0)",
+   "under": 0,
+   "dots": 0,
+   "bg": "#000000"
+  }
+ },
+ {
+  "k": "shot",
+  "v": "1-on-light"
+ },
+ {
+  "k": "hover-pt",
+  "v": {
+   "x": 273,
+   "y": 27
+  }
+ },
+ {
+  "k": "shot",
+  "v": "2-hover"
+ },
+ {
+  "k": "shot",
+  "v": "2b-hover-leave"
+ },
+ {
+  "k": "shot",
+  "v": "3-scroll"
+ },
+ {
+  "k": "s4",
+  "v": {
+   "alpha": 0,
+   "cls": [
+    "is-translucent",
+    "lg-acrylic",
+    "theme-dark"
+   ],
+   "appc": "rgba(0, 0, 0, 0)",
+   "under": 0,
+   "dots": 0,
+   "bg": "#000000"
+  }
+ },
+ {
+  "k": "shot",
+  "v": "4-dark"
+ },
+ {
+  "k": "shot",
+  "v": "5-unfocused"
+ },
+ {
+  "k": "shot",
+  "v": "6-menu"
+ },
+ {
+  "k": "shot",
+  "v": "7-palette"
+ },
+ {
+  "k": "s7b-light",
+  "v": {
+   "alpha": 0,
+   "cls": [
+    "is-translucent",
+    "lg-acrylic",
+    "theme-light"
+   ],
+   "appc": "rgba(0, 0, 0, 0)",
+   "under": 0,
+   "dots": 0,
+   "bg": "#000000"
+  }
+ },
+ {
+  "k": "shot",
+  "v": "7b-light-again"
+ },
+ {
+  "k": "shot",
+  "v": "8-settings"
+ },
+ {
+  "k": "settings-popout",
+  "v": true
+ },
+ {
+  "k": "s9-off",
+  "v": {
+   "alpha": 255,
+   "cls": [
+    "theme-light"
+   ],
+   "appc": "rgba(0, 0, 0, 0)",
+   "under": 0,
+   "dots": 0,
+   "bg": "#000000"
+  }
+ },
+ {
+  "k": "shot",
+  "v": "9-translucency-off"
+ },
+ {
+  "k": "s10-on",
+  "v": {
+   "alpha": 0,
+   "cls": [
+    "theme-light",
+    "is-translucent",
+    "lg-acrylic"
+   ],
+   "appc": "rgba(0, 0, 0, 0)",
+   "under": 0,
+   "dots": 0,
+   "bg": "#000000"
+  }
+ },
+ {
+  "k": "shot",
+  "v": "10-translucency-on"
+ },
+ {
+  "k": "s11-off",
+  "v": {
+   "alpha": 153,
+   "cls": [
+    "theme-light",
+    "is-translucent"
+   ],
+   "appc": "oklch(0.999994 0.0000497986 none / 0.6)",
+   "under": 0,
+   "dots": 0,
+   "bg": "#000000"
+  }
+ },
+ {
+  "k": "shot",
+  "v": "11-plugin-off"
+ }
+]

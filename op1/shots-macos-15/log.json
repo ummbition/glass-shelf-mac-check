@@ -1,0 +1,82 @@
+[
+ {
+  "k": "enable",
+  "v": [
+   "glass-shelf"
+  ]
+ },
+ {
+  "k": "workArea",
+  "v": {
+   "x": 0,
+   "y": 25,
+   "width": 1920,
+   "height": 1055
+  }
+ },
+ {
+  "k": "open-folders",
+  "v": [
+   "Areas",
+   "Journal",
+   "Notes",
+   "Projects",
+   "Reading"
+  ]
+ },
+ {
+  "k": "cliclick",
+  "v": true
+ },
+ {
+  "k": "tabs",
+  "v": {
+   "files": {
+    "x": 90,
+    "y": 71
+   },
+   "search": {
+    "x": 247,
+    "y": 71
+   },
+   "bookmarks": {
+    "x": 403,
+    "y": 71
+   }
+  }
+ },
+ {
+  "k": "state",
+  "v": {
+   "cls": [
+    "theme-light",
+    "lg-tab-wide",
+    "lg-tab-names"
+   ],
+   "anim": "lens",
+   "ver": "1.13.4",
+   "dpr": 1,
+   "snap": [
+    "",
+    "",
+    "0.5px"
+   ]
+  }
+ },
+ {
+  "k": "errors",
+  "v": []
+ },
+ {
+  "k": "done",
+  "v": "LENS"
+ },
+ {
+  "k": "done",
+  "v": "FAST"
+ },
+ {
+  "k": "errors2",
+  "v": 0
+ }
+]
