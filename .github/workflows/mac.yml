@@ -157,7 +157,7 @@ jobs:
           TEST3: ${{ inputs.hovertest == 'test3' && '1' || '' }}
           LENSONLY: ${{ inputs.hovertest == 'lensonly' && '1' || '' }}
           AUDIT: ${{ inputs.hovertest == 'audit' && '1' || '' }}
-          LENSCMP: ${{ (inputs.hovertest == 'lenscmp' || inputs.hovertest == 'lenscmp2' || inputs.hovertest == 'lenscmp3' || inputs.hovertest == 'lenscmp4' || inputs.hovertest == 'lenscmp5' || inputs.hovertest == 'lenscmp6' || inputs.hovertest == 'lenscmp7' || inputs.hovertest == 'lenscmp8' || inputs.hovertest == 'lenscmp9') && '1' || '' }}
+          LENSCMP: ${{ (inputs.hovertest == 'lenscmp' || inputs.hovertest == 'lenscmp2' || inputs.hovertest == 'lenscmp3' || inputs.hovertest == 'lenscmp4' || inputs.hovertest == 'lenscmp5' || inputs.hovertest == 'lenscmp6' || inputs.hovertest == 'lenscmp7' || inputs.hovertest == 'lenscmp8' || inputs.hovertest == 'lenscmp9' || inputs.hovertest == 'lenscmp10') && '1' || '' }}
           LENSCMP2: ${{ inputs.hovertest == 'lenscmp2' && '1' || '' }}
           LENSCMP3: ${{ inputs.hovertest == 'lenscmp3' && '1' || '' }}
           LENSCMP4: ${{ inputs.hovertest == 'lenscmp4' && '1' || '' }}
@@ -166,6 +166,7 @@ jobs:
           LENSCMP7: ${{ inputs.hovertest == 'lenscmp7' && '1' || '' }}
           LENSCMP8: ${{ inputs.hovertest == 'lenscmp8' && '1' || '' }}
           LENSCMP9: ${{ inputs.hovertest == 'lenscmp9' && '1' || '' }}
+          LENSCMP10: ${{ inputs.hovertest == 'lenscmp10' && '1' || '' }}
         run: |
           /Applications/Obsidian.app/Contents/MacOS/Obsidian --remote-debugging-port=9222 > obsidian.log 2>&1 &
           sleep 8

@@ -79,6 +79,24 @@ if (process.env.LENSCMP) {
     await Promise.race([done, sleep(6000)]);
     note("done", name);
   };
+  if (process.env.LENSCMP10) {
+    // 투명 상태(심플)에서 탭을 빠르게 연달아 전환 (밝은 바탕화면)
+    note("state", await ev(`return { cls: ["lg-acrylic", "lg-tab-plain", "is-translucent"].filter((c) => document.body.classList.contains(c)), anim: app.plugins.plugins["glass-shelf"].settings.tabAnim };`));
+    const fast = async (name, gap) => {
+      await move(900, 700); await sleep(1500);
+      const proc = spawn("screencapture", ["-x", "-V", "10", `${OUT}/${name}.mov`]);
+      const done = new Promise((r) => proc.on("exit", r));
+      await sleep(1200);
+      for (const t of ["search", "bookmarks", "files", "search", "bookmarks", "files"]) { await click(tabs[t].x, tabs[t].y); await sleep(gap); }
+      await move(900, 700);
+      await Promise.race([done, sleep(9000)]);
+      note("done", name);
+    };
+    try { execSync(`screencapture -x "${OUT}/look-plain.png"`); } catch {}
+    await fast("FAST", 250);
+    await fast("FAST2", 150);
+    save(); ws.close(); process.exit(0);
+  }
   if (process.env.LENSCMP9) {
     // 탭 전환 효과를 목록으로 바꾸고 탭 전환 녹화 (밝은 바탕화면). 비교로 렌즈도 한 번
     const setAnim = async (v) => { await ev(`const p = app.plugins.plugins["glass-shelf"]; p.settings.tabAnim = ${JSON.stringify(v)}; await p.saveSettings(); p.applySettings && p.applySettings();`); await sleep(1200); await ev(`app.plugins.plugins["glass-shelf"].vibNudge();`); await sleep(900); };

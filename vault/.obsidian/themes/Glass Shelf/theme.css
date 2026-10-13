@@ -1513,18 +1513,18 @@ body .lg-nav-rest > .clickable-icon.is-active:not(#lg):not(#lg) {
   flex-basis: 100%;
 }
 
-/* 효과 없음(body.lg-tab-plain): 렌즈 없이 선택한 탭이 강조색 알약. 안의 기호·글자는 강조색의 밝기(OKLCH 명도)가
+/* 심플(body.lg-tab-plain, 설정 "심플" 또는 좌우 패널 투명): 렌즈 없이 선택한 탭이 강조색 알약. 목록 방식 패널은 받지 않는다. 안의 기호·글자는 강조색의 밝기(OKLCH 명도)가
    0.75 미만이면 흰색, 그 이상이면 검정. 강조색에서 바로 계산하므로 강조색을 바꾸면 곧바로 따라간다 */
 body {
   --lg-tab-on-ink: oklch(from var(--interactive-accent) clamp(0, (0.75 - l) * 1000, 1) 0 0);
 }
 
-body.lg-tab-plain :is(.mod-left-split, .mod-right-split) .workspace-tab-header-container .workspace-tab-header.is-active:not(:only-child):not(#lg),
+body.lg-tab-plain :is(.mod-left-split, .mod-right-split):not(.lg-tab-list) .workspace-tab-header-container .workspace-tab-header.is-active:not(:only-child):not(#lg),
 body.lg-tab-plain.is-mobile .workspace-drawer-tab-options-list > .workspace-tab-header.is-active:not(:only-child):not(#lg) .workspace-tab-header-inner {
   background-color: var(--interactive-accent);
 }
 
-body.lg-tab-plain :is(.mod-left-split, .mod-right-split) .workspace-tab-header-container .workspace-tab-header.is-active:not(:only-child) :is(.workspace-tab-header-inner-icon, .workspace-tab-header-inner-title):not(#lg):not(#lg),
+body.lg-tab-plain :is(.mod-left-split, .mod-right-split):not(.lg-tab-list) .workspace-tab-header-container .workspace-tab-header.is-active:not(:only-child) :is(.workspace-tab-header-inner-icon, .workspace-tab-header-inner-title):not(#lg):not(#lg),
 body.lg-tab-plain.is-mobile .workspace-drawer-tab-options-list > .workspace-tab-header.is-active:not(:only-child):not(#lg) :is(.workspace-tab-header-inner-icon, .workspace-tab-header-inner-title) {
   --icon-color: var(--lg-tab-on-ink, #fff);
   color: var(--lg-tab-on-ink, #fff);
@@ -2271,6 +2271,19 @@ body.lg-acrylic .workspace-split.mod-sidedock:not(#lg) {
 body.lg-acrylic .workspace-split.mod-sidedock.lg-holes:not(#lg) {
   background-color: transparent;
   opacity: 0.999;
+  /* 접기·펴기가 끝나 불투명 막(.lg-under-busy)이 풀릴 때 투명이 툭 켜지지 않게 서서히 비친다 (사용자 요청). 막을 칠 때는 바로 (아래 규칙).
+     transition 으로 하면 Obsidian 의 패널 너비 전환을 덮어써 애니메이션 이름이 바뀔 때 한 번 도는 animation 으로 한다 */
+  animation: lg-under-fade 280ms ease;
+}
+
+@keyframes lg-under-fade {
+  from {
+    background-color: var(--background-secondary);
+  }
+
+  to {
+    background-color: transparent;
+  }
 }
 
 /* 화면 내보내기 우회 (설계 목적 "투명 패널 화면 깨짐은 다시 내보내기로 우회"): 패널 왼쪽 위·오른쪽 아래 끝의 눈에 안 보이는 1px 점.
@@ -2320,6 +2333,7 @@ body.lg-acrylic .workspace-split.mod-sidedock.lg-holes:not(#lg) {
 
 body.lg-acrylic .workspace-split.mod-sidedock.lg-holes.lg-under-busy:not(#lg):not(#lg) {
   background-color: var(--background-secondary);
+  animation: none;
 }
 
 /* 맥 (Obsidian 반투명 창 body.is-translucent 를 플러그인이 따라 body.lg-acrylic): Obsidian 은 창 전체(.app-container)에 바탕색 막을 덮어
@@ -4569,6 +4583,12 @@ body .suggestion-container:not(.lg-sugg-in):not(#lg) .suggestion-item.is-selecte
 }
 
 /* 알림 (오른쪽 위에 잠깐 뜨는 것) */
+/* 알림 묶음(Obsidian .notice-container)은 넘치는 부분을 잘라(overflow: hidden, 안쪽 여백 10px) 메뉴와 같은 넓은 그림자(아래로 24px, 흐림 80px)가
+   사각형으로 잘렸다 (사용자 지적). 잘라내지 않게 둔다 */
+body .notice-container:not(#lg) {
+  overflow: visible;
+}
+
 body .notice:not(#lg) {
   /* 한 줄일 때 알약 비율: 높이 H = 1lh + 위아래 여백 */
   --lg-n-h: calc(1lh + 20px);

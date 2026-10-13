@@ -982,6 +982,7 @@ var GlassShelfSettingTab = class extends import_obsidian4.PluginSettingTab {
     if (key === "showPath") pl.reloadWebViews();
     if (key === "navCompact") pl.remeasureExplorers();
     if (key === "fileStripes") pl.requestFolderColors(true);
+    if (key === "sideAcrylic" && value === true) pl.noticeSimpleTabs();
     if (key === "tint" || key === "taskColor" || key === "folderColor" || key === "tabAnim") this.update();
   }
   getSettingDefinitions() {
@@ -1033,7 +1034,7 @@ var GlassShelfSettingTab = class extends import_obsidian4.PluginSettingTab {
             }
           ),
           toggle("popupOpaque", tr("\uBD88\uD22C\uBA85\uD55C \uD31D\uC5C5", "Opaque popups"), tr("\uB300\uD654\uC0C1\uC790, \uBA85\uB839 \uD314\uB808\uD2B8, \uB9C1\uD06C \uBBF8\uB9AC\uBCF4\uAE30, \uC54C\uB9BC, \uD234\uD301 \uAC19\uC740 \uD31D\uC5C5\uC758 \uBC30\uACBD\uC785\uB2C8\uB2E4. \uB044\uBA74 \uBA54\uB274\uCC98\uB7FC \uB4A4\uAC00 \uC0B4\uC9DD \uBE44\uCE58\uACE0, \uCF1C\uBA74 \uBD88\uD22C\uBA85\uD558\uAC8C \uCC44\uC6C1\uB2C8\uB2E4.", "Background of popups such as dialogs, the command palette, link previews, notices and tooltips. Off: slightly see-through like menus. On: filled opaque.")),
-          toggle("sideAcrylic", tr("\uC88C\uC6B0 \uD328\uB110 \uD22C\uBA85", "See-through side panels"), tr("\uC88C\uC6B0 \uD328\uB110 \uB4A4\uB85C \uBC14\uD0D5\uD654\uBA74\uACFC \uB2E4\uB978 \uCC3D\uC774 \uD750\uB9AC\uAC8C \uBE44\uCE69\uB2C8\uB2E4. Windows 11 22H2 \uC774\uC0C1\uC5D0\uC11C \uB3D9\uC791\uD558\uACE0, Windows \uC124\uC815\uC758 \uD22C\uBA85 \uD6A8\uACFC\uAC00 \uCF1C\uC838 \uC788\uC5B4\uC57C \uD569\uB2C8\uB2E4. (Windows)", "Your desktop and other windows show through the left and right panels, blurred. Works on Windows 11 22H2 or later with transparency effects turned on in Windows settings. (Windows)"), import_obsidian4.Platform.isWin && !import_obsidian4.Platform.isMobile),
+          toggle("sideAcrylic", tr("\uC88C\uC6B0 \uD328\uB110 \uD22C\uBA85", "See-through side panels"), tr("\uC88C\uC6B0 \uD328\uB110 \uB4A4\uB85C \uBC14\uD0D5\uD654\uBA74\uACFC \uB2E4\uB978 \uCC3D\uC774 \uD750\uB9AC\uAC8C \uBE44\uCE69\uB2C8\uB2E4. Windows 11 22H2 \uC774\uC0C1\uC5D0\uC11C \uB3D9\uC791\uD558\uACE0, Windows \uC124\uC815\uC758 \uD22C\uBA85 \uD6A8\uACFC\uAC00 \uCF1C\uC838 \uC788\uC5B4\uC57C \uD569\uB2C8\uB2E4. \uCF1C\uBA74 \uD0ED \uC804\uD658 \uD6A8\uACFC\uB294 \uB80C\uC988 \uB300\uC2E0 \uC2EC\uD50C\uB85C \uBCF4\uC785\uB2C8\uB2E4. (Windows)", "Your desktop and other windows show through the left and right panels, blurred. Works on Windows 11 22H2 or later with transparency effects turned on in Windows settings. When on, the tab switch effect is shown as Simple instead of Lens. (Windows)"), import_obsidian4.Platform.isWin && !import_obsidian4.Platform.isMobile),
           toggle("refraction", tr("\uAD74\uC808", "Refraction"), tr("\uC720\uB9AC \uAC00\uC7A5\uC790\uB9AC\uC5D0\uC11C \uB4A4 \uBC30\uACBD\uC774 \uB80C\uC988\uCC98\uB7FC \uD718\uC5B4 \uBCF4\uC785\uB2C8\uB2E4. \uD654\uBA74\uC774 \uB290\uB824\uC9C0\uBA74 \uAEBC \uC8FC\uC138\uC694. iOS\uC640 iPadOS\uC5D0\uC11C\uB294 \uC9C0\uC6D0\uB418\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.", "Bends the background at the glass edges like a lens. Turn off if the app feels slow. Not supported on iOS and iPadOS.")),
           toggle("hoverLarge", tr("\uD070 \uD638\uBC84 \uD6A8\uACFC", "Large hover effect"), tr("\uBC84\uD2BC\uC5D0 \uB9C8\uC6B0\uC2A4\uB97C \uC62C\uB838\uC744 \uB54C \uB098\uD0C0\uB098\uB294 \uC720\uB9AC\uC758 \uD06C\uAE30\uC785\uB2C8\uB2E4. \uB044\uBA74 \uBC84\uD2BC\uC5D0 \uB9DE\uCDB0 \uC791\uAC8C, \uCF1C\uBA74 \uBC84\uD2BC \uBB36\uC74C\uC758 \uB192\uC774\uB9CC\uD07C \uD06C\uAC8C \uD45C\uC2DC\uB429\uB2C8\uB2E4.", "Size of the glass that appears when hovering a button. Off: fits the button. On: as tall as the button group.")),
           toggle("compactWindowControls", tr("\uCC3D \uC81C\uC5B4 \uBC84\uD2BC \uCD95\uC18C", "Compact window controls"), tr("\uCD5C\uC18C\uD654, \uCD5C\uB300\uD654, \uB2EB\uAE30 \uBC84\uD2BC\uC744 \uD3C9\uC18C\uC5D0\uB294 \uC791\uC740 \uC810\uC73C\uB85C \uC904\uC5EC \uB450\uACE0, \uB9C8\uC6B0\uC2A4\uB97C \uC62C\uB9AC\uBA74 \uC6D0\uB798 \uD06C\uAE30\uB85C \uBCF4\uC5EC \uC90D\uB2C8\uB2E4. \uC904\uC5B4\uB4E0 \uB9CC\uD07C \uD0ED \uC904\uC774 \uB113\uC5B4\uC9D1\uB2C8\uB2E4. (Windows, Linux)", "Shrinks the minimize, maximize and close buttons to small dots until you hover them. The tab bar gets the freed space. (Windows, Linux)"), !import_obsidian4.Platform.isMobile)
@@ -1053,9 +1054,9 @@ var GlassShelfSettingTab = class extends import_obsidian4.PluginSettingTab {
         type: "group",
         heading: tr("\uC0AC\uC774\uB4DC\uBC14 \uD0ED", "Sidebar tabs"),
         items: [
-          dropdown("tabAnim", tr("\uD0ED \uC804\uD658 \uD6A8\uACFC", "Tab switch effect"), tr("\uB80C\uC988: \uC120\uD0DD \uD45C\uC2DC\uAC00 \uB80C\uC988\uCC98\uB7FC \uBBF8\uB044\uB7EC\uC9C0\uBA70 \uC62E\uACA8 \uAC11\uB2C8\uB2E4. \uC5C6\uC74C: \uD6A8\uACFC \uC5C6\uC774 \uC120\uD0DD\uD55C \uD0ED\uC744 \uAC15\uC870\uC0C9\uC73C\uB85C \uD45C\uC2DC\uD569\uB2C8\uB2E4. \uBAA9\uB85D: \uD0ED\uC744 \uBC84\uD2BC \uC904 \uC544\uB798\uC5D0 \uD55C \uC904\uC5D0 \uD558\uB098\uC529 \uB298\uC5B4\uB193\uACE0, \uC120\uD0DD\uD55C \uD0ED\uC744 \uAC15\uC870\uC0C9\uC73C\uB85C \uD45C\uC2DC\uD569\uB2C8\uB2E4. (\uBAA9\uB85D\uC740 \uB370\uC2A4\uD06C\uD1B1, \uD0DC\uBE14\uB9BF)", "Lens: the selection slides over like a lens. None: no effect; the selected tab is shown in the accent color. List: tabs are listed one per row below the button row, and the selected tab is shown in the accent color. (List: desktop, tablet)"), {
+          dropdown("tabAnim", tr("\uD0ED \uC804\uD658 \uD6A8\uACFC", "Tab switch effect"), tr("\uB80C\uC988: \uC120\uD0DD \uD45C\uC2DC\uAC00 \uB80C\uC988\uCC98\uB7FC \uBBF8\uB044\uB7EC\uC9C0\uBA70 \uC62E\uACA8 \uAC11\uB2C8\uB2E4. \uC2EC\uD50C: \uD6A8\uACFC \uC5C6\uC774 \uC120\uD0DD\uD55C \uD0ED\uC744 \uAC15\uC870\uC0C9\uC73C\uB85C \uD45C\uC2DC\uD569\uB2C8\uB2E4. \uBAA9\uB85D: \uD0ED\uC744 \uBC84\uD2BC \uC904 \uC544\uB798\uC5D0 \uD55C \uC904\uC5D0 \uD558\uB098\uC529 \uB298\uC5B4\uB193\uACE0, \uC120\uD0DD\uD55C \uD0ED\uC744 \uAC15\uC870\uC0C9\uC73C\uB85C \uD45C\uC2DC\uD569\uB2C8\uB2E4. \uC88C\uC6B0 \uD328\uB110 \uD22C\uBA85\uC774 \uCF1C\uC838 \uC788\uC73C\uBA74 \uB80C\uC988 \uB300\uC2E0 \uC2EC\uD50C\uB85C \uBCF4\uC785\uB2C8\uB2E4. (\uBAA9\uB85D\uC740 \uB370\uC2A4\uD06C\uD1B1, \uD0DC\uBE14\uB9BF)", "Lens: the selection slides over like a lens. Simple: no effect; the selected tab is shown in the accent color. List: tabs are listed one per row below the button row, and the selected tab is shown in the accent color. With transparent side panels on, Simple is shown instead of Lens. (List: desktop, tablet)"), {
             lens: tr("\uB80C\uC988", "Lens"),
-            none: tr("\uC5C6\uC74C (\uAC15\uC870\uC0C9)", "None (accent color)"),
+            none: tr("\uC2EC\uD50C (\uAC15\uC870\uC0C9)", "Simple (accent color)"),
             ...import_obsidian4.Platform.isPhone ? {} : { list: tr("\uBAA9\uB85D", "List") }
           }),
           // 목록을 고르면 바로 밑에 (하위 항목 표시 없이, 사용자 요청)
@@ -1507,12 +1508,25 @@ var coreMethods = {
       }
     }
     document.body.classList.toggle("lg-acrylic", want);
+    document.body.classList.toggle("lg-tab-plain", this.tabPlain());
     this.acrylicTheme(want);
     this.acrylicHoles(want && !mac);
     if (mac && want) this.vibNudge();
   },
   // 맥: 재질을 바꾸거나 창 라이트·다크가 바뀐 뒤 패널이 예전 화면으로 남았다(측정: 그동안 Chromium 화면은 투명). 화면을 한 번 새로
   // 그리면 풀렸다(측정). 조금 뒤 두 프레임 동안 앱 화면 층을 바꿔 다시 그리게 한다(테마 body.lg-vib-nudge)
+  // 패널 탭이 심플(렌즈 없이 선택한 탭을 강조색으로) 방식인지. 좌우 패널 투명이 켜져 있으면 렌즈를 쓰지 않는다 (사용자 결정):
+  // 렌즈가 떠 오는 화면에 패널 바탕이 없어 원래 탭 줄 테두리와 렌즈 안 테두리가 두 줄로 보였고, 맥은 렌즈가 매 프레임 다시 그려져
+  // 반투명 덧칠 깜빡임이 늘었다(측정: 목록이 렌즈보다 4~10배 적다). 목록 방식 패널은 그대로 목록이다
+  tabPlain() {
+    return this.settings.tabAnim === "none" || document.body.classList.contains("lg-acrylic");
+  },
+  // 좌우 패널 투명을 켤 때 알린다: 렌즈를 쓰던 패널 탭이 심플로 보인다 (사용자 요청). 렌즈를 쓰는 패널이 없으면(심플, 양쪽 목록) 알리지 않는다
+  noticeSimpleTabs() {
+    const s = this.settings;
+    if (s.tabAnim === "none" || s.tabAnim === "list" && (s.tabListSides || "both") === "both") return;
+    new import_obsidian5.Notice(tr("\uC88C\uC6B0 \uD328\uB110 \uD22C\uBA85\uC774 \uCF1C\uC838 \uC788\uC73C\uBA74 \uD0ED \uC804\uD658 \uD6A8\uACFC\uB294 \uB80C\uC988 \uB300\uC2E0 \uC2EC\uD50C\uB85C \uBCF4\uC785\uB2C8\uB2E4.", "With see-through side panels on, the tab switch effect is shown as Simple instead of Lens."));
+  },
   vibNudge() {
     window.setTimeout(() => {
       if (this.unloaded) return;
@@ -1533,7 +1547,9 @@ var coreMethods = {
       const now = document.body.classList.contains("is-translucent");
       if (now === was) return;
       was = now;
-      if (!this.unloaded) this.applyAcrylic(true);
+      if (this.unloaded) return;
+      this.applyAcrylic(true);
+      if (now) this.noticeSimpleTabs();
     });
     this.translucentObs.observe(document.body, { attributes: true, attributeFilter: ["class"] });
   },
@@ -1599,7 +1615,7 @@ var coreMethods = {
     b.style.setProperty("--lg-tint-p", `${s.tintLevel * 4}%`);
     b.classList.toggle("lg-tint-ink-light", s.tint !== "none" && !!s.tintWhiteInk);
     b.style.removeProperty("--lg-active-tab-color");
-    b.classList.toggle("lg-tab-plain", s.tabAnim === "none");
+    b.classList.toggle("lg-tab-plain", this.tabPlain());
     b.classList.toggle("lg-tab-wide", !!s.tabWide);
     b.classList.toggle("lg-tab-names", !!s.tabNames);
     b.classList.toggle("lg-ficon-none", s.fileIcons === "none");
@@ -2081,7 +2097,7 @@ var eventsMethods = {
       if (sc) this.pressScale(sc);
       const rip = e.target.closest(PRESS_RIPPLE);
       if (rip) this.pressRipple(rip, e);
-      else if (this.settings.tabAnim === "none") {
+      else if (this.tabPlain()) {
         const tab = e.target.closest(":is(.mod-left-split, .mod-right-split) .workspace-tab-header-container .workspace-tab-header");
         if (tab) {
           const pill = tab.closest(PRESS_PILL);
@@ -2561,7 +2577,7 @@ var SegmentLens = class {
     return { cx: r.left - hr.left + r.width / 2, cy: r.top - hr.top + r.height / 2, w: r.width, h: r.height };
   }
   moveTo(fromTab, toTab) {
-    if (this.plugin.settings.tabAnim === "none" || this.header.closest(".lg-tab-list")) return this.stop();
+    if (this.plugin.tabPlain() || this.header.closest(".lg-tab-list")) return this.stop();
     if (!fromTab.getBoundingClientRect().width || !toTab.getBoundingClientRect().width) return;
     const from = this.raf && this.cur ? Object.assign({}, this.cur) : this.rectOf(fromTab);
     const to = this.rectOf(toTab);
@@ -2660,7 +2676,7 @@ var SegmentLens = class {
   }
   // 탭 하나가 지나는 렌즈 크기들의 지도를 쉬는 틈에 미리 굽는다. 처음 탭을 바꿀 때 매 프레임 새 지도를 굽느라 끊기던 것 (측정 확인)
   prebake(tab) {
-    if (!this.plugin.refractOn() || !tab || this.plugin.settings.tabAnim === "none" || this.header.closest(".lg-tab-list")) return;
+    if (!this.plugin.refractOn() || !tab || this.plugin.tabPlain() || this.header.closest(".lg-tab-list")) return;
     const r = tab.getBoundingClientRect();
     const Hc = this.inner.getBoundingClientRect().height || r.height;
     if (!r.width || !r.height) return;
@@ -2899,7 +2915,7 @@ var pressMethods = {
       if (!pill) return;
       if (el.matches(".workspace-tab-header") && el.closest(".lg-tab-list")) return;
       const r = pill.getBoundingClientRect();
-      const tab = el.matches(".workspace-tab-header") && this.settings.tabAnim !== "none";
+      const tab = el.matches(".workspace-tab-header") && !this.tabPlain();
       const group = pill.matches(PRESS_GROUP);
       const k = 1 + Math.min(0.2, 16 / Math.max(r.width, r.height, 1)) * (tab ? TAB_PRESS_K : group ? GROUP_PRESS_K : 1);
       const opt = { duration: 570, easing: EASE.press };
@@ -2934,7 +2950,7 @@ var pressMethods = {
         if (!el) return false;
         const r = el.getBoundingClientRect();
         k = 1 + Math.min(0.2, 16 / Math.max(r.width, r.height, 1));
-        white = !el.matches(".workspace-drawer-tab-options-list") || this.settings.tabAnim === "none";
+        white = !el.matches(".workspace-drawer-tab-options-list") || this.tabPlain();
         dur = 570;
       }
       if (el.matches(".modal-setting-back-button")) {
