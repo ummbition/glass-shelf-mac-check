@@ -4062,7 +4062,7 @@ body.is-popout-modal .modal.mod-settings .vertical-tab-header {
 
 /* 맥은 별도 창 왼쪽 위에 신호등이 있어 제목 줄 높이에 둔 검색창과 겹쳤다 (사용자 확인 요청, 맥 러너 측정): 신호등 줄 아래로 내린다 */
 body.mod-macos.is-popout-modal .modal.mod-settings .vertical-tab-header {
-  --lg-ss-top: calc(var(--titlebar-height) + 4px);
+  --lg-ss-top: 32px; /* 신호등(창 위에서 약 9~21px) 아래 */
 }
 
 .modal.mod-settings .vertical-tab-nav-item {
@@ -5186,6 +5186,11 @@ body.theme-dark {
   z-index: 2;
   top: calc((var(--lg-pill-h) - var(--search-icon-size)) / 2);
   inset-inline-start: 13px;
+}
+
+/* 설정 검색창은 높이가 따로(--lg-ss-h) 있어 기호도 그 높이의 가운데 */
+.modal.mod-settings .setting-search-container .search-input-container:not(#lg)::before {
+  top: calc((var(--lg-ss-h) - var(--search-icon-size)) / 2);
 }
 
 .workspace-split:not(.mod-root) .search-input-container .search-input-clear-button,
