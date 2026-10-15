@@ -77,23 +77,14 @@ function capture(file, cropWork) {
 if (process.env.HOVERTEST === "themeonly") {
   await ev(`return await __sk.layout("single");`);
   note("off", await ev(`await app.plugins.disablePlugin("glass-shelf"); return !app.plugins.plugins["glass-shelf"];`));
-  // 한 바퀴 미리 돌린다: 첫 장(라이트)만 리본이 목록 위에 겹친 채 찍혔고, 두 번째(다크)는 제자리였다
-  const reopen = `const l = app.workspace.getLeavesOfType("file-explorer")[0]; if (!l) return null; const p = l.parent; const i = p.children.indexOf(l); const st = l.getViewState(); l.detach(); await new Promise(r => setTimeout(r, 600)); const n = app.workspace.createLeafInParent(p, i); await n.setViewState(st); if (p.selectTab) p.selectTab(n); else app.workspace.revealLeaf(n); await new Promise(r => setTimeout(r, 1200)); return i;`;
-  for (const t of ["obsidian", "moonstone"]) { await ev(`if (app.changeTheme) app.changeTheme("${t}"); return 1;`); await ev(`return await __sk.full(true);`); await ev(`app.workspace.leftSplit.collapse(); await new Promise(r => setTimeout(r, 1000)); app.workspace.leftSplit.expand(); await new Promise(r => setTimeout(r, 1000)); return 1;`); note("prereopen", await ev(reopen)); }
   for (const dark of [false, true]) {
     await ev(`if (app.changeTheme) app.changeTheme(${JSON.stringify(dark ? "obsidian" : "moonstone")}); return 1;`);
     await ev(`return await __sk.full(true);`);
     note("sizes", await ev(`return await __sk.sizes();`));
-    // 플러그인을 끈 뒤 왼쪽 패널을 닫았다 열어야 테마 UI 가 다시 자리를 잡는다
-    await ev(`app.workspace.leftSplit.collapse(); await new Promise(r => setTimeout(r, 1000)); app.workspace.leftSplit.expand(); await new Promise(r => setTimeout(r, 1000)); return 1;`);
-    // 패널을 닫았다 여는 것만으로는 리본이 목록 위에 겹친 채 남았다 (사용자 지적). 왼쪽 패널의 탭(파일 탐색기)을 닫았다 같은 자리에 다시 열면 제자리를 잡는다
-    note("reopen", await ev(`const l = app.workspace.getLeavesOfType("file-explorer")[0]; if (!l) return null; const p = l.parent; const i = p.children.indexOf(l); const st = l.getViewState(); l.detach(); await new Promise(r => setTimeout(r, 600)); const n = app.workspace.createLeafInParent(p, i); await n.setViewState(st); if (p.selectTab) p.selectTab(n); else app.workspace.revealLeaf(n); await new Promise(r => setTimeout(r, 1200)); return i;`));
-    // 탭을 다시 연 뒤 좌우 패널을 한 번 더 닫았다 연다 (사용자 지시: 패널 닫았다 열기)
-    await ev(`for (const sp of [app.workspace.leftSplit, app.workspace.rightSplit]) { sp.collapse(); } await new Promise(r => setTimeout(r, 1000)); for (const sp of [app.workspace.leftSplit, app.workspace.rightSplit]) { sp.expand(); } await new Promise(r => setTimeout(r, 1500)); return 1;`);
-    // 편집기 포커스를 빼 커서 줄의 원문(인용 상자 [!quote] 등)이 드러나지 않게
-    await ev(`const m = app.workspace.getLeavesOfType("markdown")[0]; if (m) app.workspace.setActiveLeaf(m, { focus: false }); if (document.activeElement) document.activeElement.blur(); return 1;`);
     await front();
     await sleep(3000);
+    // 찍기 바로 전에 왼쪽 패널을 닫았다 연다: 플러그인을 끈 뒤 테마 UI 가 이렇게 해야 다시 자리를 잡는다 (사용자 지시)
+    await ev(`app.workspace.leftSplit.collapse(); await new Promise(r => setTimeout(r, 1200)); app.workspace.leftSplit.expand(); await new Promise(r => setTimeout(r, 2000)); return 1;`);
     await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: Math.round(area.size.width * 0.62), y: Math.round(area.size.height * 0.8) });
     await sleep(700);
     const name = dark ? "theme-only-dark" : "theme-only-light";
