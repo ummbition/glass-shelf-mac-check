@@ -99,16 +99,11 @@ if (process.env.HOVERTEST === "themeonly") {
 
   // 진단: 리본이 패널 위에 겹치는 상태를 무엇이 고치는지 단계마다 찍는다 (THEMEDIAG=1)
   if (process.env.THEMEDIAG) {
-    await ev(`if (app.changeTheme) app.changeTheme("moonstone"); return 1;`); await ev(`return await __sk.full(true);`); await front(); await sleep(3000);
-    const st = () => ev(`const q = (s) => document.querySelector(s); const r = (e) => e ? [Math.round(e.getBoundingClientRect().left), Math.round(e.getBoundingClientRect().top), Math.round(e.getBoundingClientRect().width)] : null; const tg = q(".sidebar-toggle-button.mod-left"); return { ribbon: r(q(".workspace-ribbon.mod-left")), split: r(q(".workspace-split.mod-left-split")), toggle: r(tg), togIn: tg && tg.parentElement && tg.parentElement.className.slice(0, 50), body: document.body.className.slice(0, 300) };`);
-    const step = async (n) => { note("st-" + n, await st()); try { capture(`${OUT}/d-${n}.png`, null); } catch {} };
-    await step("0-off");
-    await ev(`app.workspace.leftSplit.collapse(); await new Promise(r => setTimeout(r, 1200)); app.workspace.leftSplit.expand(); await new Promise(r => setTimeout(r, 2000)); return 1;`); await step("1-api");
-    const tb = await ev(`const e = document.querySelector(".sidebar-toggle-button.mod-left"); const b = e && e.getBoundingClientRect(); return b ? { x: b.left + b.width / 2, y: b.top + b.height / 2 } : null;`);
-    if (tb) { for (const t of ["mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type: t, x: tb.x, y: tb.y, button: "left", clickCount: 1 }); await sleep(1500);
-      const tb2 = await ev(`const e = document.querySelector(".sidebar-toggle-button.mod-left"); const b = e && e.getBoundingClientRect(); return b ? { x: b.left + b.width / 2, y: b.top + b.height / 2 } : null;`); await step("2a-clickclose");
-      if (tb2) for (const t of ["mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type: t, x: tb2.x, y: tb2.y, button: "left", clickCount: 1 }); await sleep(2000); await step("2b-clickopen"); }
-    note("reopen", await ev(`const l = app.workspace.getLeavesOfType("file-explorer")[0]; if (!l) return null; const p = l.parent; const i = p.children.indexOf(l); const st = l.getViewState(); l.detach(); await new Promise(r => setTimeout(r, 600)); const n = app.workspace.createLeafInParent(p, i); await n.setViewState(st); if (p.selectTab) p.selectTab(n); await new Promise(r => setTimeout(r, 1500)); return i;`)); await step("3-reopen");
+    await ev(`if (app.changeTheme) app.changeTheme("moonstone"); return 1;`); await front(); await sleep(2500);
+    const dump = () => ev(`const r = (e) => { if (!e) return null; const b = e.getBoundingClientRect(); return [Math.round(b.left), Math.round(b.top), Math.round(b.width), Math.round(b.height)]; }; const tg = document.querySelector(".sidebar-toggle-button.mod-left"); const rb = document.querySelector(".side-dock-ribbon.mod-left") || document.querySelector(".workspace-ribbon"); const act = document.querySelector(".side-dock-actions"); const cs = getComputedStyle(document.body); return { body: document.body.className, toggle: r(tg), togPath: tg ? [tg.parentElement.className, tg.parentElement.parentElement.className].map(x => String(x).slice(0, 60)) : null, ribbon: rb ? [rb.className.slice(0, 80), r(rb), getComputedStyle(rb).paddingTop] : null, actions: r(act), split: r(document.querySelector(".mod-left-split")), tl: cs.getPropertyValue("--traffic-lights-offset-y"), frameLeft: cs.getPropertyValue("--frame-left-space"), ribbonW: cs.getPropertyValue("--ribbon-width"), headerH: cs.getPropertyValue("--header-height"), win: [innerWidth, innerHeight] };`);
+    note("dump-window", await dump()); try { capture(`${OUT}/d-window.png`, null); } catch {}
+    await ev(`return await __sk.full(true);`); await front(); await sleep(2500);
+    note("dump-full", await dump()); try { capture(`${OUT}/d-full.png`, null); } catch {}
     save(); ws.close(); process.exit(0);
   }
   for (const dark of [false, true]) {
