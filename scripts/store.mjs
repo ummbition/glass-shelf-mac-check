@@ -91,6 +91,9 @@ if (process.env.HOVERTEST === "themeonly") {
     note("kit-r", await ev(`${kit}; return typeof window.__sk;`));
     note("zoom-r", await ev(`return __sk.zoom();`));
     note("plugin-r", await ev(`return { on: !!app.plugins.plugins["glass-shelf"], injected: document.querySelectorAll(".lg-injected").length };`));
+    // 다시 불러오면 플러그인이 다시 켜진다: 다 켜진 뒤 한 번 더 끈다
+    await sleep(6000);
+    note("off-r", await ev(`await app.plugins.disablePlugin("glass-shelf"); await new Promise(r => setTimeout(r, 2500)); return { on: !!app.plugins.plugins["glass-shelf"], injected: document.querySelectorAll(".lg-injected").length };`));
   }
   const tog = () => ev(`const e = document.querySelector(".sidebar-toggle-button.mod-left"); const b = e && e.getBoundingClientRect(); return b ? { x: Math.round(b.left), y: Math.round(b.top), in: e.parentElement.className.slice(0, 40) } : null;`);
 
