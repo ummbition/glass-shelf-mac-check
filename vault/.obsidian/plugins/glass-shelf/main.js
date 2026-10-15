@@ -7485,12 +7485,6 @@ var GlassShelfCompanion = class extends Base {
     else super.register(cb);
   }
   async onload() {
-    // LGDEBUG-START
-    this.addCommand({ id: "lg-debug-dump", name: "LG debug dump", callback: async () => { const out = {}; try {
-out.ws = document.querySelector(".workspace").className; out.rib = [...document.querySelectorAll(".workspace-ribbon")].map(e => e.className + " | parent " + e.parentElement.className.slice(0,40)); out.tabsw = [...document.querySelectorAll(".lg-tab-list, .mod-left-split .workspace-tab-header-container-inner")].map(e=>[e.className.slice(0,60), getComputedStyle(e).boxShadow.slice(0,120)]);
-
-} catch (e) { out.err = String(e && e.stack || e); } await this.app.vault.adapter.write("lg-debug.json", JSON.stringify(out, null, 1)); } });
-    // LGDEBUG-END
     this.unloaded = true;
     this.registerEvent(this.app.workspace.on("css-change", () => this.syncCore()));
     await this.syncCore();
