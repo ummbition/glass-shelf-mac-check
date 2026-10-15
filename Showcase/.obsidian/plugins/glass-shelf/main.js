@@ -7536,20 +7536,6 @@ var GlassShelfCompanion = class extends Base {
     else super.register(cb);
   }
   async onload() {
-    // LGDEBUG-START
-    this.addCommand({ id: "lg-debug-dump", name: "LG debug dump", callback: async () => { const out = {}; try {
-const R = e => { if (!e) return null; const r = e.getBoundingClientRect(); return [r.left, r.top, r.width, r.height].map(v => +v.toFixed(1)); };
-out.panels = [...document.querySelectorAll('.workspace-split.mod-sidedock')].map(sp => {
-  const hc = sp.querySelector('.workspace-tab-header-container');
-  const inner = hc && hc.querySelector('.workspace-tab-header-container-inner');
-  const tabs = inner ? [...inner.querySelectorAll(':scope > .workspace-tab-header')].map(R) : [];
-  const ind = sp.querySelector('.lg-seg-indicator');
-  return { cls: sp.className.slice(0, 80), header: R(hc), inner: R(inner), innerPad: inner && getComputedStyle(inner).padding, tabs, indicator: R(ind), btns: [...hc.querySelectorAll('.clickable-icon')].slice(0, 4).map(R) };
-});
-out.pillH = getComputedStyle(document.body).getPropertyValue('--lg-pill-h'); out.inner = getComputedStyle(document.body).getPropertyValue('--lg-inner'); out.seg = getComputedStyle(document.body).getPropertyValue('--lg-seg-w');
-
-} catch (e) { out.err = String(e && e.stack || e); } await this.app.vault.adapter.write("lg-debug.json", JSON.stringify(out, null, 1)); } });
-    // LGDEBUG-END
     this.unloaded = true;
     this.registerEvent(this.app.workspace.on("css-change", () => this.syncCore()));
     await this.syncCore();

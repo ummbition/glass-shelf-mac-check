@@ -107,8 +107,12 @@ body {
   --lg-gap-btn: calc(var(--lg-pill-h) - var(--lg-inner));
   --lg-tab-w: 320px; /* 편집창 탭 기본 폭 */
   --lg-tab-gap: 4px; /* 편집창 탭 사이 (가운데에 세로 구분선) */
-  --lg-row-radius: 12px;    /* 글자 항목(파일 목록·개요·검색 결과·설정 목록) 호버·선택 */
-  --lg-item-radius: 16px;  /* 메뉴 항목 호버 (항목 높이 32px 의 절반이 최대) */
+  /* 둥근 사각형 곡률은 세 단계 (사용자 결정, 26.10.15): 작은 칸 S · 판 M · 창 L. 알약·원은 따로 */
+  --lg-r-s: 12px; /* 목록 줄, 메뉴·제안 항목, 속성 칸, 카드 */
+  --lg-r-m: 20px; /* 콜아웃, 코드 블록, 칸반 열·카드 묶음, 설정 항목 묶음 */
+  --lg-r-l: 26px; /* 메뉴, 팝업, 미리보기, 명령 팔레트, 대화상자 */
+  --lg-row-radius: var(--lg-r-s);    /* 글자 항목(파일 목록·개요·검색 결과·설정 목록) 호버·선택 */
+  --lg-item-radius: var(--lg-r-s);  /* 제안·자동완성 항목, 속성 칸 */
   /* 모서리 모양 (렌즈 조율기에서 사용자가 고른 값): 알약 1.1, 둥근 사각형 1.4. 1 = 원형, 2 = 스퀘어클 */
   --lg-pill-shape: superellipse(1.1);
   --lg-rect-shape: superellipse(1.4);
@@ -2319,7 +2323,7 @@ body:not(.is-mobile) .workspace-sidedock-vault-profile .workspace-drawer-vault-a
 
 body:not(.is-phone) {
   --lg-split-gap: 8px;
-  --lg-split-r: 12px;
+  --lg-split-r: var(--lg-r-s);
   --lg-split-line: color-mix(in oklab, var(--background-primary), var(--text-normal) 12%);
   --lg-split-bar: color-mix(in oklab, var(--background-primary), white 60%);
   --lg-gl: transparent;
@@ -3972,8 +3976,8 @@ body.is-popout-modal .titlebar .titlebar-text:not(#lg) {
 
 /* ---- 설정 창 ---- */
 .modal.mod-settings {
-  --modal-radius: 26px;
-  --setting-items-radius: 22px;
+  --modal-radius: var(--lg-r-l);
+  --setting-items-radius: var(--lg-r-m);
   --input-radius: 12px;
   --button-radius: 999px;
   --dropdown-radius: 12px;
@@ -4153,7 +4157,7 @@ body.is-phone .modal.mod-community-modal .community-modal-details .modal-close-b
    목록 카드·스크린샷은 알약보다 작은 곡률: 카드는 설정 항목 묶음과 같은 22px, 카드 안 스크린샷은 버튼·줄과 같은 --lg-row-radius.
    모바일은 Obsidian 이 검색창·X 를 떠 있는 버튼(.mod-raised)으로 그려 이미 유리 알약·원이라 검색창·X 는 데스크톱만 */
 .modal.mod-community-modal {
-  --modal-radius: 26px;
+  --modal-radius: var(--lg-r-l);
 }
 
 body:not(.is-popout-modal):not(.is-phone) .modal-container .modal.mod-community-modal:not(#lg) {
@@ -4242,7 +4246,7 @@ body.is-mobile .modal-container .modal.mod-community-modal:not(#lg):not(#lg) {
 }
 
 .modal.mod-community-modal .community-item:not(#lg) {
-  border-radius: var(--setting-items-radius, 22px);
+  border-radius: var(--setting-items-radius, var(--lg-r-m));
   corner-shape: var(--lg-rect-shape);
 }
 
@@ -4629,7 +4633,7 @@ body .sidebar-toggle-button.mod-right .clickable-icon:not(#lg) > svg {
    - 뜰 때는 누른 자리(플러그인이 transform-origin 으로 넘긴다)에서 튕기듯 커진다
    ========================================================= */
 body {
-  --lg-menu-radius: 28px;
+  --lg-menu-radius: var(--lg-r-l);
   --lg-menu-pad: 6px;
   /* 메뉴 계열 흐림 반경 (다른 유리판처럼 고정 배율을 곱한다. 12px 고정은 여는 동작이 무거워 되돌림) */
   --lg-menu-blur: calc(var(--lg-blur-k) * 36px);
@@ -4798,12 +4802,12 @@ body .modal-container .prompt:not(#lg) {
 }
 
 body:not(.is-popout-modal) .modal-container .modal:not(.mod-settings):not(body.is-phone .mod-community-modal):not(#lg) {
-  border-radius: 26px;
+  border-radius: var(--lg-r-l);
   corner-shape: var(--lg-rect-shape);
 }
 
 body .modal-container .prompt:not(#lg) {
-  border-radius: 24px;
+  border-radius: var(--lg-r-l);
   corner-shape: var(--lg-rect-shape);
 }
 
@@ -4938,7 +4942,7 @@ body.is-mobile.mod-rtl .dropdown:not(lg-none) {
 
 /* 파일 이름 바꾸기 창의 입력칸: 둥근 사각형 곡률 (사용자 요청, 설정 창 입력칸과 같은 12px). 이름이 길면 여러 줄이 되어 알약이 아니다 */
 .mod-file-rename .rename-textarea:not(#lg) {
-  border-radius: 12px;
+  border-radius: var(--lg-r-s);
   corner-shape: var(--lg-rect-shape);
 }
 
@@ -5000,7 +5004,7 @@ body .modal-container .prompt:not(#lg) .suggestion-item.is-selected {
 
 /* 링크 미리보기(마우스를 올리면 뜨는 문서 미리보기) */
 body .popover.hover-popover:not(#lg) {
-  border-radius: 32px;
+  border-radius: var(--lg-r-l);
   corner-shape: var(--lg-rect-shape);
   background-color: var(--lg-pop-bg);
   background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
@@ -5745,7 +5749,7 @@ input[type="range"].lg-sl-pressed:not(#lg)::-webkit-slider-thumb {
   --lg-co-hi-y: calc(var(--lg-hi-y) + 0.5px); /* 하이라이트 폭: 알약보다 0.5px 넓게 (사용자 요청) */
   mix-blend-mode: normal;
   border: var(--lg-cres-bd);
-  border-radius: 20px;
+  border-radius: var(--lg-r-m);
   corner-shape: var(--lg-rect-shape);
   background-color: color-mix(in oklch, var(--callout-color) 10%, var(--background-primary));
   /* 가장자리 선: 알약과 같은 굵기·그라데이션, 색은 콜아웃의 짙은 색 */
@@ -5761,7 +5765,7 @@ input[type="range"].lg-sl-pressed:not(#lg)::-webkit-slider-thumb {
 /* 코드 블록: 콜아웃과 같은 둥근 사각형 모서리만 (사용자 요청, 유리·테두리는 넣지 않는다). 인라인 코드는 그대로.
    읽기 모드는 블록(pre) 하나, 편집 모드는 줄마다 그려 첫 줄 위 모서리와 끝 줄 아래 모서리를 둥글린다 */
 .markdown-rendered pre:not(#lg) {
-  border-radius: 20px;
+  border-radius: var(--lg-r-m);
   corner-shape: var(--lg-rect-shape);
 }
 
@@ -5785,14 +5789,14 @@ body {
 }
 
 .cm-s-obsidian div.HyperMD-codeblock-begin-bg:not(#lg) {
-  border-top-left-radius: 20px;
-  border-top-right-radius: 20px;
+  border-top-left-radius: var(--lg-r-m);
+  border-top-right-radius: var(--lg-r-m);
   corner-shape: var(--lg-rect-shape);
 }
 
 .cm-s-obsidian div.HyperMD-codeblock-end-bg:not(#lg) {
-  border-bottom-left-radius: 20px;
-  border-bottom-right-radius: 20px;
+  border-bottom-left-radius: var(--lg-r-m);
+  border-bottom-right-radius: var(--lg-r-m);
   corner-shape: var(--lg-rect-shape);
 }
 
@@ -7660,7 +7664,7 @@ body {
   /* 설정 창 왼쪽 칸·좌우 패널과 같은 회색 (사용자 요청, 설정 창 묶음 색 #fafafa 는 너무 옅었다) */
   --lg-board-card: var(--lg-panel-bg);
   /* 묶음 곡률: 컴퓨터는 둥근 사각형 14px, 휴대폰·태블릿은 알약 (사용자 요청) */
-  --lg-board-r: 14px;
+  --lg-board-r: var(--lg-r-m);
   --lg-board-shape: var(--lg-rect-shape);
   /* 묶음의 맨 위·맨 아래 여백: 카드 사이 가로선 위아래 틈(4px)과 같게 묶음을 위아래로 늘린다 (사용자 지적: 맨 위·아래 카드가 모서리에 붙어 보였다) */
   --lg-board-pad: 4px;
@@ -7675,7 +7679,7 @@ body.is-mobile {
 }
 
 .bases-kanban-column:not(#lg) {
-  border-radius: 22px;
+  border-radius: var(--lg-r-m);
   corner-shape: var(--lg-rect-shape);
   background: none;
   border: none;
@@ -7894,12 +7898,12 @@ body.is-mobile .bases-cards-item:not(#lg) {
    보드에만 두면 반지름이 0 이 되어 네모가 됐다 (사용자 지적) */
 body {
   --lg-kb-r: calc(var(--lg-pill-h) / 2);
-  --lg-kb-lane-r: calc(var(--lg-kb-r) + 8px);
+  --lg-kb-lane-r: var(--lg-r-l);
 }
 
 /* 목록은 Bases 칸반 보기와 같이 판 없이 제목만, 안의 카드는 회색 묶음 하나 (사용자 요청). 안의 버튼은 그대로 유리 */
 .kanban-plugin__lane:not(#lg) {
-  border-radius: 22px;
+  border-radius: var(--lg-r-m);
   corner-shape: var(--lg-rect-shape);
   background: none;
   border: none;
@@ -8067,7 +8071,7 @@ body.lg-ui:not(.is-phone) .mod-root .workspace-leaf-content[data-type="kanban"] 
 /* 목록 추가 창 (보드 위 + 버튼): 메뉴처럼 떠 있는 유리판. 여닫는 애니메이션과 자리(+ 버튼이 오른쪽 위 꼭짓점)는 플러그인. 모서리는 안의 알약과 중심이 같게 (알약 반지름 + 안쪽 여백 10px).
    입력 칸과 버튼은 알약 (사용자 요청). 판에 흐림이 걸려 있어 입력 칸에는 흐림을 걸지 않는다 */
 .kanban-plugin__lane-form-wrapper:not(#lg) {
-  border-radius: calc(var(--lg-kb-r) + 10px);
+  border-radius: var(--lg-r-l);
   corner-shape: var(--lg-pill-shape);
   background-color: var(--lg-glass-fill);
   background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
