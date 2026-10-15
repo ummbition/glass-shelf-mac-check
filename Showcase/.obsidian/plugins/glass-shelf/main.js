@@ -2388,6 +2388,16 @@ var eventsMethods = {
       holdRaf = win.requestAnimationFrame(holdScan);
       holdTimer = win.setTimeout(holdRelease, 5e3);
     }, { capture: true });
+    this.registerDomEvent(doc, "pointermove", (e) => {
+      if (!holding) return;
+      doc.querySelectorAll(".lg-ripple-menu > .lg-ripple-dot").forEach((dot) => {
+        const host = dot.parentElement && dot.parentElement.parentElement;
+        if (!host) return;
+        const r = host.getBoundingClientRect();
+        dot.style.left = `${e.clientX - r.left}px`;
+        dot.style.top = `${e.clientY - r.top}px`;
+      });
+    }, { capture: true, passive: true });
     this.registerDomEvent(doc, "pointerup", holdRelease, { capture: true });
     this.registerDomEvent(doc, "pointercancel", holdRelease, { capture: true });
     this.register(holdRelease);
@@ -5291,8 +5301,14 @@ var sidebarMethods = {
     const HOLE_SPAN = 0.9;
     const IDLE = /^(offset|easing|composite|computedOffset|background.*|color|boxShadow|border.*Color|outline.*|filter|backdropFilter|webkitBackdropFilter|fill|stroke|--.*)$/;
     const radii = (btn, w, h) => {
-      const [a, b = a] = getComputedStyle(btn).borderTopLeftRadius.split(" ");
-      const len = (v, of) => v.endsWith("%") ? parseFloat(v) / 100 * of : parseFloat(v) || 0;
+      const v = getComputedStyle(btn).borderTopLeftRadius;
+      const parts = v.match(/calc\([^)]*\)|\S+/g) || ["0"];
+      const [a, b = a] = parts;
+      const len = (s, of) => {
+        let sum = 0;
+        for (const m of s.replace(/-\s+/g, "-").matchAll(/(-?[\d.]+)(%|px)?/g)) sum += m[2] === "%" ? parseFloat(m[1]) / 100 * of : parseFloat(m[1]) || 0;
+        return sum;
+      };
       return [len(a, w), len(b, h)];
     };
     const n3 = (v) => String(+v.toFixed(3));
@@ -7469,6 +7485,12 @@ var GlassShelfCompanion = class extends Base {
     else super.register(cb);
   }
   async onload() {
+    // LGDEBUG-START
+    this.addCommand({ id: "lg-debug-dump", name: "LG debug dump", callback: async () => { const out = {}; try {
+out.ws = document.querySelector(".workspace").className; out.rib = [...document.querySelectorAll(".workspace-ribbon")].map(e => e.className + " | parent " + e.parentElement.className.slice(0,40)); out.tabsw = [...document.querySelectorAll(".lg-tab-list, .mod-left-split .workspace-tab-header-container-inner")].map(e=>[e.className.slice(0,60), getComputedStyle(e).boxShadow.slice(0,120)]);
+
+} catch (e) { out.err = String(e && e.stack || e); } await this.app.vault.adapter.write("lg-debug.json", JSON.stringify(out, null, 1)); } });
+    // LGDEBUG-END
     this.unloaded = true;
     this.registerEvent(this.app.workspace.on("css-change", () => this.syncCore()));
     await this.syncCore();

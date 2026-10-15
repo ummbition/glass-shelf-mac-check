@@ -342,7 +342,7 @@ body.theme-dark,
   --lg-divider: rgb(255 255 255 / 0.09);
   --lg-slab-edge: rgb(255 255 255 / 0.12);
   /* 다크: 외곽선 16%, 초승달 진하게 (사용자 요청, 모바일도 같다) */
-  --lg-cres-a: 0.7;
+  --lg-cres-a: 0.4;
   --lg-ol-w: 1px;
   --lg-ol-a: 0.16;
 
@@ -399,7 +399,7 @@ body.theme-dark,
   --lg-sep: color-mix(in srgb, rgb(0 0 0 / 0.18), rgb(255 255 255 / 0.12) calc(var(--lg-glass-t, 0) * 100%));
   --lg-divider: color-mix(in srgb, rgb(0 0 0 / 0.1), rgb(255 255 255 / 0.09) calc(var(--lg-glass-t, 0) * 100%));
   --lg-slab-edge: rgb(255 255 255 / calc(0.7 * var(--lg-u) + 0.12 * var(--lg-glass-t, 0)));
-  --lg-cres-a: calc(0.26 * var(--lg-u) + 0.7 * var(--lg-glass-t, 0));
+  --lg-cres-a: calc(0.26 * var(--lg-u) + 0.4 * var(--lg-glass-t, 0));
   --lg-ol-w: calc(1px * var(--lg-u));
   --lg-ol-a: calc(0.08 * var(--lg-u));
   --lg-rim-out-plain: 0 0 0 var(--lg-ol-w) rgb(0 0 0 / var(--lg-ol-a));
@@ -1041,6 +1041,8 @@ body:not(.is-mobile) .workspace-sidedock-vault-profile .workspace-drawer-vault-a
   margin-inline-end: calc((var(--lg-inner) + var(--lg-pad-x) * 2 + var(--lg-gap)) * -1);
   pointer-events: none;
   transition: margin 240ms var(--lg-ease-move);
+  /* 안 보이는 빈 묶음은 끌기 제외에서 뺀다: 리본 메뉴 버튼과 경로 표시 사이 자리(34px)에서 창이 잡히지 않았다 (사용자 지적) */
+  -webkit-app-region: drag;
 }
 
 .lg-ui .mod-root .workspace-tab-header-container .lg-tab-nav.lg-nav-empty:not(#lg)::before,
@@ -8128,6 +8130,19 @@ body:not(.lg-ui):not(.is-phone) .mod-root .workspace-leaf-content[data-type="mar
 /* 문서 위 버튼 줄: 위 4px, 아래 --lg-gap. 양 끝 여백은 탭 줄과 같게 해 위아래 버튼의 오른쪽 끝을 맞춘다 */
 body:not(.lg-ui):not(.is-mobile) .mod-root .workspace-leaf-content > .view-header:not(#lg) {
   padding: 4px var(--lg-gap) var(--lg-gap);
+}
+
+/* 맥 테마만: Obsidian 은 신호등 때문에 왼쪽 패널 접기 버튼을 리본 위가 아니라 패널 탭 줄 끝에 둔다.
+   Windows 처럼 리본 칸 맨 위(신호등 줄 아래)에 놓고, 리본 버튼들은 그만큼 내린다 (사용자 요청). 패널을 접으면 Obsidian 자리 그대로 */
+body.mod-macos:not(.lg-ui):not(.is-mobile) .mod-left-split .workspace-tabs.mod-top-left-space > .workspace-tab-header-container > .sidebar-toggle-button.mod-left:not(#lg):not(#lg) {
+  position: fixed;
+  top: var(--header-height);
+  left: calc((var(--ribbon-width) - var(--lg-btn)) / 2);
+  z-index: 30;
+}
+
+body.mod-macos:not(.lg-ui):not(.is-mobile) .workspace.is-left-sidedock-open .workspace-ribbon.mod-primary > .side-dock-actions:not(#lg) {
+  margin-top: calc(var(--lg-btn) + var(--lg-gap));
 }
 
 /* 탭 줄의 오른쪽 패널 토글: 다른 원형 버튼과 같은 크기로 */
