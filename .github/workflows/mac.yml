@@ -156,6 +156,7 @@ jobs:
           VIBA: ${{ inputs.viba && '1' || '' }}
           FIND: ${{ inputs.find && '1' || '' }}
           HOVERTEST: ${{ inputs.hovertest }}
+          THEMEDIAG: ${{ inputs.recperf == 'themediag' && '1' || '' }}
           ISO_ONLY_FILL: ${{ inputs.iso && '1' || '' }}
           TEST2: ${{ inputs.hovertest == 'test2' && '1' || '' }}
           TEST3: ${{ inputs.hovertest == 'test3' && '1' || '' }}
