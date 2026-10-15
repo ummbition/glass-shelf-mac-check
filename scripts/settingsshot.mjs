@@ -33,6 +33,11 @@ const front = () => ev(`const w = require("electron").remote.getCurrentWindow();
 for (let i = 0; i < 60; i++) { if (await ev(`return !!(window.app && app.workspace && app.workspace.layoutReady)`) === true) break; await sleep(1000); }
 await sleep(2000);
 
+const kit = readFileSync(new URL("./scenekit.js", import.meta.url), "utf8").replace("__PRESET_MINE__", readFileSync(new URL("./preset-mine.json", import.meta.url), "utf8"));
+note("kit", await ev(`${kit}; return typeof window.__sk;`));
+note("setup", await ev(`return await __sk.setup();`));
+await sleep(3000);
+note("theme-check", await ev(`return { css: app.customCss.theme, lgui: document.body.classList.contains("lg-ui"), plugin: !!app.plugins.plugins["glass-shelf"] };`));
 const shot = (n) => { try { execSync(`screencapture -x "${OUT}/${n}.png"`); } catch {} };
 for (const mode of ["light", "dark"]) {
   note("theme", await ev(`app.changeTheme("${mode === "dark" ? "obsidian" : "moonstone"}"); return app.getTheme();`));
