@@ -6875,6 +6875,22 @@ body.is-phone .menu .menu-item::after {
   height: round(0.5px, var(--lg-dpx, 1px));
 }
 
+/* 휴대폰 메뉴 시트(아래에서 올라오는 메뉴 모두): 시트 바탕은 편집창 바탕(라이트 흰색), 항목 묶음은 패널 회색 카드 (사용자 요청, 다크도 묶음은 회색) */
+body.is-phone .menu:not(#lg) .menu-group {
+  margin-inline: var(--size-4-3);
+  /* 시트 모서리와 같은 중심의 곡률(시트 곡률 - 여백)·같은 모양 (사용자 요청: 곡률·여백 맞추기) */
+  border-radius: calc(var(--touch-radius-s) - var(--size-4-3));
+  corner-shape: var(--lg-rect-shape);
+  background-color: var(--lg-panel-bg);
+  overflow: clip;
+}
+
+/* 카드와 시트 가장자리 사이를 옆·아래 모두 같은 여백(--size-4-3)으로: Obsidian 의 목록 칸 좌우 여백(16px)이 카드 여백에 더해져 옆 28.8px, 아래 34.8px 였다 (측정) */
+body.is-phone .menu:not(#lg) > .menu-scroll {
+  padding-inline: 0;
+  padding-bottom: calc(var(--size-4-3) + var(--safe-area-inset-bottom));
+}
+
 /* 패널 목록 글자색: Obsidian 기본은 흐린 회색(--text-muted)이라, 본문 글자색과 같게 (사용자 요청) */
 body {
   --nav-item-color: var(--text-normal);
