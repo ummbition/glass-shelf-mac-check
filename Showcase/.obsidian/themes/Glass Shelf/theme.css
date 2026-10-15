@@ -4060,6 +4060,11 @@ body.is-popout-modal .modal.mod-settings .vertical-tab-header {
   --lg-ss-top: calc((var(--titlebar-height) - var(--lg-ss-h)) / 2);
 }
 
+/* 맥은 별도 창 왼쪽 위에 신호등이 있어 제목 줄 높이에 둔 검색창과 겹쳤다 (사용자 확인 요청, 맥 러너 측정): 신호등 줄 아래로 내린다 */
+body.mod-macos.is-popout-modal .modal.mod-settings .vertical-tab-header {
+  --lg-ss-top: calc(var(--titlebar-height) + 4px);
+}
+
 .modal.mod-settings .vertical-tab-nav-item {
   border-radius: var(--lg-row-radius);
   corner-shape: var(--lg-rect-shape);
@@ -4655,7 +4660,7 @@ body:not(.is-phone) .menu:not(#lg) {
   -webkit-backdrop-filter: blur(var(--lg-menu-blur)) var(--lg-menu-tone);
   backdrop-filter: blur(var(--lg-menu-blur)) var(--lg-menu-tone);
   transform-origin: 0 0;
-  animation: lg-menu-in 400ms linear both;
+  animation: lg-menu-in 280ms linear both; /* 400 → 280ms (사용자 요청: 메뉴를 더 빠르게) */
 }
 
 @keyframes lg-menu-in {

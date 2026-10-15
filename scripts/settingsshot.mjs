@@ -43,7 +43,7 @@ for (const mode of ["light", "dark"]) {
   note("theme", await ev(`app.changeTheme("${mode === "dark" ? "obsidian" : "moonstone"}"); return app.getTheme();`));
   await sleep(1000);
   await front();
-  note("open", await ev(`app.setting.open(); await new Promise(r => setTimeout(r, 1500)); const d = activeDocument; const i = d.querySelector('.modal.mod-settings .setting-search-container input'); const r = i && i.getBoundingClientRect(); return { popout: d.body.classList.contains('is-popout-modal'), mac: d.body.classList.contains('mod-macos'), inp: r && [r.left, r.top, r.width, r.height], frame: d.body.className.slice(0, 200) };`));
+  note("open", await ev(`app.setting.open(); await new Promise(r => setTimeout(r, 1500)); const d = activeDocument; const i = d.querySelector('.modal.mod-settings .setting-search-container input'); const r = i && i.getBoundingClientRect(); return { popout: d.body.classList.contains('is-popout-modal'), mac: d.body.classList.contains('mod-macos'), inp: r && [r.left, r.top, r.width, r.height], frame: d.body.className.slice(0, 200), th: getComputedStyle(d.body).getPropertyValue('--titlebar-height') };`));
   await sleep(800);
   shot(`settings-${mode}`);
   await ev(`app.setting.close();`);

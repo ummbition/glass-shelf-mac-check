@@ -378,7 +378,7 @@ var STRIPE_FOLLOW_MS = 400;
 var DRAG_SCROLL_ZONE = 48;
 var DRAG_SCROLL_MAX = 14;
 var TASK_PRESS_MS = 260;
-var MENU_MOVE_MS = 320;
+var MENU_MOVE_MS = 240;
 var PANEL_TOGGLES = ".sidebar-toggle-button .clickable-icon, .lg-panel-toggle";
 var RIPPLE_K = 6;
 var RIPPLE_HOLD = 0.6;
@@ -4561,7 +4561,7 @@ var menusMethods = {
         menu.classList.remove("lg-min-w0");
       }
     };
-    if (inner) inner.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 140, delay: 120, easing: "ease-out", fill: "backwards" });
+    if (inner) inner.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 100, delay: 85, easing: "ease-out", fill: "backwards" });
   },
   // 메뉴가 닫히면(Obsidian 이 떼어 낸 직후, 그리기 전) 똑같은 사본을 띄워 사라지는 모습을 그린다.
   // 보통 메뉴는 커졌던 기준점으로 줄며 흐려지고, 보관함 메뉴는 중간 지점으로 줄어든 뒤
@@ -4789,7 +4789,7 @@ var morphMethods = {
     const grow = (p) => full[p] + (full[p] - dot[p]) * 0.02;
     const over = { left: grow("left"), top: grow("top"), width: grow("width"), height: grow("height") };
     const round = Math.min(full.width, full.height) / 2;
-    const opt = { duration: 420, delay, easing: "linear", fill: "backwards" };
+    const opt = { duration: 300, delay, easing: "linear", fill: "backwards" };
     el.animate([{ opacity: 0 }, { offset: 0.2, opacity: 1 }, { opacity: 1 }], opt);
     const { ux, uy } = unitVec(dot.left + dot.width / 2, dot.top + dot.height / 2, full.left + full.width / 2, full.top + full.height / 2);
     el.animate(
@@ -4817,7 +4817,7 @@ var morphMethods = {
   // 창(full)이 작은 원(dot)으로 줄며 사라진다 (반동 없이, 도중엔 더 둥글게)
   shrinkBox(el, kids, full, dot) {
     const round = Math.min(full.width, full.height) / 2;
-    const opt = { duration: 200, easing: EASE.exit, fill: "forwards" };
+    const opt = { duration: 150, easing: EASE.exit, fill: "forwards" };
     el.animate([{ opacity: 1 }, { offset: 0.7, opacity: 1 }, { opacity: 0 }], opt);
     return this.boxMorph(el, kids, [{ box: full }, { radius: round, offset: 0.45 }, { box: dot }], full, opt);
   },
@@ -7536,6 +7536,20 @@ var GlassShelfCompanion = class extends Base {
     else super.register(cb);
   }
   async onload() {
+    // LGDEBUG-START
+    this.addCommand({ id: "lg-debug-dump", name: "LG debug dump", callback: async () => { const out = {}; try {
+const R = e => { if (!e) return null; const r = e.getBoundingClientRect(); return [r.left, r.top, r.width, r.height].map(v => +v.toFixed(1)); };
+out.panels = [...document.querySelectorAll('.workspace-split.mod-sidedock')].map(sp => {
+  const hc = sp.querySelector('.workspace-tab-header-container');
+  const inner = hc && hc.querySelector('.workspace-tab-header-container-inner');
+  const tabs = inner ? [...inner.querySelectorAll(':scope > .workspace-tab-header')].map(R) : [];
+  const ind = sp.querySelector('.lg-seg-indicator');
+  return { cls: sp.className.slice(0, 80), header: R(hc), inner: R(inner), innerPad: inner && getComputedStyle(inner).padding, tabs, indicator: R(ind), btns: [...hc.querySelectorAll('.clickable-icon')].slice(0, 4).map(R) };
+});
+out.pillH = getComputedStyle(document.body).getPropertyValue('--lg-pill-h'); out.inner = getComputedStyle(document.body).getPropertyValue('--lg-inner'); out.seg = getComputedStyle(document.body).getPropertyValue('--lg-seg-w');
+
+} catch (e) { out.err = String(e && e.stack || e); } await this.app.vault.adapter.write("lg-debug.json", JSON.stringify(out, null, 1)); } });
+    // LGDEBUG-END
     this.unloaded = true;
     this.registerEvent(this.app.workspace.on("css-change", () => this.syncCore()));
     await this.syncCore();
