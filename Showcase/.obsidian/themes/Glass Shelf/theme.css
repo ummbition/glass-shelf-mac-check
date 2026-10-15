@@ -9,18 +9,16 @@
    예전엔 전역 *::before, *::after 로 걸었는데, 모든 요소의 가상 요소 스타일을 따로 계산하게 해 휴대폰에서 스타일 재계산이 약 5% 늘었다(측정) */
 
 /* 알약 규칙과 같은 999px 를 쓰지만 정사각형이라 원인 버튼들은 원형으로 되돌린다 */
-:is(
-  .view-header-nav-buttons .clickable-icon,
-  .lg-nav-run .clickable-icon,
-  .lg-path-pill .clickable-icon,
-  .lg-tab-nav .clickable-icon,
-  .lg-tab-menu,
-  .side-dock-ribbon-action,
-  .nav-header .nav-buttons-container .clickable-icon,
-  .titlebar-button-container.mod-right .titlebar-button,
-  .mobile-tab-switcher-menubar .mobile-tab-switcher-menu-spacer > .clickable-icon,
-  .mobile-tab-switcher-menubar .mobile-tab-switcher-menu-button
-) {
+.view-header-nav-buttons .clickable-icon:not(.lg-none),
+.lg-nav-run .clickable-icon:not(.lg-none),
+.lg-path-pill .clickable-icon:not(.lg-none),
+.lg-tab-nav .clickable-icon:not(.lg-none),
+.lg-tab-menu:not(.lg-none):not(.lg-none),
+.side-dock-ribbon-action:not(.lg-none):not(.lg-none),
+.nav-header .nav-buttons-container .clickable-icon,
+.titlebar-button-container.mod-right .titlebar-button,
+.mobile-tab-switcher-menubar .mobile-tab-switcher-menu-spacer > .clickable-icon,
+.mobile-tab-switcher-menubar .mobile-tab-switcher-menu-button:not(.lg-none) {
   corner-shape: round;
 }
 
@@ -78,8 +76,15 @@ body {
 
   /* 위아래 하이라이트 굵기: 3px 이면 1px 선 (그림자 퍼짐 -2px). 모바일도 같다 */
   --lg-hi-y: 3px;
-  /* 양옆 초승달(안쪽 그림자)을 미는 거리. 퍼짐 -0.5px 을 빼면 가운데 굵기 0.4px (사용자 요청, 예전 1.3px = 0.8px) */
-  --lg-cres-x: 0.9px;
+  /* 양옆 가장자리 선 (예전 초승달): 유리 윤곽을 따라 같은 굵기로 두르고, 진하기만 그라데이션으로 조절한다 (사용자 요청, 26.10.14: 양끝이 두껍고
+     위아래로 가늘어지던 초승달 모양 대신). 좌우 끝에서 가장 진하고(--lg-cres-a), 끝에서 --lg-cres-fade 만큼 들어가며 투명해져 위아래 가운데엔 선이 없다.
+     선은 유리 층의 투명 테두리 자리에만 칠한다(background-clip: border-area): 유리 안쪽은 어두워지지 않고 굴절도 그대로다.
+     굵기는 화면 픽셀 1칸으로 맞춰 그려진다 (테두리 굵기는 1px 미만이면 화면 픽셀 1칸) */
+  --lg-cres-w: var(--lg-ol-w); /* 가장자리 선 굵기는 바깥 외곽선과 같다 (사용자 요청) */
+  --lg-cres-fade: 14px; /* 좌우 끝에서 투명해지기까지 (사용자 요청) */
+  --lg-cres-bd: var(--lg-cres-w) solid transparent;
+  /* 가운데 투명 구간. 폭이 2 × fade 보다 좁은 원은 가운데(50%)에서 양쪽이 만난다 */
+  --lg-cres-mid: transparent min(var(--lg-cres-fade), 50%), transparent max(calc(100% - var(--lg-cres-fade)), 50%);
   /* 애플식: 넓게 퍼지고 옅은 그림자 */
   /* 알약 그림자: 넓게 퍼지는 바깥 그림자 대신 "선 그림자" (사용자 요청, 26.10.06).
      알약 테두리 모양의 고리(선)를 6px 아래로 옮긴 그림자로, 유리 안쪽에서도 보인다.
@@ -175,6 +180,13 @@ body {
   --icon-xl-stroke-width: 1.6px;
 }
 
+/* 가는 선 두께: 1px 을 화면 픽셀 배수로 반올림한 값 (--lg-dpx: 플러그인이 body 에 주는 화면 한 픽셀 길이, 없으면 1px).
+   125% 배율에서 1px 은 1.25픽셀이라 선이 놓인 높이에 따라 1픽셀·2픽셀로 그려져 줄마다 두께가 달라 보였다 (사용자 지적).
+   --lg-dpx 가 body 에 있으므로 body 에서 정한다 */
+body {
+  --lg-px: round(1px, var(--lg-dpx, 1px));
+}
+
 /* ---------- 토큰 (라이트): 다크와 다른 것만. 라이트 전용 값은 모두 여기 있다 ----------
    .lg-glass-light: 다크 모드에서도 이 자리만 라이트 유리로 (플러그인이 붙인다. 밝은 웹 페이지 대표 색으로 칠한 탭 줄) */
 body,
@@ -182,26 +194,33 @@ body,
   --lg-ink: 0 0 0;
   --lg-frost-rgb: 255 255 255;
   /* 표시 불투명도 */
-  --lg-track-a: 0.09;  /* 편집창 회색 트랙 */
-  --lg-select-a: 0.07; /* 목록 선택 */
+  /* 회색 단계 (라이트, 사용자 결정 26.10.15): 거의 같은 진하기가 이름만 여럿이라 네 단계로 묶었다.
+     옅음 4.5% (호버) · 보통 8% (선택·트랙·탭 호버·패널 탭 선택·탐색기 선택) · 선 10% (구분선·가장자리·탭 안 버튼 호버) · 진함 18% (탭 사이 세로선).
+     호버 유리(--lg-hover-base)·꺼진 토글(--lg-tg-off)은 애플 회청색이라, 유리 외곽선(--lg-ol-a)·양옆 선(--lg-cres-a)은 알약 표현이라 따로 둔다 (사용자 결정) */
+  --lg-track-a: 0.08;  /* 편집창 회색 트랙 */
+  --lg-select-a: 0.08; /* 목록 선택 */
   --lg-hover-a: 0.045; /* 평평한 호버 */
   --lg-tab-hover-a: 0.08; /* 편집창 탭 호버 */
   --lg-tab-btn-hover-a: 0.1; /* 편집창 탭 안 X·≡ 호버 */
-  --lg-edge: rgb(0 0 0 / 0.07);
-  --lg-panel-select-a: 0.09;               /* 패널 탭 선택 원 (파일 탐색기 선택 행 --lg-row-hl-a 와 같은 진하기) */
+  --lg-edge: rgb(0 0 0 / 0.1);
+  --lg-panel-select-a: 0.08;               /* 패널 탭 선택 원 (파일 탐색기 선택 행 --lg-row-hl-a 와 같은 진하기) */
   --lg-sep: rgb(0 0 0 / 0.18);             /* 편집창 탭 사이 세로선 */
   --lg-divider: rgb(0 0 0 / 0.1);          /* 쌓인 패널 사이 선 */
   --lg-slab-edge: rgb(255 255 255 / 0.7);  /* 탭 줄 뒤 유리판 밑변 */
   /* 초승달 진하기, 외곽선 두께·진하기 (초승달 조율기에서 사용자가 고른 값, 26.10.08). 다크·모바일은 아래에서 바꾼다 */
-  --lg-cres-a: 0.34;
-  --lg-ol-w: 0.7px;
-  --lg-ol-a: 0.06;
-  /* 유리 테두리: 바깥(외곽선) + 안쪽(좌우 초승달·위아래 하이라이트). 초승달은 같은 두께·진하기로 테두리 안쪽에 그린다 (사용자 요청, 예전엔 바깥으로 튀어나옴) */
+  --lg-cres-a: 0.26;
+  --lg-ol-w: 1px;
+  --lg-ol-a: 0.08;
+  /* 유리 테두리: 바깥(외곽선) + 안쪽(위아래 하이라이트). 좌우 가장자리 선은 그림자가 아니라 배경 층(--lg-cres-img)으로, 유리마다
+     테두리(--lg-cres-bd)를 두고 background-clip: border-area 로 그 자리에만 칠한다 */
   /* -plain: 틴트를 받지 않는 원래 테두리 (사이드바 탭 렌즈가 쓴다) */
-  --lg-rim-out-plain:
-    0 0 0 var(--lg-ol-w) rgb(0 0 0 / var(--lg-ol-a)),
-    inset var(--lg-cres-x) 0 0 -0.5px rgb(0 0 0 / var(--lg-cres-a)),
-    inset calc(var(--lg-cres-x) * -1) 0 0 -0.5px rgb(0 0 0 / var(--lg-cres-a));
+  --lg-rim-out-plain: 0 0 0 var(--lg-ol-w) rgb(0 0 0 / var(--lg-ol-a));
+  --lg-cres-c: rgb(0 0 0 / var(--lg-cres-a)); /* 가장자리 선 색 (틴트 때 틴트의 짙은 색이 섞인다) */
+  --lg-ol-c: rgb(0 0 0 / var(--lg-ol-a)); /* 외곽선 색 (틴트 때 틴트의 짙은 색이 섞인다) */
+  /* 유리 테두리 칸 한 줄에 외곽선과 양옆 선을 함께 칠한다 (사용자 요청, 26.10.15): 좌우 끝은 양옆 선 색, 가운데로 가며 외곽선 색이 된다.
+     예전엔 외곽선을 그림자(--lg-rim-out)로 그 바깥에 따로 그어, 테두리(화면 픽셀 1칸으로 맞춰짐)와 그림자(0.7px 그대로 번짐)의 굵기·선명도가 달랐다 */
+  --lg-cres-img-plain: linear-gradient(to right, rgb(0 0 0 / var(--lg-cres-a)), rgb(0 0 0 / var(--lg-ol-a)) min(var(--lg-cres-fade), 50%), rgb(0 0 0 / var(--lg-ol-a)) max(calc(100% - var(--lg-cres-fade)), 50%), rgb(0 0 0 / var(--lg-cres-a)));
+  --lg-cres-img: linear-gradient(to right, var(--lg-cres-c), var(--lg-ol-c) min(var(--lg-cres-fade), 50%), var(--lg-ol-c) max(calc(100% - var(--lg-cres-fade)), 50%), var(--lg-cres-c));
   --lg-rim-in-plain:
     inset 0 var(--lg-hi-y) 1px calc(1px - var(--lg-hi-y)) rgb(255 255 255 / 0.7),
     inset 0 calc(var(--lg-hi-y) * -1) 1px calc(1px - var(--lg-hi-y)) rgb(255 255 255 / 0.7);
@@ -209,6 +228,10 @@ body,
   --lg-rim-in: var(--lg-rim-in-plain);
   --lg-rim: var(--lg-rim-out), var(--lg-rim-in);
   --lg-shadow: 0 6px 8px 3px rgb(0 0 0 / 0.03), inset 0 6px 8px 3px rgb(0 0 0 / 0.03);
+  /* 링 그림자 (사용자 요청, 알약 그림자 비교대에서 고른 값): 알약 유리 아래에 테두리만 있는 고리를 깔아 흐린다. 유리가 뒤를 떠 와 비친다 */
+  --lg-ring: 1px solid rgb(0 0 0 / 0.32);
+  --lg-ring-y: 6px;
+  --lg-ring-blur: 4px;
   --lg-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.06), 0 4px 16px rgb(0 0 0 / 0.075);
   /* 호버 유리 */
   --lg-hover-base: rgb(118 118 128 / 0.17);
@@ -252,8 +275,15 @@ body {
 .workspace-split.mod-right-split,
 .workspace-drawer,
 body:not(.is-phone) .modal.mod-settings .vertical-tab-header,
-body.lg-right-open .titlebar-button-container.mod-right {
+body.lg-right-open:not(.is-popout-modal) .titlebar-button-container.mod-right {
   --lg-glass-bg: var(--lg-panel-bg);
+}
+
+/* 라이트: 좌우 패널 위 알약(패널 탭·버튼)은 패널 바탕에 흰색을 살짝(12%) 섞어 채운다 (사용자 요청, 다크와 같은 방식) */
+body:not(.theme-dark) .workspace-split.mod-left-split,
+body:not(.theme-dark) .workspace-split.mod-right-split,
+body:not(.theme-dark).lg-right-open:not(.is-popout-modal) .titlebar-button-container.mod-right {
+  --lg-glass-bg: color-mix(in srgb, var(--lg-panel-bg) 88%, #fff);
 }
 
 /* 다크: 유리 투명도 1~5 의 바래는 기준색을 자리 바탕색보다 살짝 밝은 색으로 (흰색 12%, 사용자 요청). 편집창 위는 편집창 바탕,
@@ -266,17 +296,18 @@ body.theme-dark .workspace-split.mod-left-split,
 body.theme-dark .workspace-split.mod-right-split,
 body.theme-dark .workspace-drawer,
 body.theme-dark:not(.is-phone) .modal.mod-settings .vertical-tab-header,
-body.theme-dark.lg-right-open .titlebar-button-container.mod-right {
+body.theme-dark.lg-right-open:not(.is-popout-modal) .titlebar-button-container.mod-right {
   --lg-glass-bg: color-mix(in srgb, var(--lg-panel-bg) 88%, #fff);
 }
 
-/* 창 제어 알약은 패널 밖 요소지만, 오른쪽 패널이 열려 있으면 패널 머리 위에 놓이므로 패널 바탕 쪽으로 바랜다 */
+/* 창 제어 알약은 패널 밖 요소지만, 오른쪽 패널이 열려 있으면 패널 머리 위에 놓이므로 패널 바탕 쪽으로 바랜다.
+   설정 같은 별도 창은 오른쪽 패널이 없어 빼고 창 바탕(흰색) 기준이다: 본 창의 lg-right-open 을 물려받아 흰 설정 창 위 알약이 회색으로 어둡게 보였다 (사용자 지적) */
 body,
 .workspace-split.mod-left-split,
 .workspace-split.mod-right-split,
 .workspace-drawer,
 body:not(.is-phone) .modal.mod-settings .vertical-tab-header,
-body.lg-right-open .titlebar-button-container.mod-right {
+body.lg-right-open:not(.is-popout-modal) .titlebar-button-container.mod-right {
   --lg-glass-fill: color-mix(in srgb,
     var(--lg-glass-bg) calc(var(--lg-fade) * (1 - var(--lg-haze-a)) * 100%),
     rgb(var(--lg-frost-rgb)) calc(var(--lg-haze-a) * 100%));
@@ -289,12 +320,6 @@ body.is-mobile {
   --lg-pill-blur: ;
 }
 
-/* 모바일 라이트: 화면 밀도가 높아 1px 미만 선도 또렷하게 그려지므로 초승달은 옅게, 외곽선은 가늘게 (사용자 요청) */
-body.is-mobile:not(.theme-dark) {
-  --lg-cres-a: 0.3;
-  --lg-ol-w: 0.4px;
-}
-
 /* ---------- 토큰 (다크): 라이트와 다른 것만. 다크 전용 값은 모두 여기 있다 ----------
    유리 윤곽은 옅은 흰 선, 그 바깥에 얇은 검정 띠. 흐림 뒤 밝기를 살짝 올린다.
    .lg-glass-dark: 라이트 모드에서도 이 자리만 다크 유리로 (플러그인이 붙인다. 어두운 웹 페이지 대표 색으로 칠한 탭 줄) */
@@ -304,26 +329,24 @@ body.theme-dark,
   /* 뿌연 채움은 검정: 뿌옇게 할수록 어두워진다 */
   --lg-frost-rgb: 0 0 0;
 
+  /* 회색 단계 (다크, 사용자 결정 26.10.15): 거의 같은 진하기만 묶었다. 옅음 7% (호버·트랙) · 보통 12% (선택·탭 호버·패널 탭 선택·탐색기 선택·탭 사이 세로선)
+     · 선 9% (가장자리·구분선) · 진함 15% (탭 안 X·≡ 호버). 흰 선은 어두운 바탕에서 또렷해 채움보다 옅다 */
   --lg-track-a: 0.07;
-  --lg-select-a: 0.13;
+  --lg-select-a: 0.12;
   --lg-hover-a: 0.07;
   --lg-tab-hover-a: 0.12;
   --lg-tab-btn-hover-a: 0.15;
   --lg-edge: rgb(255 255 255 / 0.09);
   --lg-panel-select-a: 0.12;
   --lg-sep: rgb(255 255 255 / 0.12);
-  --lg-divider: rgb(255 255 255 / 0.08);
+  --lg-divider: rgb(255 255 255 / 0.09);
   --lg-slab-edge: rgb(255 255 255 / 0.12);
-  /* 다크: 외곽선 없이 초승달만 진하게 (사용자 요청, 모바일도 같다) */
+  /* 다크: 외곽선 16%, 초승달 진하게 (사용자 요청, 모바일도 같다) */
   --lg-cres-a: 0.7;
-  --lg-ol-w: 0px;
-  --lg-ol-a: 0;
+  --lg-ol-w: 1px;
+  --lg-ol-a: 0.16;
 
-  /* 초승달은 외곽선(0.5px) 바깥으로 한 픽셀 온전히 나와야 직선 구간(리본·메뉴의 긴 옆변)에서도 보인다: 2px 밀고 0.5px 줄임 */
-  --lg-rim-out-plain:
-    0 0 0 var(--lg-ol-w) rgb(255 255 255 / var(--lg-ol-a)),
-    inset var(--lg-cres-x) 0 0 -0.5px rgb(0 0 0 / var(--lg-cres-a)),
-    inset calc(var(--lg-cres-x) * -1) 0 0 -0.5px rgb(0 0 0 / var(--lg-cres-a));
+  --lg-rim-out-plain: 0 0 0 var(--lg-ol-w) rgb(0 0 0 / var(--lg-ol-a));
   --lg-rim-in-plain:
     inset 0 var(--lg-hi-y) 1px calc(1px - var(--lg-hi-y)) rgb(255 255 255 / 0.2),
     inset 0 calc(var(--lg-hi-y) * -1) 1px calc(1px - var(--lg-hi-y)) rgb(255 255 255 / 0.14);
@@ -331,6 +354,10 @@ body.theme-dark,
   --lg-rim-in: var(--lg-rim-in-plain);
   /* 선 그림자 (라이트와 같은 값, 사용자 요청). 예전 1px 검정 윤곽선은 역할이 거의 없어 뺐다 (사용자 요청) */
   --lg-shadow: 0 6px 8px 3px rgb(0 0 0 / 0.03), inset 0 6px 8px 3px rgb(0 0 0 / 0.03);
+  /* 링 그림자 (사용자 요청, 알약 그림자 비교대에서 고른 값): 알약 유리 아래에 테두리만 있는 고리를 깔아 흐린다. 유리가 뒤를 떠 와 비친다 */
+  --lg-ring: 1px solid rgb(0 0 0 / 0.32);
+  --lg-ring-y: 6px;
+  --lg-ring-blur: 4px;
   --lg-shadow-sm: 0 0 0 1px rgb(0 0 0 / 0.28), 0 4px 14px rgb(0 0 0 / 0.3);
 
   --lg-hover-base: rgb(255 255 255 / 0.12);
@@ -362,23 +389,20 @@ body.theme-dark,
    두 세트 사이에서 섞는다. 그림자는 두 세트의 겹을 모두 두고 진하기만 비율대로 나눈다 */
 .lg-glass-mix {
   --lg-u: calc(1 - var(--lg-glass-t, 0));
-  --lg-track-a: calc(0.09 * var(--lg-u) + 0.07 * var(--lg-glass-t, 0));
-  --lg-select-a: calc(0.07 * var(--lg-u) + 0.13 * var(--lg-glass-t, 0));
+  --lg-track-a: calc(0.08 * var(--lg-u) + 0.07 * var(--lg-glass-t, 0));
+  --lg-select-a: calc(0.08 * var(--lg-u) + 0.12 * var(--lg-glass-t, 0));
   --lg-hover-a: calc(0.045 * var(--lg-u) + 0.07 * var(--lg-glass-t, 0));
   --lg-tab-hover-a: calc(0.08 * var(--lg-u) + 0.12 * var(--lg-glass-t, 0));
   --lg-tab-btn-hover-a: calc(0.1 * var(--lg-u) + 0.15 * var(--lg-glass-t, 0));
-  --lg-panel-select-a: calc(0.09 * var(--lg-u) + 0.12 * var(--lg-glass-t, 0));
-  --lg-edge: color-mix(in srgb, rgb(0 0 0 / 0.07), rgb(255 255 255 / 0.09) calc(var(--lg-glass-t, 0) * 100%));
+  --lg-panel-select-a: calc(0.08 * var(--lg-u) + 0.12 * var(--lg-glass-t, 0));
+  --lg-edge: color-mix(in srgb, rgb(0 0 0 / 0.1), rgb(255 255 255 / 0.09) calc(var(--lg-glass-t, 0) * 100%));
   --lg-sep: color-mix(in srgb, rgb(0 0 0 / 0.18), rgb(255 255 255 / 0.12) calc(var(--lg-glass-t, 0) * 100%));
-  --lg-divider: color-mix(in srgb, rgb(0 0 0 / 0.1), rgb(255 255 255 / 0.08) calc(var(--lg-glass-t, 0) * 100%));
+  --lg-divider: color-mix(in srgb, rgb(0 0 0 / 0.1), rgb(255 255 255 / 0.09) calc(var(--lg-glass-t, 0) * 100%));
   --lg-slab-edge: rgb(255 255 255 / calc(0.7 * var(--lg-u) + 0.12 * var(--lg-glass-t, 0)));
-  --lg-cres-a: calc(0.34 * var(--lg-u) + 0.7 * var(--lg-glass-t, 0));
-  --lg-ol-w: calc(0.7px * var(--lg-u));
-  --lg-ol-a: calc(0.06 * var(--lg-u));
-  --lg-rim-out-plain:
-    0 0 0 var(--lg-ol-w) rgb(0 0 0 / var(--lg-ol-a)),
-    inset var(--lg-cres-x) 0 0 -0.5px rgb(0 0 0 / var(--lg-cres-a)),
-    inset calc(var(--lg-cres-x) * -1) 0 0 -0.5px rgb(0 0 0 / var(--lg-cres-a));
+  --lg-cres-a: calc(0.26 * var(--lg-u) + 0.7 * var(--lg-glass-t, 0));
+  --lg-ol-w: calc(1px * var(--lg-u));
+  --lg-ol-a: calc(0.08 * var(--lg-u));
+  --lg-rim-out-plain: 0 0 0 var(--lg-ol-w) rgb(0 0 0 / var(--lg-ol-a));
   --lg-rim-in-plain:
     inset 0 var(--lg-hi-y) 1px calc(1px - var(--lg-hi-y)) rgb(255 255 255 / calc(0.7 * var(--lg-u) + 0.2 * var(--lg-glass-t, 0))),
     inset 0 calc(var(--lg-hi-y) * -1) 1px calc(1px - var(--lg-hi-y)) rgb(255 255 255 / calc(0.7 * var(--lg-u) + 0.14 * var(--lg-glass-t, 0)));
@@ -408,6 +432,9 @@ body.theme-dark,
   --lg-rim-out: var(--lg-rim-out-plain);
   --lg-rim-in: var(--lg-rim-in-plain);
   --lg-rim: var(--lg-rim-out), var(--lg-rim-in);
+  --lg-ol-c: rgb(0 0 0 / var(--lg-ol-a));
+  --lg-cres-img-plain: linear-gradient(to right, rgb(0 0 0 / var(--lg-cres-a)), rgb(0 0 0 / var(--lg-ol-a)) min(var(--lg-cres-fade), 50%), rgb(0 0 0 / var(--lg-ol-a)) max(calc(100% - var(--lg-cres-fade)), 50%), rgb(0 0 0 / var(--lg-cres-a)));
+  --lg-cres-img: var(--lg-cres-img-plain);
   --lg-hover-glass: var(--lg-hover-base);
   --lg-hl: rgb(var(--lg-ink));
 }
@@ -419,15 +446,15 @@ body.lg-tinted {
   --lg-tint-layer: color-mix(in srgb, var(--lg-tint-color) var(--lg-tint-p), transparent);
   --lg-sheen: linear-gradient(var(--lg-tint-layer), var(--lg-tint-layer));
   /* 유리 테두리도 틴트에 맞춘다: 위아래 하이라이트는 흰색에 틴트 색을 섞은 밝은 틴트,
-     좌우 초승달은 검정 대신 틴트의 짙은 색 (불투명도는 틴트 없을 때와 같게: 틴트를 켜도 더 진해지지 않는다).
+     좌우 가장자리 선은 검정 대신 틴트의 짙은 색 (불투명도는 틴트 없을 때와 같게: 틴트를 켜도 더 진해지지 않는다).
      틴트 세기(--lg-tint-p 0~40%)에 비례해 틴트 없는 테두리에서 옮겨 간다(--lg-tint-w 0~100%): 세기를 낮추면 테두리 색도 빠진다 */
   --lg-tint-w: calc(var(--lg-tint-p) * 2.5);
   --lg-tint-deep: color-mix(in srgb, var(--lg-tint-color) 60%, #000);
   --lg-tint-light: color-mix(in srgb, var(--lg-tint-color) 40%, #fff);
   --lg-rim-out:
-    0 0 0 var(--lg-ol-w) color-mix(in srgb, rgb(0 0 0 / var(--lg-ol-a)), color-mix(in srgb, var(--lg-tint-deep) 55%, transparent) var(--lg-tint-w)),
-    inset var(--lg-cres-x) 0 0 -0.5px color-mix(in srgb, rgb(0 0 0 / var(--lg-cres-a)), color-mix(in srgb, var(--lg-tint-deep) 24%, transparent) var(--lg-tint-w)),
-    inset calc(var(--lg-cres-x) * -1) 0 0 -0.5px color-mix(in srgb, rgb(0 0 0 / var(--lg-cres-a)), color-mix(in srgb, var(--lg-tint-deep) 24%, transparent) var(--lg-tint-w));
+    0 0 0 var(--lg-ol-w) color-mix(in srgb, rgb(0 0 0 / var(--lg-ol-a)), color-mix(in srgb, var(--lg-tint-deep) 55%, transparent) var(--lg-tint-w));
+  --lg-cres-c: color-mix(in srgb, rgb(0 0 0 / var(--lg-cres-a)), color-mix(in srgb, var(--lg-tint-deep) 24%, transparent) var(--lg-tint-w));
+  --lg-ol-c: color-mix(in srgb, rgb(0 0 0 / var(--lg-ol-a)), color-mix(in srgb, var(--lg-tint-deep) 55%, transparent) var(--lg-tint-w));
   --lg-rim-in:
     inset 0 var(--lg-hi-y) 1px calc(1px - var(--lg-hi-y)) color-mix(in srgb, rgb(255 255 255 / 0.7), color-mix(in srgb, var(--lg-tint-light) 90%, transparent) var(--lg-tint-w)),
     inset 0 calc(var(--lg-hi-y) * -1) 1px calc(1px - var(--lg-hi-y)) color-mix(in srgb, rgb(255 255 255 / 0.7), color-mix(in srgb, var(--lg-tint-light) 55%, transparent) var(--lg-tint-w));
@@ -443,43 +470,41 @@ body.lg-tinted {
   --lg-hover-glass: color-mix(in srgb, var(--lg-hover-base), color-mix(in srgb, var(--lg-tint-color) 30%, transparent) var(--lg-tint-p));
 }
 
-body.lg-tinted :is(
-  .view-header-nav-buttons,
-  .lg-nav-run,
-  .lg-path-pill,
-  .lg-tab-nav,
-  .lg-tab-tools,
-  .side-dock-actions,
-  .side-dock-settings,
-  .nav-header .nav-buttons-container,
-  .mod-left-split .workspace-tab-header-container-inner,
-  .mod-right-split .workspace-tab-header-container-inner,
-  .workspace-drawer-vault-switcher,
-  .workspace-drawer-vault-actions .clickable-icon,
-  .titlebar-button-container.mod-right,
-  .mod-root .workspace-tab-header-container,
-  .sidebar-toggle-button .clickable-icon,
-  .view-actions .clickable-icon,
-  .lg-nav-rest > .clickable-icon,
-  .lg-nav-more,
-  .lg-panel-toggle,
-  .lg-rib-menu,
-  .lg-tab-mode,
-  .graph-controls,
-  .status-bar,
-  .menu,
-  .modal.mod-settings .setting-search-container,
-  .is-mobile .mod-raised,
-  .is-mobile .workspace-drawer-tab-options-list,
-  .is-mobile .mobile-toolbar-floating-options
-) {
+body.lg-tinted .view-header-nav-buttons:not(.lg-none):not(.lg-none),
+body.lg-tinted .lg-nav-run:not(.lg-none):not(.lg-none),
+body.lg-tinted .lg-path-pill:not(.lg-none):not(.lg-none),
+body.lg-tinted .lg-tab-nav:not(.lg-none):not(.lg-none),
+body.lg-tinted .lg-tab-tools:not(.lg-none):not(.lg-none),
+body.lg-tinted .side-dock-actions:not(.lg-none):not(.lg-none),
+body.lg-tinted .side-dock-settings:not(.lg-none):not(.lg-none),
+body.lg-tinted .nav-header .nav-buttons-container:not(.lg-none),
+body.lg-tinted .mod-left-split .workspace-tab-header-container-inner:not(.lg-none),
+body.lg-tinted .mod-right-split .workspace-tab-header-container-inner:not(.lg-none),
+body.lg-tinted .workspace-drawer-vault-switcher:not(.lg-none):not(.lg-none),
+body.lg-tinted .workspace-drawer-vault-actions .clickable-icon:not(.lg-none),
+body.lg-tinted .titlebar-button-container.mod-right:not(.lg-none),
+body.lg-tinted .mod-root .workspace-tab-header-container:not(.lg-none),
+body.lg-tinted .sidebar-toggle-button .clickable-icon:not(.lg-none),
+body.lg-tinted .view-actions .clickable-icon:not(.lg-none),
+body.lg-tinted .lg-nav-rest > .clickable-icon:not(.lg-none),
+body.lg-tinted .lg-nav-more:not(.lg-none):not(.lg-none),
+body.lg-tinted .lg-panel-toggle:not(.lg-none):not(.lg-none),
+body.lg-tinted .lg-rib-menu:not(.lg-none):not(.lg-none),
+body.lg-tinted .lg-tab-mode:not(.lg-none):not(.lg-none),
+body.lg-tinted .graph-controls:not(.lg-none):not(.lg-none),
+body.lg-tinted .status-bar:not(.lg-none):not(.lg-none),
+body.lg-tinted .menu:not(.lg-none):not(.lg-none),
+body.lg-tinted .modal.mod-settings .setting-search-container,
+body.lg-tinted .is-mobile .mod-raised:not(.lg-none),
+body.lg-tinted .is-mobile .workspace-drawer-tab-options-list:not(.lg-none),
+body.lg-tinted .is-mobile .mobile-toolbar-floating-options:not(.lg-none) {
   /* 본문 글자·기호도 틴트 색을 살짝 (틴트 세기의 절반, 최대 20%) */
   --text-normal: color-mix(in srgb, var(--color-base-100), var(--lg-tint-color) calc(var(--lg-tint-p) * 0.5));
   --text-muted: color-mix(in srgb, var(--color-base-70), var(--lg-gray-mix));
   --text-faint: color-mix(in srgb, var(--color-base-50), var(--lg-gray-mix));
   --background-modifier-border: color-mix(in srgb, var(--color-base-30), var(--lg-gray-mix));
   --lg-hl: color-mix(in srgb, rgb(var(--lg-ink)), var(--lg-gray-mix));
-  --lg-edge: color-mix(in srgb, var(--lg-hl) 7%, transparent);
+  --lg-edge: color-mix(in srgb, var(--lg-hl) 10%, transparent);
   --lg-sep: color-mix(in srgb, var(--lg-hl) 18%, transparent);
   --lg-divider: color-mix(in srgb, var(--lg-hl) 10%, transparent);
 }
@@ -488,74 +513,70 @@ body.lg-tinted.theme-dark {
   --lg-hover-glass: color-mix(in srgb, var(--lg-hover-base), color-mix(in srgb, var(--lg-tint-color) 16%, transparent) var(--lg-tint-p));
 }
 
-body.lg-tinted.theme-dark :is(
-  .view-header-nav-buttons,
-  .lg-nav-run,
-  .lg-path-pill,
-  .lg-tab-nav,
-  .lg-tab-tools,
-  .side-dock-actions,
-  .side-dock-settings,
-  .nav-header .nav-buttons-container,
-  .mod-left-split .workspace-tab-header-container-inner,
-  .mod-right-split .workspace-tab-header-container-inner,
-  .workspace-drawer-vault-switcher,
-  .workspace-drawer-vault-actions .clickable-icon,
-  .titlebar-button-container.mod-right,
-  .mod-root .workspace-tab-header-container,
-  .sidebar-toggle-button .clickable-icon,
-  .view-actions .clickable-icon,
-  .lg-nav-rest > .clickable-icon,
-  .lg-nav-more,
-  .lg-panel-toggle,
-  .lg-rib-menu,
-  .lg-tab-mode,
-  .graph-controls,
-  .status-bar,
-  .menu,
-  .modal.mod-settings .setting-search-container,
-  .is-mobile .mod-raised,
-  .is-mobile .workspace-drawer-tab-options-list,
-  .is-mobile .mobile-toolbar-floating-options
-) {
+body.lg-tinted.theme-dark .view-header-nav-buttons:not(.lg-none):not(.lg-none),
+body.lg-tinted.theme-dark .lg-nav-run:not(.lg-none):not(.lg-none),
+body.lg-tinted.theme-dark .lg-path-pill:not(.lg-none):not(.lg-none),
+body.lg-tinted.theme-dark .lg-tab-nav:not(.lg-none):not(.lg-none),
+body.lg-tinted.theme-dark .lg-tab-tools:not(.lg-none):not(.lg-none),
+body.lg-tinted.theme-dark .side-dock-actions:not(.lg-none):not(.lg-none),
+body.lg-tinted.theme-dark .side-dock-settings:not(.lg-none):not(.lg-none),
+body.lg-tinted.theme-dark .nav-header .nav-buttons-container:not(.lg-none),
+body.lg-tinted.theme-dark .mod-left-split .workspace-tab-header-container-inner:not(.lg-none),
+body.lg-tinted.theme-dark .mod-right-split .workspace-tab-header-container-inner:not(.lg-none),
+body.lg-tinted.theme-dark .workspace-drawer-vault-switcher:not(.lg-none):not(.lg-none),
+body.lg-tinted.theme-dark .workspace-drawer-vault-actions .clickable-icon:not(.lg-none),
+body.lg-tinted.theme-dark .titlebar-button-container.mod-right:not(.lg-none),
+body.lg-tinted.theme-dark .mod-root .workspace-tab-header-container:not(.lg-none),
+body.lg-tinted.theme-dark .sidebar-toggle-button .clickable-icon:not(.lg-none),
+body.lg-tinted.theme-dark .view-actions .clickable-icon:not(.lg-none),
+body.lg-tinted.theme-dark .lg-nav-rest > .clickable-icon:not(.lg-none),
+body.lg-tinted.theme-dark .lg-nav-more:not(.lg-none):not(.lg-none),
+body.lg-tinted.theme-dark .lg-panel-toggle:not(.lg-none):not(.lg-none),
+body.lg-tinted.theme-dark .lg-rib-menu:not(.lg-none):not(.lg-none),
+body.lg-tinted.theme-dark .lg-tab-mode:not(.lg-none):not(.lg-none),
+body.lg-tinted.theme-dark .graph-controls:not(.lg-none):not(.lg-none),
+body.lg-tinted.theme-dark .status-bar:not(.lg-none):not(.lg-none),
+body.lg-tinted.theme-dark .menu:not(.lg-none):not(.lg-none),
+body.lg-tinted.theme-dark .modal.mod-settings .setting-search-container,
+body.lg-tinted.theme-dark .is-mobile .mod-raised:not(.lg-none),
+body.lg-tinted.theme-dark .is-mobile .workspace-drawer-tab-options-list:not(.lg-none),
+body.lg-tinted.theme-dark .is-mobile .mobile-toolbar-floating-options:not(.lg-none) {
   --lg-edge: color-mix(in srgb, var(--lg-hl) 9%, transparent);
   --lg-sep: color-mix(in srgb, var(--lg-hl) 12%, transparent);
-  --lg-divider: color-mix(in srgb, var(--lg-hl) 8%, transparent);
+  --lg-divider: color-mix(in srgb, var(--lg-hl) 9%, transparent);
 }
 
 /* ---------- 버튼 기호 색 (애플식) ----------
    - 유리 버튼의 기호는 회색이 아니라 본문 글자색(라이트 검정·다크 흰색)
    - 메뉴를 여는 버튼은 메뉴가 열려 있는 동안 회색 하이라이트 대신 기호가 회색으로 옅어진다
    - 패널 탭은 기호가 본문 글자색이고, 선택된 탭만 강조색 */
-body :is(
-  .view-header-nav-buttons,
-  .lg-nav-run,
-  .lg-path-pill,
-  .lg-tab-nav,
-  .lg-tab-tools,
-  .side-dock-actions,
-  .side-dock-settings,
-  .nav-header .nav-buttons-container,
-  .mod-left-split .workspace-tab-header-container-inner,
-  .mod-right-split .workspace-tab-header-container-inner,
-  .workspace-drawer-vault-switcher,
-  .workspace-drawer-vault-actions .clickable-icon,
-  .titlebar-button-container.mod-right,
-  .mod-root .workspace-tab-header-new-tab .clickable-icon,
-  .mod-root .workspace-tab-header-tab-list .clickable-icon,
-  .mod-root .workspace-tab-header.is-active,
-  .sidebar-toggle-button .clickable-icon,
-  .view-actions .clickable-icon,
-  .lg-nav-rest > .clickable-icon,
-  .lg-nav-more,
-  .lg-panel-toggle,
-  .lg-rib-menu,
-  .lg-tab-mode,
-  .graph-controls.is-close .graph-controls-button,
-  .status-bar,
-  .is-mobile .mod-raised,
-  .is-mobile .mobile-toolbar-floating-options
-) {
+body .view-header-nav-buttons:not(.lg-none):not(.lg-none),
+body .lg-nav-run:not(.lg-none):not(.lg-none),
+body .lg-path-pill:not(.lg-none):not(.lg-none),
+body .lg-tab-nav:not(.lg-none):not(.lg-none),
+body .lg-tab-tools:not(.lg-none):not(.lg-none),
+body .side-dock-actions:not(.lg-none):not(.lg-none),
+body .side-dock-settings:not(.lg-none):not(.lg-none),
+body .nav-header .nav-buttons-container:not(.lg-none),
+body .mod-left-split .workspace-tab-header-container-inner:not(.lg-none),
+body .mod-right-split .workspace-tab-header-container-inner:not(.lg-none),
+body .workspace-drawer-vault-switcher:not(.lg-none):not(.lg-none),
+body .workspace-drawer-vault-actions .clickable-icon:not(.lg-none),
+body .titlebar-button-container.mod-right:not(.lg-none),
+body .mod-root .workspace-tab-header-new-tab .clickable-icon,
+body .mod-root .workspace-tab-header-tab-list .clickable-icon,
+body .mod-root .workspace-tab-header.is-active,
+body .sidebar-toggle-button .clickable-icon:not(.lg-none),
+body .view-actions .clickable-icon:not(.lg-none),
+body .lg-nav-rest > .clickable-icon:not(.lg-none),
+body .lg-nav-more:not(.lg-none):not(.lg-none),
+body .lg-panel-toggle:not(.lg-none):not(.lg-none),
+body .lg-rib-menu:not(.lg-none):not(.lg-none),
+body .lg-tab-mode:not(.lg-none):not(.lg-none),
+body .graph-controls.is-close .graph-controls-button,
+body .status-bar:not(.lg-none):not(.lg-none),
+body .is-mobile .mod-raised:not(.lg-none),
+body .is-mobile .mobile-toolbar-floating-options:not(.lg-none) {
   --icon-color: var(--text-normal);
   --icon-color-hover: var(--text-normal);
   --icon-color-focused: var(--text-normal);
@@ -582,36 +603,34 @@ body .mod-right-split .workspace-tab-header.is-active:not(:only-child) .workspac
 }
 
 /* 흰 글자 (플러그인 토글): 유리 안의 기호·글자를 흰색으로. 다크 모드는 원래 흰색 */
-body.lg-tint-ink-light:not(.theme-dark) :is(
-  .view-header-nav-buttons,
-  .lg-nav-run,
-  .lg-path-pill,
-  .lg-tab-nav,
-  .lg-tab-tools,
-  .side-dock-actions,
-  .side-dock-settings,
-  .nav-header .nav-buttons-container,
-  .mod-left-split .workspace-tab-header-container-inner,
-  .mod-right-split .workspace-tab-header-container-inner,
-  .workspace-drawer-vault-switcher,
-  .workspace-drawer-vault-actions .clickable-icon,
-  .titlebar-button-container.mod-right,
-  .mod-root .workspace-tab-header-new-tab .clickable-icon,
-  .mod-root .workspace-tab-header-tab-list .clickable-icon,
-  .mod-root .workspace-tab-header.is-active,
-  .sidebar-toggle-button .clickable-icon,
-  .view-actions .clickable-icon,
-  .lg-nav-rest > .clickable-icon,
-  .lg-nav-more,
-  .lg-panel-toggle,
-  .lg-rib-menu,
-  .lg-tab-mode,
-  .graph-controls.is-close .graph-controls-button,
-  .status-bar,
-  .is-mobile .mod-raised,
-  .is-mobile .workspace-drawer-tab-options-list,
-  .is-mobile .mobile-toolbar-floating-options
-) {
+body.lg-tint-ink-light:not(.theme-dark) .view-header-nav-buttons:not(.lg-none):not(.lg-none),
+body.lg-tint-ink-light:not(.theme-dark) .lg-nav-run:not(.lg-none):not(.lg-none),
+body.lg-tint-ink-light:not(.theme-dark) .lg-path-pill:not(.lg-none):not(.lg-none),
+body.lg-tint-ink-light:not(.theme-dark) .lg-tab-nav:not(.lg-none):not(.lg-none),
+body.lg-tint-ink-light:not(.theme-dark) .lg-tab-tools:not(.lg-none):not(.lg-none),
+body.lg-tint-ink-light:not(.theme-dark) .side-dock-actions:not(.lg-none):not(.lg-none),
+body.lg-tint-ink-light:not(.theme-dark) .side-dock-settings:not(.lg-none):not(.lg-none),
+body.lg-tint-ink-light:not(.theme-dark) .nav-header .nav-buttons-container:not(.lg-none),
+body.lg-tint-ink-light:not(.theme-dark) .mod-left-split .workspace-tab-header-container-inner:not(.lg-none),
+body.lg-tint-ink-light:not(.theme-dark) .mod-right-split .workspace-tab-header-container-inner:not(.lg-none),
+body.lg-tint-ink-light:not(.theme-dark) .workspace-drawer-vault-switcher:not(.lg-none):not(.lg-none),
+body.lg-tint-ink-light:not(.theme-dark) .workspace-drawer-vault-actions .clickable-icon:not(.lg-none),
+body.lg-tint-ink-light:not(.theme-dark) .titlebar-button-container.mod-right:not(.lg-none),
+body.lg-tint-ink-light:not(.theme-dark) .mod-root .workspace-tab-header-new-tab .clickable-icon,
+body.lg-tint-ink-light:not(.theme-dark) .mod-root .workspace-tab-header-tab-list .clickable-icon,
+body.lg-tint-ink-light:not(.theme-dark) .mod-root .workspace-tab-header.is-active,
+body.lg-tint-ink-light:not(.theme-dark) .sidebar-toggle-button .clickable-icon:not(.lg-none),
+body.lg-tint-ink-light:not(.theme-dark) .view-actions .clickable-icon:not(.lg-none),
+body.lg-tint-ink-light:not(.theme-dark) .lg-nav-rest > .clickable-icon:not(.lg-none),
+body.lg-tint-ink-light:not(.theme-dark) .lg-nav-more:not(.lg-none):not(.lg-none),
+body.lg-tint-ink-light:not(.theme-dark) .lg-panel-toggle:not(.lg-none):not(.lg-none),
+body.lg-tint-ink-light:not(.theme-dark) .lg-rib-menu:not(.lg-none):not(.lg-none),
+body.lg-tint-ink-light:not(.theme-dark) .lg-tab-mode:not(.lg-none):not(.lg-none),
+body.lg-tint-ink-light:not(.theme-dark) .graph-controls.is-close .graph-controls-button,
+body.lg-tint-ink-light:not(.theme-dark) .status-bar:not(.lg-none):not(.lg-none),
+body.lg-tint-ink-light:not(.theme-dark) .is-mobile .mod-raised:not(.lg-none),
+body.lg-tint-ink-light:not(.theme-dark) .is-mobile .workspace-drawer-tab-options-list:not(.lg-none),
+body.lg-tint-ink-light:not(.theme-dark) .is-mobile .mobile-toolbar-floating-options:not(.lg-none) {
   --icon-color: #fff;
   --icon-color-hover: #fff;
   --icon-color-active: #fff;
@@ -631,9 +650,9 @@ body.lg-tint-ink-light:not(.theme-dark) :is(
 body.lg-tinted.theme-dark {
   --lg-tint-deep: color-mix(in srgb, var(--lg-tint-color) 45%, #000);
   --lg-rim-out:
-    0 0 0 var(--lg-ol-w) color-mix(in srgb, rgb(255 255 255 / var(--lg-ol-a)), color-mix(in srgb, var(--lg-tint-color) 12%, transparent) var(--lg-tint-w)),
-    inset var(--lg-cres-x) 0 0 -0.5px color-mix(in srgb, rgb(0 0 0 / var(--lg-cres-a)), color-mix(in srgb, var(--lg-tint-deep) 40%, transparent) var(--lg-tint-w)),
-    inset calc(var(--lg-cres-x) * -1) 0 0 -0.5px color-mix(in srgb, rgb(0 0 0 / var(--lg-cres-a)), color-mix(in srgb, var(--lg-tint-deep) 40%, transparent) var(--lg-tint-w));
+    0 0 0 var(--lg-ol-w) color-mix(in srgb, rgb(0 0 0 / var(--lg-ol-a)), color-mix(in srgb, var(--lg-tint-color) 12%, transparent) var(--lg-tint-w));
+  --lg-cres-c: color-mix(in srgb, rgb(0 0 0 / var(--lg-cres-a)), color-mix(in srgb, var(--lg-tint-deep) 40%, transparent) var(--lg-tint-w));
+  --lg-ol-c: color-mix(in srgb, rgb(0 0 0 / var(--lg-ol-a)), color-mix(in srgb, var(--lg-tint-color) 12%, transparent) var(--lg-tint-w));
   --lg-rim-in:
     inset 0 var(--lg-hi-y) 1px calc(1px - var(--lg-hi-y)) color-mix(in srgb, rgb(255 255 255 / 0.2), color-mix(in srgb, var(--lg-tint-light) 35%, transparent) var(--lg-tint-w)),
     inset 0 calc(var(--lg-hi-y) * -1) 1px calc(1px - var(--lg-hi-y)) color-mix(in srgb, rgb(255 255 255 / 0.14), color-mix(in srgb, var(--lg-tint-light) 20%, transparent) var(--lg-tint-w));
@@ -692,31 +711,27 @@ body:not(.is-mobile) .workspace-sidedock-vault-profile .workspace-drawer-vault-a
   transition: background-color 180ms var(--lg-ease), transform 180ms var(--lg-ease);
 }
 
-.mod-root .workspace-tab-header-new-tab .clickable-icon:active,
-.mod-root .workspace-tab-header-tab-list .clickable-icon:active,
-.view-actions .clickable-icon:active,
-.lg-nav-rest > .clickable-icon:active,
-.lg-nav-more:active,
-.lg-panel-toggle:active,
-.lg-rib-menu:active,
-.lg-tab-mode:active,
-body:not(.is-mobile) .workspace-sidedock-vault-profile .workspace-drawer-vault-actions .clickable-icon:active {
-  transform: scale(0.94);
-}
-
 /* 유리를 요소 자체에 그리는 것 (안에 호버 유리가 없는 것, 플러그인이 숨기는 옛 버튼 줄) */
 .view-header-nav-buttons,
 .nav-header .nav-buttons-container,
 .status-bar {
   background-color: var(--lg-glass-fill);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim), var(--lg-shadow);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, border-box;
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in), var(--lg-shadow);
   -webkit-backdrop-filter: var(--lg-refract,) var(--lg-haze);
   backdrop-filter: var(--lg-refract,) var(--lg-haze);
 }
 
 /* 유리를 ::after 층에 그리는 것: 요소는 투명한 틀 */
-:where(.lg-tab-nav, .lg-nav-run, .lg-path-pill, .side-dock-actions, .side-dock-settings, .mod-left-split .workspace-tab-header-container-inner, .mod-right-split .workspace-tab-header-container-inner) {
+:where(.lg-tab-nav),
+:where(.lg-nav-run),
+:where(.lg-path-pill),
+:where(.side-dock-actions),
+:where(.side-dock-settings),
+:where(.mod-left-split .workspace-tab-header-container-inner),
+:where(.mod-right-split .workspace-tab-header-container-inner) {
   position: relative;
 }
 
@@ -771,15 +786,53 @@ body:not(.is-mobile) .workspace-sidedock-vault-profile .workspace-drawer-vault-a
   corner-shape: inherit; /* 붙은 요소의 모양을 따른다 (예전 전역 *::before 규칙 대신) */
   content: "";
   position: absolute;
-  inset: 0;
+  inset: calc(max(var(--lg-cres-w), var(--lg-dpx, 1px)) * -1); /* 가장자리 선(테두리)은 유리 바깥으로: 상자를 선 굵기만큼 키워 선이 원래 윤곽 밖에 놓인다 (사용자 요청). 1 화면 픽셀보다 가는 테두리는 1 화면 픽셀로 그려지므로 그만큼 */
   z-index: -2;
   pointer-events: none;
   border-radius: inherit;
   background-color: var(--lg-glass-fill);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim), var(--lg-shadow);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, padding-box; /* 채움은 원래 윤곽(테두리 안)까지 */
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in);
   -webkit-backdrop-filter: var(--lg-refract,) var(--lg-haze);
   backdrop-filter: var(--lg-refract,) var(--lg-haze);
+}
+
+/* 위 ::after 유리 알약의 링 그림자 (사용자 요청): 테두리만 있는 고리를 아래로 내려 흐린다(::before). 유리(::after, z-index -2) 위·내용 아래(-1)에 그려
+   유리 투명도 설정과 상관없이 알약 안쪽 링도 보인다 (사용자 요청: 예전엔 유리 아래라 채움이 불투명할수록 안쪽 링이 가려졌다).
+   아이콘 버튼의 ::before 는 호버 유리가 요소(.lg-hover-glass)로 옮겨 가 비었다.
+   보관함 전환 버튼은 ::before 를 호버 유리로 써서 뺀다. 묶음 알약(탭 도구·칸반 버튼 묶음) 안 버튼은 유리가 묶음에 있어 링도 묶음에 단다 */
+.lg-tab-nav::before,
+.lg-path-pill::before,
+.lg-nav-run::before,
+.side-dock-actions::before,
+.side-dock-settings:not(:empty)::before,
+.is-hidden-frameless:not(.is-fullscreen) .titlebar-button-container.mod-right::before,
+.mod-root .workspace-tab-header-new-tab .clickable-icon::before,
+.mod-root .workspace-tab-header-tab-list .clickable-icon::before,
+.sidebar-toggle-button .clickable-icon::before,
+.view-actions .clickable-icon::before,
+.lg-nav-rest > .clickable-icon::before,
+.lg-nav-more::before,
+.lg-panel-toggle::before,
+.lg-rib-menu::before,
+.lg-tab-mode::before,
+body:not(.is-mobile) .workspace-sidedock-vault-profile .workspace-drawer-vault-actions .clickable-icon::before,
+.graph-controls.is-close .graph-controls-button::before,
+.mod-root .workspace-tab-header-container > .lg-tab-tools::before,
+.view-actions > .lg-kb-group::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1; /* 유리(::after, -2) 위·내용 아래: 유리 채움이 불투명해도 알약 안쪽 링이 보인다 (사용자 요청) */
+  pointer-events: none;
+  border: var(--lg-ring);
+  border-radius: inherit;
+  corner-shape: inherit;
+  background: none;
+  transform: translateY(var(--lg-ring-y));
+  filter: blur(var(--lg-ring-blur));
 }
 
 /* 패널 탭 알약: 탭이 가로로 스크롤되므로 유리를 ::after 가 아니라 요소 자체에 그린다.
@@ -788,10 +841,33 @@ body:not(.is-mobile) .workspace-sidedock-vault-profile .workspace-drawer-vault-a
 .mod-left-split .workspace-tab-header-container .workspace-tab-header-container-inner:not(#lg):not(#lg),
 .mod-right-split .workspace-tab-header-container .workspace-tab-header-container-inner:not(#lg):not(#lg) {
   background-color: var(--lg-glass-fill);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim-out), var(--lg-rim-in), var(--lg-shadow);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, border-box;
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in);
   -webkit-backdrop-filter: var(--lg-refract,) var(--lg-haze);
   backdrop-filter: var(--lg-refract,) var(--lg-haze);
+  anchor-name: --lg-ptab;
+}
+
+/* 패널 탭 알약의 링 그림자 (사용자 요청: 다른 알약과 같은 링). 알약이 가로로 스크롤되어 제 ::before 에는 못 그린다:
+   플러그인이 알약 바로 앞에 넣는 층(.lg-ptab-ring)을 앵커 위치로 알약에 겹친다. 알약보다 앞 형제라 알약 유리 아래에 그려진다 */
+.mod-left-split .workspace-tab-header-container > .lg-ptab-ring,
+.mod-right-split .workspace-tab-header-container > .lg-ptab-ring {
+  position: absolute;
+  position-anchor: --lg-ptab;
+  position-visibility: anchors-visible;
+  top: anchor(top);
+  left: anchor(left);
+  width: anchor-size(width);
+  height: anchor-size(height);
+  box-sizing: border-box;
+  pointer-events: none;
+  border: var(--lg-ring);
+  border-radius: calc(var(--lg-pill-h) * var(--lg-pill-rx)) / calc(var(--lg-pill-h) / 2);
+  corner-shape: var(--lg-pill-shape);
+  transform: translateY(var(--lg-ring-y));
+  filter: blur(var(--lg-ring-blur));
 }
 
 .mod-left-split .workspace-tab-header-container-inner::after,
@@ -810,10 +886,34 @@ body:not(.is-mobile) .workspace-sidedock-vault-profile .workspace-drawer-vault-a
    그림자는 없다 (사용자 요청: 경로 표시와 상관없이 편집창 탭만, 테두리는 그대로) */
 .workspace .mod-root .workspace-tab-header-container .workspace-tab-header.is-active {
   background-color: var(--lg-glass-fill);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, border-box;
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in);
   -webkit-backdrop-filter: var(--lg-refract,) var(--lg-haze);
   backdrop-filter: var(--lg-refract,) var(--lg-haze);
+}
+
+/* 편집창 탭이 하나뿐이면 링 그림자를 단다 (사용자 요청). 탭 자체에 그리면 탭 유리 채움에 가리거나 탭 줄에 잘려 일부만 보였다.
+   탭 뒤(탭 줄 안쪽 .lg-tab-single 의 ::before, 탭보다 아래 층)에 테두리만 있는 고리를 흐려 깐다. 탭 유리가 뒤를 떠 와 흐리고 굴절하므로
+   그림자가 유리 너머로 비친다. 값은 링 토큰(--lg-ring 등). 사이드바 탭 렌즈도 같은 토큰 (styles.css) */
+.workspace .mod-root .workspace-tab-header-container-inner.lg-tab-single:not(#lg) {
+  position: relative;
+}
+
+.workspace .mod-root .workspace-tab-header-container-inner.lg-tab-single:not(#lg)::before {
+  display: block;
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border: var(--lg-ring);
+  border-radius: 999px;
+  corner-shape: var(--lg-pill-shape);
+  background: none;
+  transform: translateY(var(--lg-ring-y));
+  filter: blur(var(--lg-ring-blur));
+  pointer-events: none;
 }
 
 /* 편집창 탭 줄 위: 다른 알약과 같은 뿌연 유리 (굴절 + 글자만 알아볼 수 없게 흐림) */
@@ -889,6 +989,7 @@ body:not(.is-mobile) .workspace-sidedock-vault-profile .workspace-drawer-vault-a
     transform 300ms var(--lg-ease-pop);
 }
 
+.lg-ui .lg-tab-nav:not(#lg)::before,
 .lg-ui .lg-tab-nav:not(#lg)::after {
   transform-origin: 50% 50%;
   transition:
@@ -939,6 +1040,7 @@ body:not(.is-mobile) .workspace-sidedock-vault-profile .workspace-drawer-vault-a
   transition: margin 240ms var(--lg-ease-move);
 }
 
+.lg-ui .mod-root .workspace-tab-header-container .lg-tab-nav.lg-nav-empty:not(#lg)::before,
 .lg-ui .mod-root .workspace-tab-header-container .lg-tab-nav.lg-nav-empty:not(#lg)::after {
   opacity: 0;
   transform: scale(0);
@@ -1023,13 +1125,13 @@ body.lg-wc-compact.mod-linux {
 
 .workspace-split.mod-left-split {
   box-shadow:
-    inset -1px 0 0 var(--lg-edge),
+    inset calc(var(--lg-px) * -1) 0 0 var(--lg-edge),
     var(--lg-panel-shadow-l);
 }
 
 .workspace-split.mod-right-split {
   box-shadow:
-    inset 1px 0 0 var(--lg-edge),
+    inset var(--lg-px) 0 0 var(--lg-edge),
     var(--lg-panel-shadow-r);
 }
 
@@ -1066,7 +1168,7 @@ body.lg-wc-compact.mod-linux {
   left: 16px;
   right: 16px;
   bottom: 0;
-  height: 1px;
+  height: var(--lg-px);
   background-color: var(--lg-divider);
   pointer-events: none;
 }
@@ -1440,6 +1542,19 @@ body.is-hidden-frameless:not(.is-fullscreen) :is(body.lg-tab-wide :is(.mod-left-
   width: var(--lg-ns-w);
 }
 
+/* 닫힌 검색 버튼은 완전한 원 (사용자 요청: 알약 공식은 버튼 크기에서 원이 아닌 스퀘어클이었다). 닫힐 때는 폭이 다 줄어든 뒤(320ms) 원이 된다:
+   바로 원 값이 들어가면 줄어드는 알약이 먼저 타원이 됐다 (Bases 검색 버튼과 같다). 열 때는 바로 알약 값 */
+:is(body.lg-tab-wide, .lg-tab-list) .lg-nav-rest > .lg-nav-find:not(.lg-nav-search):not(#lg):not(#lg) {
+  border-radius: 50%;
+  corner-shape: round;
+  transition:
+    width 320ms var(--lg-ease),
+    background-color 180ms var(--lg-ease),
+    transform 180ms var(--lg-ease),
+    border-radius 0s linear 320ms,
+    corner-shape 0s linear 320ms;
+}
+
 /* 검색 버튼(돋보기, 플러그인 .lg-nav-find)은 원형 버튼 묶음에서 패널 바깥쪽 끝에 (사용자 요청).
    묶음은 편집창 쪽에 붙어 있어, 넓어질 때 다른 버튼은 제자리이고 검색 버튼만 빈 칸 쪽으로 넓어진다 */
 .mod-left-split .lg-nav-rest > .lg-nav-find {
@@ -1451,12 +1566,12 @@ body.is-hidden-frameless:not(.is-fullscreen) :is(body.lg-tab-wide :is(.mod-left-
 }
 
 /* 호버 유리는 알약 가운데가 아니라 돋보기 자리에 (자석도 그 자리 기준, 플러그인 magnetBox) */
-:is(body.lg-tab-wide, .lg-tab-list) .lg-nav-rest > .lg-nav-find:not(#lg):not(#lg)::before {
+:is(body.lg-tab-wide, .lg-tab-list) .lg-nav-rest > .lg-nav-find:not(#lg):not(#lg) > .lg-hover-glass {
   left: calc(var(--lg-btn) / 2);
 }
 
 /* 검색 칸 위에서는 호버 유리를 보이지 않게 (돋보기 근처에서만, 사용자 요청. 플러그인 .lg-nav-typing) */
-:is(body.lg-tab-wide, .lg-tab-list) .lg-nav-rest > .lg-nav-find.lg-nav-typing:not(#lg):not(#lg)::before {
+:is(body.lg-tab-wide, .lg-tab-list) .lg-nav-rest > .lg-nav-find.lg-nav-typing:not(#lg):not(#lg) > .lg-hover-glass {
   opacity: 0;
 }
 
@@ -1530,8 +1645,10 @@ body.lg-tab-plain.is-mobile .workspace-drawer-tab-options-list > .workspace-tab-
   background-color: var(--interactive-accent);
 }
 
-body.lg-tab-plain :is(.mod-left-split, .mod-right-split):not(.lg-tab-list) .workspace-tab-header-container .workspace-tab-header.is-active:not(:only-child) :is(.workspace-tab-header-inner-icon, .workspace-tab-header-inner-title):not(#lg):not(#lg),
-body.lg-tab-plain.is-mobile .workspace-drawer-tab-options-list > .workspace-tab-header.is-active:not(:only-child):not(#lg) :is(.workspace-tab-header-inner-icon, .workspace-tab-header-inner-title) {
+body.lg-tab-plain :is(.mod-left-split, .mod-right-split):not(.lg-tab-list) .workspace-tab-header-container .workspace-tab-header.is-active:not(:only-child) .workspace-tab-header-inner-icon:not(#lg):not(#lg),
+body.lg-tab-plain :is(.mod-left-split, .mod-right-split):not(.lg-tab-list) .workspace-tab-header-container .workspace-tab-header.is-active:not(:only-child) .workspace-tab-header-inner-title:not(#lg):not(#lg),
+body.lg-tab-plain.is-mobile .workspace-drawer-tab-options-list > .workspace-tab-header.is-active:not(:only-child):not(#lg) .workspace-tab-header-inner-icon,
+body.lg-tab-plain.is-mobile .workspace-drawer-tab-options-list > .workspace-tab-header.is-active:not(:only-child):not(#lg) .workspace-tab-header-inner-title {
   --icon-color: var(--lg-tab-on-ink, #fff);
   color: var(--lg-tab-on-ink, #fff);
 }
@@ -1603,7 +1720,8 @@ body.theme-dark .workspace-split.lg-tab-list .workspace-leaf-content[data-type="
 }
 
 /* 아래 묶음도 버튼 줄(과 접힌 ···)을 첫 줄에 */
-.workspace-split.lg-tab-list .workspace-tabs > .workspace-tab-header-container > :is(.lg-nav-row, .lg-nav-more):not(#lg):not(#lg):not(#lg) {
+.workspace-split.lg-tab-list .workspace-tabs > .workspace-tab-header-container > .lg-nav-row:not(#lg):not(#lg):not(#lg),
+.workspace-split.lg-tab-list .workspace-tabs > .workspace-tab-header-container > .lg-nav-more:not(#lg):not(#lg):not(#lg) {
   order: 0;
 }
 
@@ -1708,7 +1826,8 @@ body.is-hidden-frameless:not(.is-fullscreen) .workspace-split.lg-tab-list .works
   background-color: var(--interactive-accent);
 }
 
-.workspace-split.lg-tab-list .workspace-tab-header-container-inner > .workspace-tab-header.is-active :is(.workspace-tab-header-inner-icon, .workspace-tab-header-inner-title):not(#lg):not(#lg):not(#lg):not(#lg) {
+.workspace-split.lg-tab-list .workspace-tab-header-container-inner > .workspace-tab-header.is-active .workspace-tab-header-inner-icon:not(#lg):not(#lg):not(#lg):not(#lg),
+.workspace-split.lg-tab-list .workspace-tab-header-container-inner > .workspace-tab-header.is-active .workspace-tab-header-inner-title:not(#lg):not(#lg):not(#lg):not(#lg) {
   --icon-color: var(--lg-tab-on-ink, #fff);
   color: var(--lg-tab-on-ink, #fff);
 }
@@ -1892,7 +2011,8 @@ body:not(.is-mobile):not(.lg-ui) .workspace-split:is(.mod-left-split, .mod-right
    둘째 줄(탭 알약 줄·빈칸)은 끌기 제외로 두고, 플러그인이 탭 줄 맨 앞에 넣는 띠만 끌기 영역으로 둔다.
    띠 높이는 경로 표시를 켜면 첫 줄(버튼 높이 + 위 여백 + 줄 사이 절반), 끄면 탭 줄 전체(한 줄). 접힌 탭 줄에서는 띠를 숨긴다 */
 .is-hidden-frameless:not(.is-fullscreen) .mod-root .workspace-tabs.mod-top > .workspace-tab-header-container:not(#lg),
-.is-hidden-frameless:not(.is-fullscreen) .mod-root .workspace-tabs.mod-top > .workspace-tab-header-container > :is(.workspace-tab-header-container-inner, .workspace-tab-header-spacer):not(#lg) {
+.is-hidden-frameless:not(.is-fullscreen) .mod-root .workspace-tabs.mod-top > .workspace-tab-header-container > .workspace-tab-header-container-inner:not(#lg),
+.is-hidden-frameless:not(.is-fullscreen) .mod-root .workspace-tabs.mod-top > .workspace-tab-header-container > .workspace-tab-header-spacer:not(#lg) {
   -webkit-app-region: no-drag;
 }
 
@@ -1952,8 +2072,10 @@ body:not(.lg-ui) .workspace-leaf-content[data-type="outline"] > .view-content {
   padding-top: 0;
 }
 
-.lg-ui :is(.mod-left-split, .mod-right-split) .workspace-leaf-content:not([data-type="file-explorer"]):not([data-type="localgraph"]):not([data-type="search"]).lg-bare-head > :is(.view-content, .tag-container):not(#lg),
-.lg-ui :is(.mod-left-split, .mod-right-split) .workspace-leaf-content:not([data-type="file-explorer"]):not([data-type="localgraph"]):not([data-type="search"]).lg-bare-head > .view-content > :is(.backlink-pane, .outgoing-link-pane) {
+.lg-ui :is(.mod-left-split, .mod-right-split) .workspace-leaf-content:not([data-type="file-explorer"]):not([data-type="localgraph"]):not([data-type="search"]).lg-bare-head > .view-content:not(#lg),
+.lg-ui :is(.mod-left-split, .mod-right-split) .workspace-leaf-content:not([data-type="file-explorer"]):not([data-type="localgraph"]):not([data-type="search"]).lg-bare-head > .tag-container:not(#lg),
+.lg-ui :is(.mod-left-split, .mod-right-split) .workspace-leaf-content:not([data-type="file-explorer"]):not([data-type="localgraph"]):not([data-type="search"]).lg-bare-head > .view-content > .backlink-pane,
+.lg-ui :is(.mod-left-split, .mod-right-split) .workspace-leaf-content:not([data-type="file-explorer"]):not([data-type="localgraph"]):not([data-type="search"]).lg-bare-head > .view-content > .outgoing-link-pane {
   padding-top: calc(var(--header-height) + 4px);
 }
 
@@ -1962,8 +2084,10 @@ body:not(.lg-ui) .workspace-leaf-content[data-type="outline"] > .view-content {
   padding-top: 0;
 }
 
-.lg-ui :is(.mod-left-split, .mod-right-split) .workspace-leaf-content:not([data-type="file-explorer"]):not([data-type="localgraph"]):not([data-type="search"]).lg-bare-head > :is(.view-content, .tag-container)::-webkit-scrollbar-track,
-.lg-ui :is(.mod-left-split, .mod-right-split) .workspace-leaf-content:not([data-type="file-explorer"]):not([data-type="localgraph"]):not([data-type="search"]).lg-bare-head > .view-content > :is(.backlink-pane, .outgoing-link-pane)::-webkit-scrollbar-track {
+.lg-ui :is(.mod-left-split, .mod-right-split) .workspace-leaf-content:not([data-type="file-explorer"]):not([data-type="localgraph"]):not([data-type="search"]).lg-bare-head > .view-content::-webkit-scrollbar-track,
+.lg-ui :is(.mod-left-split, .mod-right-split) .workspace-leaf-content:not([data-type="file-explorer"]):not([data-type="localgraph"]):not([data-type="search"]).lg-bare-head > .tag-container::-webkit-scrollbar-track,
+.lg-ui :is(.mod-left-split, .mod-right-split) .workspace-leaf-content:not([data-type="file-explorer"]):not([data-type="localgraph"]):not([data-type="search"]).lg-bare-head > .view-content > .backlink-pane::-webkit-scrollbar-track,
+.lg-ui :is(.mod-left-split, .mod-right-split) .workspace-leaf-content:not([data-type="file-explorer"]):not([data-type="localgraph"]):not([data-type="search"]).lg-bare-head > .view-content > .outgoing-link-pane::-webkit-scrollbar-track {
   margin-top: var(--header-height);
 }
 
@@ -1989,6 +2113,12 @@ body:not(.lg-ui) .workspace-leaf-content[data-type="outline"] > .view-content {
 .tree-item-self {
   border-radius: var(--lg-row-radius);
   corner-shape: var(--lg-rect-shape);
+}
+
+/* 모바일 서랍의 목록 줄(파일 목록·검색 결과 등의 호버·선택, 줄무늬)은 알약 (사용자 요청: 네모나 보였다) */
+body.is-mobile .workspace-drawer {
+  --lg-row-radius: 999px;
+  --lg-rect-shape: var(--lg-pill-shape);
 }
 
 /* 파일 탐색기 줄무늬 (사용자 요청, macOS Finder 목록 보기 참고): 한 줄 건너 흰 줄, 모서리는 줄 곡률 그대로.
@@ -2037,6 +2167,15 @@ body:not(.lg-ui) .workspace-leaf-content[data-type="outline"] > .view-content {
 
 .workspace-leaf-content[data-type="file-explorer"] .tree-item-self:not(#lg):not(#lg):not(#lg) {
   background-color: transparent;
+}
+
+/* 깜빡임(경로 표시에서 폴더를 눌러 탐색기에서 찾기 등, Obsidian .is-flashing): Obsidian 이 줄 자기 배경을 --highlight-background 로 칠해
+   호버·선택 하이라이트와 폭·곡률이 달랐다 (사용자 지적). 그 변수를 비우고 같은 색을 ::before 층(--lg-row-bg)에 칠한다.
+   Obsidian 의 섞기(mix-blend-mode)는 줄 글자까지 섞어 끈다 */
+.workspace-leaf-content[data-type="file-explorer"] .tree-item-self.is-flashing {
+  --lg-row-bg: var(--text-highlight-bg);
+  --highlight-background: transparent;
+  mix-blend-mode: normal;
 }
 
 .workspace-leaf-content[data-type="file-explorer"] .tree-item-self::before {
@@ -2101,7 +2240,7 @@ body:not(.is-phone) .workspace-leaf.mod-active .workspace-leaf-content[data-type
    줄무늬 위에서 진하기가 달라 보이지 않게 하이라이트가 깔린 줄의 줄무늬 막대는 숨긴다(.lg-stripe-hide) */
 /* 진하기는 다른 평평한 호버(--lg-hover-a)보다 진하게 따로 둔다 (사용자 요청) */
 body {
-  --lg-row-hl-a: 0.09;
+  --lg-row-hl-a: 0.08;
 }
 
 body.theme-dark {
@@ -2180,13 +2319,15 @@ body:not(.is-phone) .mod-root .workspace-tabs {
 }
 
 /* 좌우 분할: 앞 칸 오른쪽에 틈, 뒤 칸은 왼쪽 변이 틈에 닿는다 */
-body:not(.is-phone) .workspace-split.mod-vertical:is(.mod-root, .mod-root *) > :is(.workspace-tabs, .workspace-split):not(:last-child):not(#lg) {
+body:not(.is-phone) .workspace-split.mod-vertical:is(.mod-root, .mod-root *) > .workspace-tabs:not(:last-child):not(#lg),
+body:not(.is-phone) .workspace-split.mod-vertical:is(.mod-root, .mod-root *) > .workspace-split:not(:last-child):not(#lg) {
   --lg-gr: var(--lg-split-line);
   --lg-pad-r: var(--lg-split-gap);
   padding-inline-end: var(--lg-split-gap);
 }
 
-body:not(.is-phone) .workspace-split.mod-vertical:is(.mod-root, .mod-root *) > :is(.workspace-tabs, .workspace-split) ~ :is(.workspace-tabs, .workspace-split):not(#lg) {
+body:not(.is-phone) .workspace-split.mod-vertical:is(.mod-root, .mod-root *) > :is(.workspace-tabs, .workspace-split) ~ .workspace-tabs:not(#lg),
+body:not(.is-phone) .workspace-split.mod-vertical:is(.mod-root, .mod-root *) > :is(.workspace-tabs, .workspace-split) ~ .workspace-split:not(#lg) {
   --lg-gl: var(--lg-split-line);
 }
 
@@ -2203,13 +2344,15 @@ body:not(.is-phone) .workspace-split.mod-vertical:is(.mod-root, .mod-root *) > :
 }
 
 /* 위아래 분할: 앞 칸 아래에 틈, 뒤 칸은 위 변이 틈에 닿는다 */
-body:not(.is-phone) .workspace-split.mod-horizontal:is(.mod-root, .mod-root *) > :is(.workspace-tabs, .workspace-split):not(:last-child):not(#lg) {
+body:not(.is-phone) .workspace-split.mod-horizontal:is(.mod-root, .mod-root *) > .workspace-tabs:not(:last-child):not(#lg),
+body:not(.is-phone) .workspace-split.mod-horizontal:is(.mod-root, .mod-root *) > .workspace-split:not(:last-child):not(#lg) {
   --lg-gb: var(--lg-split-line);
   --lg-pad-b: var(--lg-split-gap);
   padding-bottom: var(--lg-split-gap);
 }
 
-body:not(.is-phone) .workspace-split.mod-horizontal:is(.mod-root, .mod-root *) > :is(.workspace-tabs, .workspace-split) ~ :is(.workspace-tabs, .workspace-split):not(#lg) {
+body:not(.is-phone) .workspace-split.mod-horizontal:is(.mod-root, .mod-root *) > :is(.workspace-tabs, .workspace-split) ~ .workspace-tabs:not(#lg),
+body:not(.is-phone) .workspace-split.mod-horizontal:is(.mod-root, .mod-root *) > :is(.workspace-tabs, .workspace-split) ~ .workspace-split:not(#lg) {
   --lg-gt: var(--lg-split-line);
 }
 
@@ -2439,9 +2582,9 @@ body.lg-vib-nudge.is-translucent .app-container:not(#lg):not(#lg) {
   -webkit-backdrop-filter: blur(calc(var(--lg-blur-k) * 22px)) var(--lg-tone);
   backdrop-filter: blur(calc(var(--lg-blur-k) * 22px)) var(--lg-tone);
   box-shadow:
-    inset 0 -1px 0 var(--lg-slab-edge),
-    0 1px 0 color-mix(in srgb, var(--lg-hl) 8%, transparent),
-    0 6px 24px rgb(0 0 0 / 0.06);
+    inset 0 calc(var(--lg-px) * -1) 0 var(--lg-slab-edge),
+    0 var(--lg-px) 0 color-mix(in srgb, var(--lg-hl) 8%, transparent),
+    0 6px 24px rgb(0 0 0 / 0.04);
   transition: background-color 300ms ease;
 }
 
@@ -2613,6 +2756,11 @@ body.lg-show-path:not(.is-phone) .mod-root .workspace-tabs:not(.mod-stacked) > .
   display: none;
 }
 
+/* 경로가 없을 때(새 탭 등) ≡ 는 경로가 있을 때와 같은 오른쪽 끝에. 경로 글자 칸이 빠지면 최소 폭 알약의 왼쪽에 붙었다 (사용자 지적) */
+.lg-path-text:empty + .lg-path-menu {
+  margin-inline-start: auto;
+}
+
 .lg-path-pill .clickable-icon {
   flex: 0 0 auto;
   width: var(--lg-inner);
@@ -2712,7 +2860,9 @@ body:not(.lg-show-path).lg-mini-bar:not(.is-phone) .mod-root .workspace-tabs.lg-
   pointer-events: none;
 }
 
-body.lg-mini-bar:not(.is-phone) .mod-root .workspace-tabs.lg-mini:not(.mod-stacked) .lg-path-pill :is(.view-header-title-parent, .lg-path-menu, .view-header-reload-button):not(#lg) {
+body.lg-mini-bar:not(.is-phone) .mod-root .workspace-tabs.lg-mini:not(.mod-stacked) .lg-path-pill .view-header-title-parent:not(#lg),
+body.lg-mini-bar:not(.is-phone) .mod-root .workspace-tabs.lg-mini:not(.mod-stacked) .lg-path-pill .lg-path-menu:not(#lg),
+body.lg-mini-bar:not(.is-phone) .mod-root .workspace-tabs.lg-mini:not(.mod-stacked) .lg-path-pill .view-header-reload-button:not(#lg) {
   display: none;
 }
 
@@ -2925,8 +3075,10 @@ body.lg-mini-bar:not(.is-phone) .mod-root .workspace-tabs.lg-mini:not(.mod-stack
 .lg-path-pill.lg-sugg-host::after,
 .lg-web-card.lg-sugg-host::after {
   background-color: var(--lg-menu-bg);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim), var(--lg-menu-shadow);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, border-box;
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in), var(--lg-menu-shadow);
   -webkit-backdrop-filter: blur(var(--lg-menu-blur)) var(--lg-menu-tone);
   backdrop-filter: blur(var(--lg-menu-blur)) var(--lg-menu-tone);
 }
@@ -2950,7 +3102,7 @@ body.lg-mini-bar:not(.is-phone) .mod-root .workspace-tabs.lg-mini:not(.mod-stack
 .lg-web-card::after {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: calc(max(var(--lg-cres-w), var(--lg-dpx, 1px)) * -1); /* 가장자리 선(테두리)은 유리 바깥으로: 상자를 선 굵기만큼 키워 선이 원래 윤곽 밖에 놓인다 (사용자 요청). 1 화면 픽셀보다 가는 테두리는 1 화면 픽셀로 그려지므로 그만큼 */
   bottom: calc(var(--lg-sugg-h, 0px) * -1);
   z-index: -1;
   pointer-events: none;
@@ -2958,8 +3110,10 @@ body.lg-mini-bar:not(.is-phone) .mod-root .workspace-tabs.lg-mini:not(.mod-stack
   corner-shape: inherit;
   /* 평소에는 편집창 선택 탭과 같은 유리 */
   background-color: var(--lg-glass-fill);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim), var(--lg-shadow);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, padding-box; /* 채움은 원래 윤곽(테두리 안)까지 */
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in), var(--lg-shadow);
   -webkit-backdrop-filter: var(--lg-haze);
   backdrop-filter: var(--lg-haze);
   transition:
@@ -3137,9 +3291,10 @@ body .suggestion-container.lg-web-sugg.lg-sugg-in:not(#lg) .suggestion-item.is-s
   position: absolute;
   top: calc(50% - 9px);
   bottom: auto;
-  /* 두께는 정수 px: 1.5px 처럼 화면 픽셀로 나눠떨어지지 않으면 줄마다 1·2픽셀로 반올림돼 굵기가 달라 보였다 (사용자 지적) */
-  inset-inline-start: calc(var(--lg-tab-gap) / -2 - 1px);
-  width: 2px;
+  /* 두께는 화면 픽셀 배수(--lg-dpx): 화면 픽셀로 나눠떨어지지 않으면 탭마다 굵기가 달라 보였다 (사용자 지적). 자리도 같은 배수로 맞춘다 */
+  --lg-sep-w: round(2px, var(--lg-dpx, 1px));
+  inset-inline-start: round(calc(var(--lg-tab-gap) / -2 - var(--lg-sep-w) / 2), var(--lg-dpx, 1px));
+  width: var(--lg-sep-w);
   height: 18px;
   border-radius: 1px;
   box-shadow: none;
@@ -3240,13 +3395,15 @@ body .workspace .mod-root .workspace-tabs:not(.mod-stacked) .workspace-tab-heade
   corner-shape: inherit; /* 붙은 요소의 모양을 따른다 (예전 전역 *::before 규칙 대신) */
   content: "";
   position: absolute;
-  inset: 0;
+  inset: calc(max(var(--lg-cres-w), var(--lg-dpx, 1px)) * -1); /* 가장자리 선(테두리)은 유리 바깥으로: 상자를 선 굵기만큼 키워 선이 원래 윤곽 밖에 놓인다 (사용자 요청). 1 화면 픽셀보다 가는 테두리는 1 화면 픽셀로 그려지므로 그만큼 */
   z-index: -2;
   pointer-events: none;
   border-radius: inherit;
   background-color: var(--lg-glass-fill);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim), var(--lg-shadow);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, padding-box; /* 채움은 원래 윤곽(테두리 안)까지 */
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in); /* 그림자는 링 (::before) */
   -webkit-backdrop-filter: var(--lg-refract,) var(--lg-haze);
   backdrop-filter: var(--lg-refract,) var(--lg-haze);
 }
@@ -3261,6 +3418,7 @@ body .workspace .mod-root .workspace-tabs:not(.mod-stacked) .workspace-tab-heade
   isolation: auto;
 }
 
+.lg-tab-tools .clickable-icon:not(#lg)::before,
 .lg-tab-tools .clickable-icon:not(#lg)::after {
   content: none;
 }
@@ -3539,13 +3697,14 @@ body.lg-wc-compact .titlebar-button-container.mod-right:not(:hover) .titlebar-bu
   /* 위아래 간격을 남기고 넘치면 창 안에서 스크롤 */
   max-height: calc(100% - var(--lg-gap) * 2);
   inset-inline-end: var(--lg-gap);
-  border: none;
   /* 메뉴창과 같은 반지름 (사용자 요청) */
   border-radius: var(--lg-menu-radius);
   corner-shape: var(--lg-rect-shape);
   background-color: var(--lg-menu-bg);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim), var(--lg-menu-shadow);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, border-box;
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in), var(--lg-menu-shadow);
   -webkit-backdrop-filter: blur(var(--lg-menu-blur)) var(--lg-menu-tone);
   backdrop-filter: blur(var(--lg-menu-blur)) var(--lg-menu-tone);
   /* 열고 닫는 애니메이션은 플러그인: 설정 버튼이 창 가운데로 돌진하며 사라지고, 중간 지점에서 창이 넓어진다 */
@@ -3683,7 +3842,8 @@ body:not(.is-popout-modal):not(.is-phone) .modal-container .modal.mod-settings:n
 
 /* 앱 안 설정 창의 닫기(X, 이 버전은 .modal-header-button): 단독 원형 버튼과 같은 유리 원, 창 위·오른쪽 끝에서 알약 간격(--lg-gap)만큼 띄운다 (사용자 요청).
    호버는 다른 아이콘 버튼처럼 가운데 호버 유리 원(::before)만. 버튼 전체를 회색으로 덮던 호버는 뺐다 (사용자 지적) */
-body:not(.is-popout-modal):not(.is-phone) .modal.mod-settings > :is(.modal-close-button, .modal-header-button):not(#lg):not(#lg) {
+body:not(.is-popout-modal):not(.is-phone) .modal.mod-settings > .modal-close-button:not(#lg):not(#lg),
+body:not(.is-popout-modal):not(.is-phone) .modal.mod-settings > .modal-header-button:not(#lg):not(#lg) {
   top: var(--lg-gap);
   inset-inline-end: var(--lg-gap);
   width: var(--lg-btn);
@@ -3694,8 +3854,10 @@ body:not(.is-popout-modal):not(.is-phone) .modal.mod-settings > :is(.modal-close
   justify-content: center;
   border-radius: 50%;
   background-color: var(--lg-glass-fill);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim), var(--lg-shadow);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, border-box;
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in), var(--lg-shadow);
   -webkit-backdrop-filter: var(--lg-haze);
   backdrop-filter: var(--lg-haze);
 }
@@ -3707,7 +3869,8 @@ body:not(.is-popout-modal):not(.is-phone) .modal.mod-settings .vertical-tab-cont
   margin-bottom: calc(var(--modal-radius) / 2);
 }
 
-body:not(.is-popout-modal):not(.is-phone) .modal.mod-settings .vertical-tab-header :is(.vertical-tab-header-group-container, .setting-search-results):not(#lg)::-webkit-scrollbar-track {
+body:not(.is-popout-modal):not(.is-phone) .modal.mod-settings .vertical-tab-header .vertical-tab-header-group-container:not(#lg)::-webkit-scrollbar-track,
+body:not(.is-popout-modal):not(.is-phone) .modal.mod-settings .vertical-tab-header .setting-search-results:not(#lg)::-webkit-scrollbar-track {
   margin-bottom: calc(var(--modal-radius) / 2);
 }
 
@@ -3764,11 +3927,12 @@ body:not(.is-phone) .modal.mod-settings .vertical-tab-header .setting-search-con
 .modal.mod-settings .setting-search-container input[type="search"],
 .modal.mod-settings .setting-search-container input {
   height: var(--lg-pill-h);
-  border: none;
   border-radius: calc(var(--lg-pill-h) * var(--lg-pill-rx)) / calc(var(--lg-pill-h) / 2);
   corner-shape: var(--lg-pill-shape);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim), var(--lg-shadow-sm);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, border-box;
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in), var(--lg-shadow-sm);
   -webkit-backdrop-filter: var(--lg-refract,) var(--lg-haze);
   backdrop-filter: var(--lg-refract,) var(--lg-haze);
   padding-inline-start: 34px;
@@ -3791,7 +3955,8 @@ body.is-phone .modal.mod-community-modal .community-modal-details:not(#lg) {
   --modal-header-height: calc(var(--safe-area-inset-top) + var(--size-4-12) + var(--lg-safe-gap));
 }
 
-body.is-phone .modal.mod-community-modal .community-modal-details :is(.modal-header-button, .modal-close-button):not(#lg) {
+body.is-phone .modal.mod-community-modal .community-modal-details .modal-header-button:not(#lg),
+body.is-phone .modal.mod-community-modal .community-modal-details .modal-close-button:not(#lg) {
   top: calc(var(--safe-area-inset-top) + var(--lg-safe-gap));
 }
 
@@ -3809,7 +3974,8 @@ body:not(.is-popout-modal):not(.is-phone) .modal-container .modal.mod-community-
   overflow: clip;
 }
 
-body:not(.is-popout-modal):not(.is-phone) .modal.mod-community-modal > :is(.modal-close-button, .modal-header-button):not(#lg):not(#lg) {
+body:not(.is-popout-modal):not(.is-phone) .modal.mod-community-modal > .modal-close-button:not(#lg):not(#lg),
+body:not(.is-popout-modal):not(.is-phone) .modal.mod-community-modal > .modal-header-button:not(#lg):not(#lg) {
   top: var(--lg-gap);
   inset-inline-end: var(--lg-gap);
   width: var(--lg-btn);
@@ -3820,8 +3986,10 @@ body:not(.is-popout-modal):not(.is-phone) .modal.mod-community-modal > :is(.moda
   justify-content: center;
   border-radius: 50%;
   background-color: var(--lg-glass-fill);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim), var(--lg-shadow);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, border-box;
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in), var(--lg-shadow);
   -webkit-backdrop-filter: var(--lg-haze);
   backdrop-filter: var(--lg-haze);
 }
@@ -3834,12 +4002,13 @@ body:not(.is-popout-modal):not(.is-phone) .modal.mod-community-modal .community-
 
 body:not(.is-mobile) .modal.mod-community-modal .community-modal-search input:not(#lg) {
   height: var(--lg-pill-h);
-  border: none;
   border-radius: calc(var(--lg-pill-h) * var(--lg-pill-rx)) / calc(var(--lg-pill-h) / 2);
   corner-shape: var(--lg-pill-shape);
   background-color: rgb(var(--lg-tint) / 0.06);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim), var(--lg-shadow-sm);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, border-box;
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in), var(--lg-shadow-sm);
   -webkit-backdrop-filter: var(--lg-refract,) var(--lg-haze);
   backdrop-filter: var(--lg-refract,) var(--lg-haze);
   padding-inline-start: 34px;
@@ -3866,8 +4035,10 @@ body:not(.is-phone) .modal.mod-community-modal .community-modal-search > .clicka
   justify-content: center;
   border-radius: 50%;
   background-color: var(--lg-glass-fill);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim), var(--lg-shadow-sm);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, border-box;
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in), var(--lg-shadow-sm);
   -webkit-backdrop-filter: var(--lg-haze);
   backdrop-filter: var(--lg-haze);
 }
@@ -3898,9 +4069,16 @@ body.is-mobile .modal-container .modal.mod-community-modal:not(#lg):not(#lg) {
    커뮤니티 찾기 창도 같다: 정렬 메뉴 시트(흐림)가 올라올 때 화면이 깜빡였다 (사용자 지적, 같은 원인으로 추정) */
 /* 모든 요소(*)를 검사하지 않고, 이 창들 안에서 흐림·굴절을 거는 요소만 고른다 (최적화, 사용자 요청): 검색창·떠 있는 버튼(.mod-raised)·
    아이콘 버튼 호버 유리·토글 손잡이·할 일 체크박스 호버 유리·플러그인 설정의 렌즈. 이 창 안에 흐림을 거는 규칙을 새로 넣으면 여기에도 넣는다 */
-body.is-phone :is(.modal.mod-settings, .modal.mod-community-modal) :is(input, .mod-raised, .search-input-container, .lg-seg-lens):not(#lg):not(#lg):not(#lg),
-body.is-phone :is(.modal.mod-settings, .modal.mod-community-modal) :is(.clickable-icon, .mod-raised, .task-list-item-checkbox):not(#lg):not(#lg):not(#lg)::before,
-body.is-phone :is(.modal.mod-settings, .modal.mod-community-modal) :is(.checkbox-container, .mod-raised, .search-input-container):not(#lg):not(#lg):not(#lg)::after {
+body.is-phone :is(.modal.mod-settings, .modal.mod-community-modal) :where(input):not(.lg-none):not(#lg):not(#lg):not(#lg),
+body.is-phone :is(.modal.mod-settings, .modal.mod-community-modal) .mod-raised:not(#lg):not(#lg):not(#lg),
+body.is-phone :is(.modal.mod-settings, .modal.mod-community-modal) .search-input-container:not(#lg):not(#lg):not(#lg),
+body.is-phone :is(.modal.mod-settings, .modal.mod-community-modal) .lg-seg-lens:not(#lg):not(#lg):not(#lg),
+body.is-phone :is(.modal.mod-settings, .modal.mod-community-modal) .clickable-icon:not(#lg):not(#lg):not(#lg)::before,
+body.is-phone :is(.modal.mod-settings, .modal.mod-community-modal) .mod-raised:not(#lg):not(#lg):not(#lg)::before,
+body.is-phone :is(.modal.mod-settings, .modal.mod-community-modal) .task-list-item-checkbox:not(#lg):not(#lg):not(#lg)::before,
+body.is-phone :is(.modal.mod-settings, .modal.mod-community-modal) .checkbox-container:not(#lg):not(#lg):not(#lg)::after,
+body.is-phone :is(.modal.mod-settings, .modal.mod-community-modal) .mod-raised:not(#lg):not(#lg):not(#lg)::after,
+body.is-phone :is(.modal.mod-settings, .modal.mod-community-modal) .search-input-container:not(#lg):not(#lg):not(#lg)::after {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
@@ -3928,14 +4106,17 @@ body.is-mobile .modal.mod-settings .setting-search-container input:not(#lg):not(
   padding-inline-start: calc(13px + var(--search-icon-size) + 10px);
 }
 
-body.is-phone .modal.mod-settings :is(.modal-close-button, .modal-header-button, .modal-setting-back-button):not(#lg):not(#lg) {
+body.is-phone .modal.mod-settings .modal-close-button:not(#lg):not(#lg),
+body.is-phone .modal.mod-settings .modal-header-button:not(#lg):not(#lg),
+body.is-phone .modal.mod-settings .modal-setting-back-button:not(#lg):not(#lg) {
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
 }
 
-body.is-phone .modal.mod-settings :is(.modal-close-button, .modal-header-button):not(.mod-start):not(#lg):not(#lg) {
+body.is-phone .modal.mod-settings .modal-close-button:not(.mod-start):not(#lg):not(#lg),
+body.is-phone .modal.mod-settings .modal-header-button:not(.mod-start):not(#lg):not(#lg) {
   inset-inline-end: var(--lg-set-side);
 }
 
@@ -3945,7 +4126,10 @@ body.is-phone .modal.mod-settings .modal-setting-back-button:not(#lg):not(#lg) {
 
 /* 휴대폰 설정 창 스크롤바 (사용자 요청): 목록 쪽은 검색창 아래에서 시작하고(머리 + 여백 16px + 검색창 + 8px),
    본문 쪽은 머리 아래에서 시작한다. 아래 끝은 화면 모서리 곡선 위에서 멈춘다: 곡률은 CSS 로 알 수 없어 검색창 높이 + 아래 안전 영역만큼 띄운다 */
-body.is-phone .modal.mod-settings :is(.vertical-tab-header, .vertical-tabs-container, .vertical-tab-header-group-container, .setting-search-results):not(#lg):not(#lg)::-webkit-scrollbar-track {
+body.is-phone .modal.mod-settings .vertical-tab-header:not(#lg):not(#lg)::-webkit-scrollbar-track,
+body.is-phone .modal.mod-settings .vertical-tabs-container:not(#lg):not(#lg)::-webkit-scrollbar-track,
+body.is-phone .modal.mod-settings .vertical-tab-header-group-container:not(#lg):not(#lg)::-webkit-scrollbar-track,
+body.is-phone .modal.mod-settings .setting-search-results:not(#lg):not(#lg)::-webkit-scrollbar-track {
   margin-top: calc(var(--modal-header-height) + var(--size-4-4) + var(--lg-pill-h) + 8px);
   margin-bottom: calc(var(--lg-pill-h) + var(--safe-area-inset-bottom));
 }
@@ -4018,21 +4202,22 @@ body.is-popout-modal .modal.mod-settings .vertical-tab-content-container::before
    ========================================================= */
 
 /* 위치 지정은 :where 로 걸어, 원래 absolute 인 버튼의 배치를 건드리지 않는다 */
-:where(
-  .clickable-icon,
-  .workspace-drawer-vault-switcher,
-  .mod-left-split .workspace-tab-header,
-  .mod-right-split .workspace-tab-header,
-  .status-bar-item.mod-clickable,
-  .titlebar-button-container.mod-right .titlebar-button,
-  .tree-item-self.is-clickable
-) {
+:where(.clickable-icon),
+:where(.workspace-drawer-vault-switcher),
+:where(.mod-left-split .workspace-tab-header),
+:where(.mod-right-split .workspace-tab-header),
+:where(.status-bar-item.mod-clickable),
+:where(.titlebar-button-container.mod-right .titlebar-button),
+:where(.tree-item-self.is-clickable) {
   position: relative;
   isolation: isolate;
 }
 
-/* 호버 유리 층 */
-.clickable-icon:not(.lg-tab-menu):not(.workspace-tab-header-inner-close-button)::before,
+/* 호버 유리 층. 아이콘 버튼은 플러그인이 커서가 올라간 버튼에 넣는 요소(.lg-hover-glass, 문서에 둘뿐)에 그리고,
+   비게 된 아이콘 버튼의 ::before 는 알약 링 그림자에 쓴다. 패널 탭·창 버튼·보관함 전환은 그대로 ::before */
+.clickable-icon:not(.lg-tab-menu):not(.workspace-tab-header-inner-close-button) > .lg-hover-glass,
+.bases-toolbar .bases-toolbar-item > .text-icon-button > .lg-hover-glass,
+.bases-kanban-column-footer > .text-icon-button > .lg-hover-glass,
 .titlebar-button-container.mod-right .titlebar-button::before,
 .mod-left-split .workspace-tab-header-container .workspace-tab-header::before,
 .mod-right-split .workspace-tab-header-container .workspace-tab-header::before,
@@ -4054,7 +4239,7 @@ body:not(.is-mobile) .workspace-sidedock-vault-profile .workspace-drawer-vault-s
 }
 
 /* 아이콘 버튼: 버튼 가운데에 원 (크기는 --lg-hover-d, 기본은 알약 안 버튼 크기) */
-body .clickable-icon:not(.lg-tab-menu):not(.workspace-tab-header-inner-close-button):not(#lg)::before,
+body .clickable-icon:not(.lg-tab-menu):not(.workspace-tab-header-inner-close-button):not(#lg) > .lg-hover-glass,
 body .titlebar-button-container.mod-right .titlebar-button:not(#lg)::before,
 body .mod-left-split .workspace-tab-header-container .workspace-tab-header:not(#lg)::before,
 body .mod-right-split .workspace-tab-header-container .workspace-tab-header:not(#lg)::before {
@@ -4112,8 +4297,10 @@ body:not(.is-mobile) :is(.mod-left-split, .mod-right-split) .workspace-tab-heade
 /* 아이콘(기호)도 커서를 따라 조금 끌려간다 */
 .clickable-icon:not(.lg-tab-menu):not(.workspace-tab-header-inner-close-button) > svg,
 .titlebar-button-container.mod-right .titlebar-button > svg,
-.mod-left-split .workspace-tab-header :is(.workspace-tab-header-inner-icon, .workspace-tab-header-inner-title),
-.mod-right-split .workspace-tab-header :is(.workspace-tab-header-inner-icon, .workspace-tab-header-inner-title) {
+.mod-left-split .workspace-tab-header .workspace-tab-header-inner-icon,
+.mod-left-split .workspace-tab-header .workspace-tab-header-inner-title,
+.mod-right-split .workspace-tab-header .workspace-tab-header-inner-icon,
+.mod-right-split .workspace-tab-header .workspace-tab-header-inner-title {
   transform: translate(calc(var(--lg-mx, 0px) * 0.6), calc(var(--lg-my, 0px) * 0.6));
   transition:
     opacity var(--anim-duration-fast) ease-in-out,
@@ -4128,7 +4315,7 @@ body.is-mobile .clickable-icon:not(.lg-tab-menu):not(.workspace-tab-header-inner
 }
 
 /* 오른쪽 패널 토글은 Obsidian 이 버튼을 좌우로 뒤집어 그리므로(scale(-1, 1)), 끌려가는 방향의 가로 값도 뒤집어야 커서를 따라간다 */
-body .sidebar-toggle-button.mod-right .clickable-icon:not(#lg):not(.lg-tab-menu):not(.workspace-tab-header-inner-close-button)::before {
+body .sidebar-toggle-button.mod-right .clickable-icon:not(#lg):not(.lg-tab-menu):not(.workspace-tab-header-inner-close-button) > .lg-hover-glass {
   transform: translate(calc(-50% - var(--lg-mx, 0px)), calc(-50% + var(--lg-my, 0px)));
 }
 
@@ -4138,7 +4325,9 @@ body .sidebar-toggle-button.mod-right .clickable-icon:not(#lg):not(.lg-tab-menu)
 
 /* 좌우 패널 투명(구멍을 쓰는 패널, 플러그인 .lg-holes) 위 버튼은 호버 유리 필터를 늘 달아 둔다 (시험): 호버를 벗어나는 순간 필터를 떼면
    흐려지는 동안 호버 유리가 잠깐 까맣게 보였다 (사용자 지적, 원인은 추정) */
-.lg-holes .clickable-icon:not(.lg-tab-menu):not(.workspace-tab-header-inner-close-button)::before,
+.lg-holes .clickable-icon:not(.lg-tab-menu):not(.workspace-tab-header-inner-close-button) > .lg-hover-glass,
+.lg-holes .bases-toolbar .bases-toolbar-item > .text-icon-button > .lg-hover-glass,
+.lg-holes .bases-kanban-column-footer > .text-icon-button > .lg-hover-glass,
 .lg-holes .workspace-drawer-vault-switcher::before,
 .lg-holes .workspace-tab-header-container .workspace-tab-header::before {
   -webkit-backdrop-filter: var(--lg-refract-h,) var(--lg-tone) var(--lg-bright-h,);
@@ -4152,7 +4341,9 @@ body .sidebar-toggle-button.mod-right .clickable-icon:not(#lg):not(.lg-tab-menu)
 }
 
 @media (hover: hover) {
-  .clickable-icon:not(.lg-tab-menu):not(.workspace-tab-header-inner-close-button):not(.has-active-menu):hover::before,
+  .clickable-icon:not(.lg-tab-menu):not(.workspace-tab-header-inner-close-button):not(.has-active-menu):hover > .lg-hover-glass,
+  .bases-toolbar .bases-toolbar-item > .text-icon-button:hover > .lg-hover-glass,
+  .bases-kanban-column-footer > .text-icon-button:hover > .lg-hover-glass,
   body:not(.is-mobile) .workspace-sidedock-vault-profile .workspace-drawer-vault-switcher:hover::before,
   .mod-left-split .workspace-tab-header-container .workspace-tab-header:not(.is-active):hover::before,
   .mod-right-split .workspace-tab-header-container .workspace-tab-header:not(.is-active):hover::before,
@@ -4201,7 +4392,8 @@ body .sidebar-toggle-button.mod-right .clickable-icon:not(#lg):not(.lg-tab-menu)
   .titlebar-button-container.mod-right .titlebar-button.mod-close:hover {
     color: #fff;
   }
-  .titlebar-button-container.mod-right .titlebar-button.mod-close:hover :is(svg, path) {
+  .titlebar-button-container.mod-right .titlebar-button.mod-close:hover svg,
+.titlebar-button-container.mod-right .titlebar-button.mod-close:hover path {
     color: #fff;
     fill: #fff;
   }
@@ -4259,20 +4451,23 @@ body {
     var(--background-primary) calc(var(--lg-menu-a) * (1 - var(--lg-haze-a)) * 100%),
     rgb(var(--lg-frost-rgb)) calc(var(--lg-haze-a) * 100%));
   --lg-menu-shadow: 0 2px 6px rgb(0 0 0 / 0.06), 0 24px 80px rgb(0 0 0 / 0.09);
+  --lg-menu-hi: rgb(255 255 255 / 0.7); /* 휴대폰 메뉴 시트의 위 하이라이트 선 (알약 하이라이트와 같은 진하기) */
 }
 
 body.theme-dark {
   --lg-menu-shadow: 0 0 0 1px rgb(0 0 0 / 0.28), 0 24px 80px rgb(0 0 0 / 0.29);
+  --lg-menu-hi: rgb(255 255 255 / 0.2);
 }
 
 body:not(.is-phone) .menu:not(#lg) {
-  border: none;
   border-radius: var(--lg-menu-radius);
   corner-shape: var(--lg-rect-shape);
   /* 채움·그림자는 알약과 같게 (사용자 요청, 예전엔 --lg-menu-bg·--lg-menu-shadow) */
   background-color: var(--lg-glass-fill);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim), var(--lg-shadow);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, border-box;
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in), var(--lg-shadow);
   -webkit-backdrop-filter: blur(var(--lg-menu-blur)) var(--lg-menu-tone);
   backdrop-filter: blur(var(--lg-menu-blur)) var(--lg-menu-tone);
   transform-origin: 0 0;
@@ -4397,10 +4592,11 @@ body.theme-dark.lg-pop-opaque {
 /* 대화상자·명령 팔레트 */
 body:not(.is-popout-modal) .modal-container .modal:not(.mod-settings):not(body.is-phone .mod-community-modal):not(#lg),
 body .modal-container .prompt:not(#lg) {
-  border: none;
   background-color: var(--lg-pop-bg);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim), var(--lg-menu-shadow);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, border-box;
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in), var(--lg-menu-shadow);
   -webkit-backdrop-filter: var(--lg-pop-blur);
   backdrop-filter: var(--lg-pop-blur);
   animation: lg-pop-in 360ms linear both;
@@ -4454,7 +4650,7 @@ button:not(.clickable-icon) {
   padding-inline: var(--size-4-4);
 }
 
-/* 색 버튼(강조·경고·삭제): 초승달은 버튼 색의 짙은 색(60% + 검정), 하이라이트는 버튼 색의 밝은 색(40% + 흰색) (사용자 지적: 색이 들어가면
+/* 색 버튼(강조·경고·삭제): 가장자리 선은 버튼 색의 짙은 색(60% + 검정), 하이라이트는 버튼 색의 밝은 색(40% + 흰색) (사용자 지적: 색이 들어가면
    하이라이트·초승달에도 섞여야 한다). 진하기는 회색 알약과 같다 */
 button:not(.clickable-icon):is(.mod-cta, .mod-warning, .mod-destructive, .kanban-plugin__lane-action-add) {
   --button-radius: 999px;
@@ -4466,11 +4662,14 @@ button:not(.clickable-icon):is(.mod-cta, .mod-warning, .mod-destructive, .kanban
   --lg-btn-hi-b: 70%;
   --input-shadow:
     0 0 0 var(--lg-ol-w) color-mix(in srgb, var(--lg-btn-deep) calc(var(--lg-ol-a) * 100%), transparent),
-    inset var(--lg-cres-x) 0 0 -0.5px color-mix(in srgb, var(--lg-btn-deep) calc(var(--lg-cres-a) * 100%), transparent),
-    inset calc(var(--lg-cres-x) * -1) 0 0 -0.5px color-mix(in srgb, var(--lg-btn-deep) calc(var(--lg-cres-a) * 100%), transparent),
     inset 0 var(--lg-hi-y) 1px calc(1px - var(--lg-hi-y)) color-mix(in srgb, var(--lg-btn-light) var(--lg-btn-hi-a), transparent),
     inset 0 calc(var(--lg-hi-y) * -1) 1px calc(1px - var(--lg-hi-y)) color-mix(in srgb, var(--lg-btn-light) var(--lg-btn-hi-b), transparent);
   --input-shadow-hover: var(--input-shadow);
+  --lg-btn-cres: color-mix(in srgb, var(--lg-btn-deep) calc(var(--lg-cres-a) * 100%), transparent);
+  /* 가장자리 선: 알약과 같은 굵기·그라데이션, 색만 버튼의 짙은 색 */
+  border: var(--lg-cres-bd);
+  background-image: linear-gradient(to right, var(--lg-btn-cres), var(--lg-cres-mid), var(--lg-btn-cres)), none;
+  background-clip: border-area, border-box;
 }
 
 button:not(.clickable-icon):is(.mod-warning, .mod-destructive) {
@@ -4501,14 +4700,16 @@ select.dropdown,
 /* 모바일 드롭다운: Obsidian 모바일 값은 글자 끝 여백(32px)이 화살표 원(2em) 폭보다 좁아 글자와 원이 붙고, 화살표 자리(12px)가 원 가운데와 달라
    태블릿에서 화살표가 한쪽으로 치우쳤다 (사용자 지적). 데스크톱처럼 화살표를 원 가운데(끝에서 0.65em)에 두고, 글자 끝 여백을 원 끝(2.15em)에 0.5em 을 더한 값으로.
    두 값은 Obsidian 이 body 에서 미리 합쳐 두는 변수(--dropdown-padding·--dropdown-background-position)라 여기서 다시 적는다 */
-body.is-mobile :is(select.dropdown, .dropdown) {
+body.is-mobile select.dropdown,
+body.is-mobile .dropdown:not(lg-none) {
   --dropdown-icon-inset: 0.65em;
   --dropdown-padding-end: 2.65em;
   --dropdown-padding: 0 var(--dropdown-padding-end) 0 var(--dropdown-padding-start);
   --dropdown-background-position: var(--inset-end) var(--dropdown-icon-inset) top 50%, var(--inset-end) 0.15em top 50%, 0 0;
 }
 
-body.is-mobile.mod-rtl :is(select.dropdown, .dropdown) {
+body.is-mobile.mod-rtl select.dropdown,
+body.is-mobile.mod-rtl .dropdown:not(lg-none) {
   --dropdown-padding: 0 var(--dropdown-padding-start) 0 var(--dropdown-padding-end);
 }
 
@@ -4519,16 +4720,25 @@ body.is-mobile.mod-rtl :is(select.dropdown, .dropdown) {
 }
 
 @media (hover: hover) {
-  :is(select.dropdown, .dropdown):not(:disabled):not(.mod-disabled):hover {
+  select.dropdown:not(:disabled):not(.mod-disabled):hover,
+.dropdown:not(lg-none):not(:disabled):not(.mod-disabled):hover {
     --dropdown-icon-background: color-mix(in oklab, var(--lg-btn-bg), var(--text-normal) 6%);
   }
 }
 
 /* 설정 창의 버튼·드롭다운은 플랫 (사용자 요청): 알약 곡률만 두고 테두리(외곽선·초승달·하이라이트)는 뺀다.
    드롭다운을 열면 뜨는 메뉴만 유리다 */
-.modal.mod-settings :is(button:not(.clickable-icon), .dropdown):not(#lg) {
+.modal.mod-settings button:not(.clickable-icon):not(#lg),
+.modal.mod-settings .dropdown:not(lg-none):not(#lg) {
   --input-shadow: none;
   --input-shadow-hover: none;
+}
+
+/* 색 버튼의 가장자리 선(테두리 자리 배경 층)도 뺀다 */
+.modal.mod-settings button:not(.clickable-icon):is(.mod-cta, .mod-warning, .mod-destructive, .kanban-plugin__lane-action-add):not(#lg) {
+  border: none;
+  background-image: none;
+  background-clip: border-box;
 }
 
 /* 파일 이름 바꾸기 창의 입력칸: 둥근 사각형 곡률 (사용자 요청, 설정 창 입력칸과 같은 12px). 이름이 길면 여러 줄이 되어 알약이 아니다 */
@@ -4595,12 +4805,13 @@ body .modal-container .prompt:not(#lg) .suggestion-item.is-selected {
 
 /* 링크 미리보기(마우스를 올리면 뜨는 문서 미리보기) */
 body .popover.hover-popover:not(#lg) {
-  border: none;
   border-radius: 32px;
   corner-shape: var(--lg-rect-shape);
   background-color: var(--lg-pop-bg);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim), var(--lg-menu-shadow);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, border-box;
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in), var(--lg-menu-shadow);
   -webkit-backdrop-filter: var(--lg-pop-blur);
   backdrop-filter: var(--lg-pop-blur);
 }
@@ -4631,13 +4842,14 @@ body .popover.hover-popover:not(#lg) .view-content {
 /* 편집창 자동완성([[ 링크, 태그 등) */
 body .suggestion-container:not(.lg-sugg-in):not(#lg),
 body .cm-tooltip.cm-tooltip-autocomplete:not(#lg) {
-  border: none;
   border-radius: var(--lg-menu-radius);
   corner-shape: var(--lg-rect-shape);
   padding: var(--lg-menu-pad);
   background-color: var(--lg-menu-bg);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim), var(--lg-menu-shadow);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, border-box;
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in), var(--lg-menu-shadow);
   -webkit-backdrop-filter: blur(var(--lg-menu-blur)) var(--lg-menu-tone);
   backdrop-filter: blur(var(--lg-menu-blur)) var(--lg-menu-tone);
 }
@@ -4666,8 +4878,10 @@ body .notice:not(#lg) {
   corner-shape: var(--lg-pill-shape);
   color: var(--text-normal);
   background-color: var(--lg-pop-bg);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim), var(--lg-menu-shadow);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, border-box;
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in), var(--lg-menu-shadow);
   -webkit-backdrop-filter: var(--lg-pop-blur);
   backdrop-filter: var(--lg-pop-blur);
 }
@@ -4681,8 +4895,10 @@ body .tooltip:not(#lg) {
   padding: 5px 12px;
   color: var(--text-normal);
   background-color: var(--lg-pop-bg);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim), var(--lg-shadow-sm);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, border-box;
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in), var(--lg-shadow-sm);
   -webkit-backdrop-filter: var(--lg-pop-blur);
   backdrop-filter: var(--lg-pop-blur);
 }
@@ -4758,12 +4974,13 @@ body.theme-dark {
    ========================================================= */
 .workspace-split:not(.mod-root) .search-input-container input {
   height: var(--lg-pill-h);
-  border: none;
   border-radius: calc(var(--lg-pill-h) * var(--lg-pill-rx)) / calc(var(--lg-pill-h) / 2);
   corner-shape: var(--lg-pill-shape);
   background-color: rgb(var(--lg-tint) / calc(var(--lg-fill-a) + 0.35));
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim), var(--lg-shadow-sm);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, border-box;
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in), var(--lg-shadow-sm);
   -webkit-backdrop-filter: var(--lg-refract,) var(--lg-haze);
   backdrop-filter: var(--lg-refract,) var(--lg-haze);
   padding-inline-start: 34px;
@@ -4844,8 +5061,10 @@ body.lg-ui .workspace-leaf-content[data-type="search"] .search-input-container i
   corner-shape: var(--lg-pill-shape);
   /* 닫혀 있을 때는 다른 알약과 같은 뿌연 유리 */
   background-color: var(--lg-glass-fill);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim), var(--lg-shadow-sm);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, border-box;
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in), var(--lg-shadow-sm);
   -webkit-backdrop-filter: var(--lg-haze);
   backdrop-filter: var(--lg-haze);
   transition:
@@ -4900,7 +5119,7 @@ body .suggestion-container.mod-search-suggestion:not(#lg) .suggestion-item.mod-g
   top: 0;
   left: 12px;
   right: 12px;
-  height: 1px;
+  height: var(--lg-px);
   background-color: var(--background-modifier-border);
   pointer-events: none;
 }
@@ -5016,11 +5235,15 @@ body.is-phone:not(.is-ios) .modal.mod-settings {
   --lg-sb-w: var(--lg-set-side);
 }
 
-body.is-phone:not(.is-ios) .modal.mod-settings :is(.vertical-tab-header, .vertical-tab-content, .setting-search-results):not(#lg):not(#lg) {
+body.is-phone:not(.is-ios) .modal.mod-settings .vertical-tab-header:not(#lg):not(#lg),
+body.is-phone:not(.is-ios) .modal.mod-settings .vertical-tab-content:not(#lg):not(#lg),
+body.is-phone:not(.is-ios) .modal.mod-settings .setting-search-results:not(#lg):not(#lg) {
   scrollbar-gutter: stable;
 }
 
-body.is-phone:not(.is-ios) .modal.mod-settings :is(.vertical-tab-content, .vertical-tab-header-group, .setting-search-results):not(#lg):not(#lg) {
+body.is-phone:not(.is-ios) .modal.mod-settings .vertical-tab-content:not(#lg):not(#lg),
+body.is-phone:not(.is-ios) .modal.mod-settings .vertical-tab-header-group:not(#lg):not(#lg),
+body.is-phone:not(.is-ios) .modal.mod-settings .setting-search-results:not(#lg):not(#lg) {
   padding-right: 0;
 }
 
@@ -5033,16 +5256,14 @@ body.lg-ui:not(#lg) ::-webkit-scrollbar-thumb:active {
   background-color: var(--scrollbar-thumb-bg);
 }
 
-body.lg-ui :is(
-  .nav-files-container,
-  .workspace-leaf-content > .view-content,
-  .cm-scroller,
-  .markdown-preview-view,
-  .vertical-tab-content,
-  .vertical-tab-header-group-container,
-  .setting-search-results,
-  .search-result-container
-) {
+body.lg-ui .nav-files-container:not(.lg-none),
+body.lg-ui .workspace-leaf-content > .view-content,
+body.lg-ui .cm-scroller:not(.lg-none),
+body.lg-ui .markdown-preview-view:not(.lg-none),
+body.lg-ui .vertical-tab-content:not(.lg-none),
+body.lg-ui .vertical-tab-header-group-container:not(.lg-none),
+body.lg-ui .setting-search-results:not(.lg-none),
+body.lg-ui .search-result-container:not(.lg-none) {
   transition: --lg-sb 180ms ease;
 }
 
@@ -5318,19 +5539,21 @@ input[type="range"].lg-sl-pressed:not(#lg)::-webkit-slider-thumb {
   --lg-co-ol-a: 0.1; /* 라이트 외곽선 진하기: 알약(6%)보다 진하게 (사용자 요청) */
   --lg-co-ol-w: var(--lg-ol-w);
   --lg-co-cres-a: 0.6;
+  --lg-co-cres: color-mix(in srgb, var(--lg-co-deep) calc(var(--lg-co-cres-a) * 100%), transparent);
   --lg-co-hi-a: 1;
   --lg-co-hi-b: 1;
   --lg-co-hi-y: calc(var(--lg-hi-y) + 0.5px); /* 하이라이트 폭: 알약보다 0.5px 넓게 (사용자 요청) */
   mix-blend-mode: normal;
-  border: none;
+  border: var(--lg-cres-bd);
   border-radius: 20px;
   corner-shape: var(--lg-rect-shape);
   background-color: color-mix(in oklch, var(--callout-color) 10%, var(--background-primary));
+  /* 가장자리 선: 알약과 같은 굵기·그라데이션, 색은 콜아웃의 짙은 색 */
+  background-image: linear-gradient(to right, var(--lg-co-cres), var(--lg-cres-mid), var(--lg-co-cres)), none;
+  background-clip: border-area, border-box;
   box-shadow:
     /* 외곽선은 콜아웃 안쪽 가장자리에, 다른 테두리 층보다 위에 긋는다 (사용자 요청). 바깥에 그으면 부모가 넘치는 부분을 잘라 안 보일 수 있다 */
     inset 0 0 0 var(--lg-co-ol-w) color-mix(in srgb, var(--lg-co-deep) calc(var(--lg-co-ol-a) * 100%), transparent),
-    inset var(--lg-cres-x) 0 0 -0.5px color-mix(in srgb, var(--lg-co-deep) calc(var(--lg-co-cres-a) * 100%), transparent),
-    inset calc(var(--lg-cres-x) * -1) 0 0 -0.5px color-mix(in srgb, var(--lg-co-deep) calc(var(--lg-co-cres-a) * 100%), transparent),
     inset 0 var(--lg-co-hi-y) 1px calc(1px - var(--lg-hi-y)) color-mix(in srgb, var(--lg-co-light) calc(var(--lg-co-hi-a) * 100%), transparent),
     inset 0 calc(var(--lg-co-hi-y) * -1) 1px calc(1px - var(--lg-hi-y)) color-mix(in srgb, var(--lg-co-light) calc(var(--lg-co-hi-b) * 100%), transparent);
 }
@@ -5414,14 +5637,24 @@ body.theme-dark {
   --lg-hrule: #fff;
 }
 
-body.lg-hrule .markdown-rendered :is(h1, h2, h3, h4, h5, h6) {
+body.lg-hrule .markdown-rendered h1,
+body.lg-hrule .markdown-rendered h2,
+body.lg-hrule .markdown-rendered h3,
+body.lg-hrule .markdown-rendered h4,
+body.lg-hrule .markdown-rendered h5,
+body.lg-hrule .markdown-rendered h6 {
   position: relative;
   padding-bottom: var(--lg-hrule-gap);
 }
 
 /* 읽기 모드 가로줄 ↔ 본문: 제목 아래 바깥 여백과 다음 블록 첫 요소의 위 여백을 같이 줄인다 (두 여백은 겹쳐 큰 쪽만 남는다).
    읽기 모드는 블록마다 div(.el-h1 등)로 감싸져 있어 다음 블록의 첫 요소를 본다 */
-body.lg-hrule .markdown-rendered :is(h1, h2, h3, h4, h5, h6) {
+body.lg-hrule .markdown-rendered h1,
+body.lg-hrule .markdown-rendered h2,
+body.lg-hrule .markdown-rendered h3,
+body.lg-hrule .markdown-rendered h4,
+body.lg-hrule .markdown-rendered h5,
+body.lg-hrule .markdown-rendered h6 {
   margin-block-end: var(--lg-hrule-below);
 }
 
@@ -5429,7 +5662,12 @@ body.lg-hrule .markdown-rendered :is(.el-h1, .el-h2, .el-h3, .el-h4, .el-h5, .el
   margin-block-start: var(--lg-hrule-below);
 }
 
-body.lg-hrule .markdown-rendered :is(h1, h2, h3, h4, h5, h6)::after {
+body.lg-hrule .markdown-rendered h1::after,
+body.lg-hrule .markdown-rendered h2::after,
+body.lg-hrule .markdown-rendered h3::after,
+body.lg-hrule .markdown-rendered h4::after,
+body.lg-hrule .markdown-rendered h5::after,
+body.lg-hrule .markdown-rendered h6::after {
   content: "";
   position: absolute;
   left: 0;
@@ -5442,12 +5680,14 @@ body.lg-hrule .markdown-rendered :is(h1, h2, h3, h4, h5, h6)::after {
 
 /* 다음 줄 위 여백은 선택자 점수를 올려(:not(#lg)) 지킨다: Obsidian 의 줄 여백 규칙이 덮어써 선이 본문 글자와 겹쳤다 (사용자 지적)
    제목 바로 다음이 표·콜아웃·임베드처럼 줄(.cm-line)이 아닌 블록(.cm-embed-block)이면 그 블록 위에 긋는다 (사용자 지적: 제목 밑 표에서 선이 안 보였다) */
-body.lg-hrule .markdown-source-view.mod-cm6 :is(.HyperMD-header-1, .HyperMD-header-2, .HyperMD-header-3, .HyperMD-header-4, .HyperMD-header-5, .HyperMD-header-6) + :is(.cm-line, .cm-embed-block):not(#lg) {
+body.lg-hrule .markdown-source-view.mod-cm6 :is(.HyperMD-header-1, .HyperMD-header-2, .HyperMD-header-3, .HyperMD-header-4, .HyperMD-header-5, .HyperMD-header-6) + .cm-line:not(#lg),
+body.lg-hrule .markdown-source-view.mod-cm6 :is(.HyperMD-header-1, .HyperMD-header-2, .HyperMD-header-3, .HyperMD-header-4, .HyperMD-header-5, .HyperMD-header-6) + .cm-embed-block:not(#lg) {
   position: relative;
   padding-top: calc(var(--lg-hrule-gap) + var(--lg-hrule-w) + var(--lg-hrule-below));
 }
 
-body.lg-hrule .markdown-source-view.mod-cm6 :is(.HyperMD-header-1, .HyperMD-header-2, .HyperMD-header-3, .HyperMD-header-4, .HyperMD-header-5, .HyperMD-header-6) + :is(.cm-line, .cm-embed-block)::before {
+body.lg-hrule .markdown-source-view.mod-cm6 :is(.HyperMD-header-1, .HyperMD-header-2, .HyperMD-header-3, .HyperMD-header-4, .HyperMD-header-5, .HyperMD-header-6) + .cm-line::before,
+body.lg-hrule .markdown-source-view.mod-cm6 :is(.HyperMD-header-1, .HyperMD-header-2, .HyperMD-header-3, .HyperMD-header-4, .HyperMD-header-5, .HyperMD-header-6) + .cm-embed-block::before {
   content: "";
   position: absolute;
   left: 0;
@@ -5745,11 +5985,11 @@ body.is-phone .workspace-drawer-inner:not(#lg) {
 body.is-mobile .mod-raised:not(#lg),
 body.is-mobile .workspace-drawer-tab-select .workspace-tab-header-inner:not(#lg),
 body.is-mobile .mobile-toolbar-floating-options:not(#lg) {
-  border: none;
   background-color: var(--lg-glass-fill);
-  background-image: var(--lg-sheen);
-  background-clip: border-box;
-  box-shadow: var(--lg-rim), var(--lg-shadow);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, border-box;
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in), var(--lg-shadow);
   -webkit-backdrop-filter: var(--lg-refract,) var(--lg-haze);
   backdrop-filter: var(--lg-refract,) var(--lg-haze);
 }
@@ -5764,6 +6004,15 @@ body.is-mobile :is(.mobile-navbar, .view-header .view-actions, .mobile-toolbar-o
 body.is-mobile .workspace-drawer-tab-select .workspace-tab-header-inner:not(#lg) {
   border-radius: 999px;
   corner-shape: var(--lg-pill-shape);
+}
+
+/* Bases 메뉴(보기 고르기 등) 안 검색창은 유리 대신 평평한 바탕색 알약 (사용자 요청) */
+body.is-mobile .bases-toolbar-menu .search-input-container.mod-raised:not(#lg):not(#lg) {
+  border: none;
+  background: var(--lg-flat-bg);
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 /* 원 */
@@ -5806,6 +6055,7 @@ body.is-phone .view-header .view-actions .clickable-icon:not(#lg) {
   box-shadow: none;
 }
 
+body.is-phone .view-header .view-actions .clickable-icon:not(#lg)::before,
 body.is-phone .view-header .view-actions .clickable-icon:not(#lg)::after {
   content: none;
 }
@@ -5921,8 +6171,10 @@ body.is-mobile .workspace-drawer-tab-options .workspace-drawer-tab-options-list:
   corner-shape: var(--lg-pill-shape);
   transition: none;
   background-color: var(--lg-glass-fill);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim), var(--lg-shadow);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, border-box;
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in), var(--lg-shadow);
   -webkit-backdrop-filter: var(--lg-refract,) var(--lg-haze);
   backdrop-filter: var(--lg-refract,) var(--lg-haze);
 }
@@ -5949,7 +6201,8 @@ body.is-mobile .workspace-drawer-tab-options-list > .workspace-tab-header:not(#l
   background-color: transparent;
 }
 
-body.is-mobile .workspace-drawer-tab-options-list > .workspace-tab-header:not(#lg) :is(.workspace-tab-header-inner-title, .workspace-tab-header-inner-chevron) {
+body.is-mobile .workspace-drawer-tab-options-list > .workspace-tab-header:not(#lg) .workspace-tab-header-inner-title,
+body.is-mobile .workspace-drawer-tab-options-list > .workspace-tab-header:not(#lg) .workspace-tab-header-inner-chevron {
   display: none;
 }
 
@@ -5989,7 +6242,8 @@ body.is-mobile .workspace-drawer-tab-options-list > .workspace-tab-header.is-act
   background-color: color-mix(in srgb, var(--lg-hl) calc(var(--lg-select-a) * 100%), transparent);
 }
 
-body.is-mobile .workspace-drawer-tab-options-list > .workspace-tab-header.is-active:not(:only-child):not(#lg) :is(.workspace-tab-header-inner-icon, .workspace-tab-header-inner-title) {
+body.is-mobile .workspace-drawer-tab-options-list > .workspace-tab-header.is-active:not(:only-child):not(#lg) .workspace-tab-header-inner-icon,
+body.is-mobile .workspace-drawer-tab-options-list > .workspace-tab-header.is-active:not(:only-child):not(#lg) .workspace-tab-header-inner-title {
   color: var(--lg-active-tab-color, var(--interactive-accent));
 }
 
@@ -6114,8 +6368,8 @@ body.is-phone .workspace-drawer-header:not(#lg)::before {
   -webkit-backdrop-filter: blur(calc(var(--lg-blur-k) * 22px)) var(--lg-tone);
   backdrop-filter: blur(calc(var(--lg-blur-k) * 22px)) var(--lg-tone);
   box-shadow:
-    inset 0 1px 0 var(--lg-slab-edge),
-    0 -1px 0 color-mix(in srgb, var(--lg-hl) 8%, transparent);
+    inset 0 var(--lg-px) 0 var(--lg-slab-edge),
+    0 calc(var(--lg-px) * -1) 0 color-mix(in srgb, var(--lg-hl) 8%, transparent);
 }
 
 /* 휴대폰 서랍은 화면 전체 폭으로 (사용자 요청). Obsidian 은 폭 380px 이하 화면에서만 전체 폭이다.
@@ -6129,6 +6383,9 @@ body.is-phone.is-mobile {
 
 body.is-phone .workspace-drawer:not(.is-pinned):not(#lg):not(#lg) {
   box-shadow: none;
+  border: none;
+  background-image: none;
+  background-clip: border-box;
 }
 
 /* 휴대폰 보기 전환 알약은 늘 좌우 끝까지 (사용자 요청): 항목이 남는 폭을 나눠 갖는다. 항목이 많아 넘치면 원래처럼 가로로 밀린다 */
@@ -6145,7 +6402,10 @@ body.is-phone .workspace-drawer-tab-options-list > .workspace-tab-header:not(#lg
    안쪽 하이라이트 층(::after, 반투명)은 휴대폰에서 서랍을 열 때 깜빡여 뺐다 (원인 추정: 서랍이 미끄러지는 동안 반투명 층이 따로 그려짐) */
 /* 바깥: 외곽선·초승달만 (그림자는 사용자 요청으로 뺐다) */
 body.is-mobile .workspace-drawer:not(.is-pinned):not(#lg) {
-  box-shadow: var(--lg-rim-out);
+  box-shadow: none;
+  border: var(--lg-cres-bd);
+  background-image: var(--lg-cres-img), none;
+  background-clip: border-area, border-box;
 }
 
 
@@ -6220,7 +6480,8 @@ body.is-tablet .workspace-drawer-ribbon .side-dock-actions:not(#lg) {
 }
 
 /* 리본: 알약을 가운데로 */
-body.is-tablet .workspace-drawer-ribbon :is(.side-dock-actions, .side-dock-settings):not(#lg) {
+body.is-tablet .workspace-drawer-ribbon .side-dock-actions:not(#lg),
+body.is-tablet .workspace-drawer-ribbon .side-dock-settings:not(#lg) {
   margin-inline: auto;
 }
 
@@ -6339,7 +6600,8 @@ body.is-tablet .workspace-drawer.lg-tab-list .workspace-drawer-tab-options-list 
   background-color: var(--interactive-accent);
 }
 
-body.is-tablet .workspace-drawer.lg-tab-list .workspace-drawer-tab-options-list > .workspace-tab-header.is-active:not(:only-child):not(#lg):not(#lg):not(#lg) :is(.workspace-tab-header-inner-icon, .workspace-tab-header-inner-title) {
+body.is-tablet .workspace-drawer.lg-tab-list .workspace-drawer-tab-options-list > .workspace-tab-header.is-active:not(:only-child):not(#lg):not(#lg):not(#lg) .workspace-tab-header-inner-icon,
+body.is-tablet .workspace-drawer.lg-tab-list .workspace-drawer-tab-options-list > .workspace-tab-header.is-active:not(:only-child):not(#lg):not(#lg):not(#lg) .workspace-tab-header-inner-title {
   --icon-color: var(--lg-tab-on-ink, #fff);
   color: var(--lg-tab-on-ink, #fff);
 }
@@ -6398,8 +6660,10 @@ body.is-tablet .workspace-drawer-header-left:not(#lg) {
   border-radius: calc(var(--lg-pill-h) * var(--lg-pill-rx)) / calc(var(--lg-pill-h) / 2);
   corner-shape: var(--lg-pill-shape);
   background-color: var(--lg-glass-fill);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim), var(--lg-shadow);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, border-box;
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in), var(--lg-shadow);
   -webkit-backdrop-filter: var(--lg-refract,) var(--lg-haze);
   backdrop-filter: var(--lg-refract,) var(--lg-haze);
 }
@@ -6436,15 +6700,18 @@ body.is-mobile .mobile-tab-switcher-menubar:not(#lg) {
   padding-right: calc(max(var(--safe-area-inset-right), var(--size-4-4)) + var(--lg-gap));
 }
 
-body.is-mobile .mobile-tab-switcher-menubar :is(.mobile-tab-switcher-menu-spacer > .clickable-icon, .mobile-tab-switcher-menu-button):not(#lg) {
+body.is-mobile .mobile-tab-switcher-menubar .mobile-tab-switcher-menu-spacer > .clickable-icon:not(#lg),
+body.is-mobile .mobile-tab-switcher-menubar .mobile-tab-switcher-menu-button:not(.lg-none):not(#lg) {
   height: var(--lg-tabsw-h);
   min-width: var(--lg-tabsw-h);
   justify-content: center;
   border-radius: 999px;
   corner-shape: var(--lg-pill-shape);
   background-color: var(--lg-glass-fill);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim), var(--lg-shadow);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, border-box;
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in), var(--lg-shadow);
   -webkit-backdrop-filter: var(--lg-refract,) var(--lg-haze);
   backdrop-filter: var(--lg-refract,) var(--lg-haze);
 }
@@ -6474,15 +6741,16 @@ body.is-mobile .mobile-tab-switcher-menu-spacer:last-child > .clickable-icon:not
   background-image: none;
 }
 
-/* 완료 체크의 테두리는 버튼 색(파랑)에 맞춘다: 하이라이트는 밝은 파랑, 외곽선·초승달은 짙은 파랑 (사용자 요청).
+/* 완료 체크의 테두리는 버튼 색(파랑)에 맞춘다: 하이라이트는 밝은 파랑, 외곽선·가장자리 선은 짙은 파랑 (사용자 요청).
    틴트는 받지 않는다: 틴트를 켜도 늘 파랑 */
 body.is-mobile .mobile-tab-switcher-menubar .mobile-tab-switcher-menu-spacer:last-child > .clickable-icon:not(#lg):not(#lg) {
   --lg-tabsw-deep: color-mix(in srgb, var(--lg-tabsw-blue) 60%, #000);
   --lg-tabsw-light: color-mix(in srgb, var(--lg-tabsw-blue) 40%, #fff);
+  --lg-tabsw-cres: color-mix(in srgb, var(--lg-tabsw-deep) 50%, transparent);
+  background-image: linear-gradient(to right, var(--lg-tabsw-cres), var(--lg-cres-mid), var(--lg-tabsw-cres)), none;
+  background-clip: border-area, border-box;
   box-shadow:
     0 0 0 0.35px color-mix(in srgb, var(--lg-tabsw-deep) 55%, transparent),
-    inset var(--lg-cres-x) 0 0 -0.5px color-mix(in srgb, var(--lg-tabsw-deep) 50%, transparent),
-    inset calc(var(--lg-cres-x) * -1) 0 0 -0.5px color-mix(in srgb, var(--lg-tabsw-deep) 50%, transparent),
     inset 0 var(--lg-hi-y) 1px calc(1px - var(--lg-hi-y)) color-mix(in srgb, var(--lg-tabsw-light) 90%, transparent),
     inset 0 calc(var(--lg-hi-y) * -1) 1px calc(1px - var(--lg-hi-y)) color-mix(in srgb, var(--lg-tabsw-light) 55%, transparent),
     var(--lg-shadow);
@@ -6498,6 +6766,41 @@ body.is-mobile .mobile-tab-switcher-menu-spacer:last-child > .clickable-icon:not
   mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M7.28 12.26L11.1 17.15L16.32 6.9' fill='none' stroke='black' stroke-width='1.92' stroke-linecap='round' stroke-linejoin='round'/></svg>") center / contain no-repeat;
 }
 
+/* Bases 메뉴 시트(휴대폰) 오른쪽 위 완료 체크: 탭 전환 화면의 완료 버튼과 같은 파란 원에 흰 체크 (사용자 요청).
+   크기는 시트 머리 줄의 손가락 크기 그대로, 체크는 원 크기에 맞춰 같은 비율(36/52)로 */
+body.is-mobile .bases-toolbar-menu-header-end > .clickable-icon.mod-raised:not(#lg):not(#lg):not(#lg) {
+  --lg-tabsw-blue: #0a84ff;
+  --lg-tabsw-deep: color-mix(in srgb, var(--lg-tabsw-blue) 60%, #000);
+  --lg-tabsw-light: color-mix(in srgb, var(--lg-tabsw-blue) 40%, #fff);
+  --lg-tabsw-cres: color-mix(in srgb, var(--lg-tabsw-deep) 50%, transparent);
+  border-radius: 50%;
+  corner-shape: round;
+  background-color: var(--lg-tabsw-blue);
+  background-image: linear-gradient(to right, var(--lg-tabsw-cres), var(--lg-cres-mid), var(--lg-tabsw-cres)), none;
+  background-clip: border-area, border-box;
+  border: var(--lg-cres-bd);
+  box-shadow:
+    0 0 0 0.35px color-mix(in srgb, var(--lg-tabsw-deep) 55%, transparent),
+    inset 0 var(--lg-hi-y) 1px calc(1px - var(--lg-hi-y)) color-mix(in srgb, var(--lg-tabsw-light) 90%, transparent),
+    inset 0 calc(var(--lg-hi-y) * -1) 1px calc(1px - var(--lg-hi-y)) color-mix(in srgb, var(--lg-tabsw-light) 55%, transparent),
+    var(--lg-shadow);
+}
+
+body.is-mobile .bases-toolbar-menu-header-end > .clickable-icon.mod-raised:not(#lg):not(#lg):not(#lg) > svg {
+  display: none;
+}
+
+body.is-mobile .bases-toolbar-menu-header-end > .clickable-icon.mod-raised:not(#lg):not(#lg):not(#lg)::after {
+  content: "";
+  display: block;
+  flex: none;
+  width: calc(var(--touch-size-m) * 36 / 52);
+  height: calc(var(--touch-size-m) * 36 / 52);
+  background-color: #fff;
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M7.28 12.26L11.1 17.15L16.32 6.9' fill='none' stroke='black' stroke-width='1.92' stroke-linecap='round' stroke-linejoin='round'/></svg>") center / contain no-repeat;
+  mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M7.28 12.26L11.1 17.15L16.32 6.9' fill='none' stroke='black' stroke-width='1.92' stroke-linecap='round' stroke-linejoin='round'/></svg>") center / contain no-repeat;
+}
+
 /* ---- 팝업 ---- */
 /* 휴대폰 대화상자·명령 팔레트는 화면을 거의 덮으므로 비치지 않게 채우고, Obsidian 의 올라오는 전환을 쓴다 */
 body.is-phone,
@@ -6505,7 +6808,8 @@ body.is-phone.theme-dark {
   --lg-pop-bg: var(--background-primary);
 }
 
-body.is-phone .modal-container :is(.modal, .prompt):not(#lg):not(#lg) {
+body.is-phone .modal-container .modal:not(#lg):not(#lg),
+body.is-phone .modal-container .prompt:not(#lg):not(#lg) {
   animation: none;
 }
 
@@ -6530,13 +6834,25 @@ body.is-phone .menu:not(#lg) {
   /* 휴대폰 설정 창과 같은 곡률 (사용자 요청): Obsidian 이 휴대폰 설정 창 위 모서리에 주는 --touch-radius-s(40px) */
   border-radius: var(--touch-radius-s) var(--touch-radius-s) 0 0;
   corner-shape: var(--lg-rect-shape);
-  background-color: color-mix(in srgb, var(--background-primary) 35%, transparent);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim-out), var(--lg-rim-in), var(--lg-menu-shadow);
-  /* 흐림 반지름은 공용 메뉴 흐림(--lg-menu-blur, 약 3.2px)의 4배(약 13px). 예전 24px 고정값은 휴대폰에서 가장 무거운 흐림이었다 (최적화, 검토 지적).
-     시트는 넓고 채움이 옅어(35%) 공용 값 그대로면 뒤 글자가 너무 또렷하다 */
-  -webkit-backdrop-filter: blur(calc(var(--lg-menu-blur) * 4)) var(--lg-menu-tone);
-  backdrop-filter: blur(calc(var(--lg-menu-blur) * 4)) var(--lg-menu-tone);
+  /* 불투명한 바탕, 뒤 흐림 없음: 휴대폰 팝업과 같다. 그림자를 뺀 뒤에도 남은 끊김의 대부분이 뒤 흐림이었다 (사용자 지적.
+     휴대폰 측정, 여는 동안 끊김 합 중앙값: 흐림 있음 약 0.15~0.2초, 흐림 없음 약 0.05초) */
+  background-color: var(--background-primary);
+  /* 그림자는 쓰지 않는다: 시트가 아래에서 올라오는 동안 그림자(바깥·안쪽 하이라이트 모두)가 있으면 매 프레임 다시 그려져
+     메뉴를 열 때 0.1~0.25초씩 끊겼다 (사용자 지적. 휴대폰 측정, 끊김 합: 지금까지 약 0.7초, 넓은 겹만 빼면 0.4초, 하이라이트만 남겨도 0.3초,
+     그림자 없음 0~0.09초. 뒤 흐림을 빼는 효과는 0.2초 정도로 작았다). 위 하이라이트는 안쪽 위 1px 흰 선 층(그라데이션)으로 대신한다.
+     시트는 화면 아래에 붙어 있어 아래 하이라이트와 바깥 그림자는 어차피 거의 보이지 않는다 */
+  background-image: var(--lg-cres-img), linear-gradient(to bottom, var(--lg-menu-hi) 0 1px, transparent 1px), var(--lg-sheen);
+  background-clip: border-area, padding-box, border-box;
+  border: var(--lg-cres-bd);
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* 휴대폰 메뉴 시트의 항목 사이 가로선: Obsidian 은 0.5px 높이로 긋는데, 화면 픽셀로 1.31칸이라 항목 자리(소수)에 따라 1칸·2칸으로 그려져
+   줄마다 굵기가 달라 보였다 (사용자 지적, 휴대폰 화면 픽셀 측정). 높이를 화면 픽셀 배수(--lg-dpx)로 반올림해 늘 1칸으로 */
+body.is-phone .menu .menu-item::after {
+  height: round(0.5px, var(--lg-dpx, 1px));
 }
 
 /* 패널 목록 글자색: Obsidian 기본은 흐린 회색(--text-muted)이라, 본문 글자색과 같게 (사용자 요청) */
@@ -6574,7 +6890,8 @@ body.lg-explorer-on:not(.is-grabbing) .workspace-leaf-content[data-type="file-ex
   --lg-row-bg: var(--interactive-accent);
 }
 
-body.lg-explorer-on .workspace-leaf-content[data-type="file-explorer"] .tree-item-self:is(.is-active, .is-selected) :is(.tree-item-icon, .nav-file-tag):not(#lg) {
+body.lg-explorer-on .workspace-leaf-content[data-type="file-explorer"] .tree-item-self:is(.is-active, .is-selected) .tree-item-icon:not(#lg),
+body.lg-explorer-on .workspace-leaf-content[data-type="file-explorer"] .tree-item-self:is(.is-active, .is-selected) .nav-file-tag:not(#lg) {
   color: var(--lg-tab-on-ink);
 }
 
@@ -6592,7 +6909,8 @@ body:not(.is-grabbing) .tree-item-self.is-being-dragged:hover:not(#lg):not(#lg) 
   box-shadow: none;
 }
 
-body .tree-item-self.is-being-dragged :is(.tree-item-icon, .nav-file-tag):not(#lg):not(#lg) {
+body .tree-item-self.is-being-dragged .tree-item-icon:not(#lg):not(#lg),
+body .tree-item-self.is-being-dragged .nav-file-tag:not(#lg):not(#lg) {
   color: inherit;
 }
 
@@ -6670,12 +6988,14 @@ body.is-phone {
 
 /* 이름 바꾸는 중: 기호(::before)가 이름 칸 안의 글자 앞에 있어, 이름을 다 지우면 커서가 기호 왼쪽으로 갔다 (사용자 지적).
    바꾸는 동안만 기호를 칸 왼쪽 여백에 띄워 두고(글자 흐름에서 뺀다) 그만큼 여백을 줘, 커서가 늘 기호 오른쪽에서 시작하게 한다 */
-.tree-item-self.is-being-renamed > :is(.nav-folder-title-content, .nav-file-title-content) {
+.tree-item-self.is-being-renamed > .nav-folder-title-content,
+.tree-item-self.is-being-renamed > .nav-file-title-content {
   position: relative;
   padding-inline-start: calc(var(--lg-ficon-w, 17px) + 6px);
 }
 
-.tree-item-self.is-being-renamed > :is(.nav-folder-title-content, .nav-file-title-content)::before {
+.tree-item-self.is-being-renamed > .nav-folder-title-content::before,
+.tree-item-self.is-being-renamed > .nav-file-title-content::before {
   position: absolute;
   inset-inline-start: 0;
   top: 50%;
@@ -6683,7 +7003,8 @@ body.is-phone {
   translate: 0 -50%;
 }
 
-body.is-mobile .tree-item-self.is-being-renamed > :is(.nav-folder-title-content, .nav-file-title-content) {
+body.is-mobile .tree-item-self.is-being-renamed > .nav-folder-title-content,
+body.is-mobile .tree-item-self.is-being-renamed > .nav-file-title-content {
   --lg-ficon-w: 1.2em;
 }
 
@@ -6708,17 +7029,20 @@ body.is-mobile .nav-file-title-content::before {
    심플(body.lg-ficon-line): 폴더에만 Obsidian 의 닫힌 폴더 기호(선 하나, 플러그인이 떠 준 --lg-folder-line 마스크)를 폴더 색으로 칠하고,
    문서에는 붙이지 않고, 문서 이름은 같은 단계 폴더 이름 시작에 맞춘다 (사용자 요청).
    폴더 색은 이름별 색(--lg-fc) → 폴더 아이콘 색 설정(--lg-folder-tint) → 기본 파랑 순 */
-body.lg-ficon-none :is(.nav-folder-title-content, .nav-file-title-content)::before,
+body.lg-ficon-none .nav-folder-title-content::before,
+body.lg-ficon-none .nav-file-title-content::before,
 body.lg-ficon-line .nav-file-title-content::before {
   content: none;
 }
 
-body.lg-ficon-none :is(.nav-folder-title-content, .nav-file-title-content),
+body.lg-ficon-none .nav-folder-title-content,
+body.lg-ficon-none .nav-file-title-content,
 body.lg-ficon-line .nav-file-title-content {
   margin-inline-start: 0;
 }
 
-body.lg-ficon-none .tree-item-self.is-being-renamed > :is(.nav-folder-title-content, .nav-file-title-content),
+body.lg-ficon-none .tree-item-self.is-being-renamed > .nav-folder-title-content,
+body.lg-ficon-none .tree-item-self.is-being-renamed > .nav-file-title-content,
 body.lg-ficon-line .tree-item-self.is-being-renamed > .nav-file-title-content {
   padding-inline-start: 0;
 }
@@ -6806,6 +7130,531 @@ body.is-mobile.lg-ficon-line .nav-folder-title-content::before {
 }
 
 /* =========================================================
+   Bases (Obsidian 코어 데이터베이스 보기): 툴바·칸반·카드에 알약 유리 (사용자 요청)
+   - 툴바 버튼(보기 고르기·정렬·그룹·필터·속성·검색·추가): 하나씩 유리 알약. 결과 수는 글자 그대로
+   - 칸반: 목록(열)은 Kanban 플러그인 목록과 같은 유리판, 카드는 판 안의 투명한 알약(호버 회색)
+   - 카드 보기: 카드 하나하나를 유리 알약판으로 (모서리는 칸반 카드와 같은 반지름)
+   ========================================================= */
+/* 버튼 사이와 보기 가장자리까지 알약 간격(--lg-gap 10px)으로 (사용자 요청) */
+.bases-toolbar:not(#lg) {
+  gap: var(--lg-gap);
+  padding-inline: 0;
+}
+
+/* Obsidian 은 툴바 칸과 버튼을 잘라(overflow: hidden) 버튼 유리 그림자 아래쪽이 잘렸다 (사용자 지적) */
+.bases-toolbar .bases-toolbar-item:not(#lg),
+.bases-toolbar .bases-toolbar-item > .text-icon-button:not(#lg):not(#lg) {
+  overflow: visible;
+}
+
+.bases-toolbar .bases-toolbar-item:not(#lg),
+.bases-toolbar .bases-toolbar-item > .text-icon-button:not(#lg):not(#lg):not(#lg) {
+  margin: 0;
+}
+
+.bases-toolbar .bases-toolbar-item:not(#lg) {
+  padding: 0;
+}
+
+/* 결과 수 뒤로 오른쪽 버튼들을 오른쪽 끝에 모은다 */
+.bases-toolbar .bases-toolbar-item.bases-toolbar-result-count:not(#lg) {
+  margin-inline-end: auto;
+}
+
+/* 휴대폰: 버튼 사이와 화면 끝까지는 휴대폰 뷰 헤더와 같은 간격(--size-4-3, 12px) (사용자 지적: 휴대폰은 간격이 따로 있다) */
+body.is-phone .bases-header:not(#lg) {
+  --lg-gap: var(--size-4-3);
+}
+
+/* 휴대폰은 결과 수가 보기 고르기 버튼 안에 들어가 결과 수 칸이 숨겨져, 버튼들이 왼쪽에 몰렸다 (사용자 지적):
+   보기 고르기 버튼만 왼쪽, 나머지는 오른쪽 끝으로 */
+body.is-phone .bases-toolbar .bases-toolbar-item.bases-toolbar-views-menu:not(#lg) {
+  margin-inline-end: auto;
+}
+
+/* 툴바 아래 가로선은 없애고, 위 편집창 탭 줄에서 조금 띄운다 (사용자 요청) */
+.bases-header:not(#lg) {
+  border-bottom: none;
+  /* 아래도 같은 간격: 표 보기에서 버튼 그림자가 첫 줄 글자에 겹쳤다 (사용자 지적) */
+  padding: var(--lg-gap);
+  /* Obsidian 은 높이를 40px 로 고정한다(--bases-header-height): 여백을 줘도 툴바(34px)가 그 높이 안에 가운데로 놓여
+     탭 줄과 3px 만 떨어졌다 (사용자 지적: 다시 붙음). 높이는 여백을 더한 만큼. 보기 내용(세로 flex)이 넘치면 줄어들므로 줄지 않게 */
+  height: auto;
+  flex-shrink: 0;
+  /* 아래 보기(표 머리 줄은 sticky·z-index 5, 흰 바탕)가 버튼 그림자 아래쪽을 덮었다 (사용자 지적): 툴바를 그 위 층에 둔다 */
+  position: relative;
+  z-index: 6;
+}
+
+/* 툴바 버튼: 다른 단독 버튼과 같은 높이(--lg-btn)의 유리 알약. 유리는 다른 버튼처럼 ::after 에 그린다:
+   보기 고르기 버튼의 메뉴가 보관함 메뉴처럼 버튼에서 넓어질 때(플러그인 morphMenu) 유리 층이 원으로 줄며 흐려진다 */
+.bases-toolbar .bases-toolbar-item > .text-icon-button:not(#lg) {
+  position: relative;
+  isolation: isolate;
+  height: var(--lg-btn);
+  border-radius: calc(var(--lg-btn) * var(--lg-pill-rx)) / calc(var(--lg-btn) / 2);
+  corner-shape: var(--lg-pill-shape);
+  padding-inline: 12px;
+  background: none;
+  box-shadow: none;
+}
+
+.bases-toolbar .bases-toolbar-item > .text-icon-button:not(#lg)::after {
+  content: "";
+  position: absolute;
+  inset: calc(max(var(--lg-cres-w), var(--lg-dpx, 1px)) * -1); /* 가장자리 선(테두리)은 유리 바깥으로: 상자를 선 굵기만큼 키워 선이 원래 윤곽 밖에 놓인다 (사용자 요청). 1 화면 픽셀보다 가는 테두리는 1 화면 픽셀로 그려지므로 그만큼 */
+  z-index: -2;
+  pointer-events: none;
+  border-radius: inherit;
+  corner-shape: inherit;
+  background-color: var(--lg-glass-fill);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, padding-box; /* 채움은 원래 윤곽(테두리 안)까지 */
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in);
+  -webkit-backdrop-filter: var(--lg-refract,) var(--lg-haze);
+  backdrop-filter: var(--lg-refract,) var(--lg-haze);
+}
+
+/* 휴대폰·태블릿: 툴바 버튼도 다른 알약처럼 손가락 크기 (사용자 요청: 작아 보였다). 태블릿은 알약 높이가 이미 이 값이다 */
+body.is-mobile .bases-header,
+body.is-mobile .bases-kanban-column-footer {
+  --lg-btn: var(--touch-size-m);
+}
+
+/* 그림자는 다른 유리 버튼과 같은 링 그림자 (유리 아래 ::before) */
+.bases-toolbar .bases-toolbar-item > .text-icon-button:not(#lg)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1; /* 유리 위 (위 링 그림자 목록과 같다) */
+  pointer-events: none;
+  border: var(--lg-ring);
+  border-radius: inherit;
+  corner-shape: inherit;
+  background: none;
+  transform: translateY(var(--lg-ring-y));
+  filter: blur(var(--lg-ring-blur));
+}
+
+@media (hover: hover) {
+  .bases-toolbar .bases-toolbar-item > .text-icon-button:not(#lg):hover {
+    background: none;
+  }
+}
+
+/* 호버 유리: 알약 안 버튼의 호버처럼 버튼보다 조금 작은 알약(높이 --lg-hover-d, 사방 같은 여백)이 커서 쪽으로 끌리고,
+   글자·기호도 조금 끌려간다 (사용자 요청). 원형 버튼은 같은 크기의 원.
+   유리는 플러그인이 넣는 요소(.lg-hover-glass)에 그린다: ::after 는 버튼 유리, ::before 는 링 그림자 */
+body .bases-toolbar .bases-toolbar-item > .text-icon-button:not(#lg) > .lg-hover-glass {
+  inset: calc((var(--lg-btn) - var(--lg-hover-d)) / 2);
+  border-radius: 999px;
+  corner-shape: var(--lg-pill-shape);
+  transform: translate(var(--lg-mx, 0px), var(--lg-my, 0px));
+}
+
+body .bases-toolbar :is(.bases-toolbar-new-item-menu, .bases-toolbar-search) > .text-icon-button:not(#lg) > .lg-hover-glass {
+  border-radius: 50%;
+  corner-shape: round;
+}
+
+body:not(.is-mobile) .bases-toolbar .bases-toolbar-item > .text-icon-button:not(#lg) > .text-button-icon,
+body:not(.is-mobile) .bases-toolbar .bases-toolbar-item > .text-icon-button:not(#lg) > .text-button-label,
+body:not(.is-mobile) .bases-toolbar .bases-toolbar-item > .text-icon-button:not(#lg) > .flair {
+  transform: translate(calc(var(--lg-mx, 0px) * 0.45), calc(var(--lg-my, 0px) * 0.45));
+  transition: transform 460ms var(--lg-spring);
+}
+
+/* 무언가 설정된 버튼(Obsidian .is-active: 정렬·필터·그룹 등, 플러그인 .lg-on: 그룹)은 Obsidian 처럼 글자·기호 모두 강조색.
+   아래 "검게" 규칙이 덮어 검게 보이고 호버 때 기호만 빛났다 (사용자 지적) */
+.bases-toolbar .bases-toolbar-item > .text-icon-button:is(.is-active, .lg-on):not(#lg):not(#lg):not(#lg),
+.bases-toolbar .bases-toolbar-item > .text-icon-button:is(.is-active, .lg-on):not(#lg):not(#lg):not(#lg) > .text-button-icon {
+  --icon-color: var(--icon-color-active);
+  --icon-color-hover: var(--icon-color-active);
+  color: var(--icon-color-active);
+}
+
+/* 글자·기호는 검게 (사용자 요청) */
+.bases-toolbar .bases-toolbar-item > .text-icon-button:not(#lg):not(#lg) {
+  color: var(--text-normal);
+  --icon-color: var(--text-normal);
+}
+
+/* 검색·추가는 기호만: 원형 버튼 (사용자 요청) */
+.bases-toolbar :is(.bases-toolbar-search, .bases-toolbar-new-item-menu) > .text-icon-button:not(#lg):not(#lg) {
+  width: var(--lg-btn);
+  padding: 0;
+  justify-content: center;
+  gap: 0;
+}
+
+.bases-toolbar :is(.bases-toolbar-search, .bases-toolbar-new-item-menu) > .text-icon-button > .text-button-label:not(#lg) {
+  display: none;
+}
+
+/* 뷰 설정의 드롭다운 줄(행 높이 등): 이름 왼쪽, 드롭다운 오른쪽으로 한 줄 (사용자 지적: 이름 밑 줄 끝에 드롭다운만 떨어져 보였다).
+   드롭다운이 든 줄은 플러그인이 .lg-dd-row 로 알린다 */
+.bases-toolbar-menu-form .input-row.lg-dd-row:not(#lg) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--size-4-2);
+}
+
+.bases-toolbar-menu-form .input-row.lg-dd-row > .input-row-content:not(#lg) {
+  width: auto;
+  justify-content: flex-end;
+}
+
+/* 정렬·그룹 메뉴의 기준 줄: Obsidian 은 줄마다 회색 바탕(--menu-background)을 깐다. 메뉴 유리 위에 회색 칸으로 떠 보여 없앤다 (사용자 요청) */
+.base-toolbar-sort-item:not(#lg),
+.base-toolbar-groupby-item:not(#lg) {
+  background-color: transparent;
+}
+
+/* 결과 수 메뉴의 입력 칸: 파일 탐색기 줄 호버와 같은 모서리 (사용자 요청) */
+/* 메뉴 안 항목·버튼의 호버 하이라이트는 다른 메뉴 항목과 같은 곡률 (사용자 지적: Obsidian 은 작은 곡률이고 속성 목록은 오른쪽이 각졌다) */
+.bases-toolbar-menu .bases-toolbar-menu-item:not(#lg):not(#lg),
+.bases-toolbar-menu .back-button:not(#lg):not(#lg),
+.bases-toolbar-menu .text-icon-button:not(#lg):not(#lg),
+.bases-toolbar-menu .bases-toolbar-menu-action:not(#lg):not(#lg) {
+  border-radius: var(--lg-item-radius);
+  corner-shape: var(--lg-rect-shape);
+}
+
+/* 메뉴로 바뀌어 돌진해 사라진 버튼(플러그인 .lg-dashed)에는 호버 유리를 띄우지 않는다: 메뉴가 열린 동안 빈자리에 호버가 떴다 (사용자 지적) */
+body .bases-toolbar .bases-toolbar-item > .text-icon-button.lg-dashed:not(#lg):not(#lg) > .lg-hover-glass {
+  opacity: 0;
+  transition: none;
+}
+
+/* 메뉴가 펼쳐진 동안 사라진 버튼의 링 그림자도 지운다 (사용자 요청). 버튼이 사라지고 돌아오는 시간(160ms)에 맞춰 흐려지고 돌아온다 */
+.bases-toolbar .bases-toolbar-item > .text-icon-button:not(#lg)::before {
+  transition: opacity 160ms cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+.bases-toolbar .bases-toolbar-item > .text-icon-button.lg-dashed:not(#lg)::before {
+  opacity: 0;
+}
+
+/* 필터 줄의 속성·조건 칸은 줄지 않는다: 줄 폭이 한두 픽셀 모자라면 "파일"이 "파…"처럼 잘렸다 (사용자 지적). 줄어드는 몫은 값 칸이 맡는다 */
+.bases-toolbar-menu .filter-expression .combobox-button:not(#lg) {
+  flex-shrink: 0;
+}
+
+.bases-results-page .bases-toolbar-menu-form .input-row-content > input:not(#lg) {
+  border-radius: var(--lg-row-radius);
+  corner-shape: var(--lg-rect-shape);
+}
+
+/* 원형 버튼은 완전한 원 (사용자 지적: 알약 모양 값이 남아 살짝 각졌다). 검색은 넓어지지 않았을 때만 */
+.bases-toolbar .bases-toolbar-new-item-menu > .text-icon-button:not(#lg):not(#lg),
+.workspace-leaf-content:not(.lg-kb-searching) .bases-toolbar .bases-toolbar-search > .text-icon-button:not(#lg):not(#lg) {
+  border-radius: 50%;
+  corner-shape: round;
+}
+
+/* 검색 버튼은 닫힌 뒤에 원이 된다: 바로 원 모양 값으로 바뀌면 줄어드는 알약이 먼저 타원이 됐다가 줄었다 (사용자 지적).
+   넓어지기·줄어들기(폭 320ms)가 끝날 때 모양만 바꾼다. 열 때는 이 규칙이 빠져 바로 알약 모양이다 */
+.workspace-leaf-content:not(.lg-kb-searching) .bases-toolbar .bases-toolbar-search > .lg-kb-search-btn:not(#lg):not(#lg) {
+  transition:
+    width 320ms var(--lg-ease),
+    background-color 180ms var(--lg-ease),
+    transform 180ms var(--lg-ease),
+    border-radius 0s linear 320ms,
+    corner-shape 0s linear 320ms;
+}
+
+/* 검색: 칸반 검색과 같이 버튼이 왼쪽으로 넓어져 알약이 되고, Obsidian 검색 줄(.bases-search-row)이 그 위에 놓인다
+   (플러그인 setupBases: 버튼에 .lg-kb-search-btn, 켜져 있으면 보기에 .lg-kb-searching, 줄에 버튼 자리 --lg-kb-top·--lg-kb-right) */
+.bases-toolbar .bases-toolbar-search > .lg-kb-search-btn:not(#lg):not(#lg) {
+  /* 돋보기는 넓어지든 줄어들든 늘 왼쪽 끝에 (패널 검색 버튼 .lg-nav-find 와 같다). 넓어진 동안만 왼쪽에 두니
+     닫을 때 돋보기가 알약 가운데로 튀었다가 줄어드는 알약을 따라 오른쪽으로 밀려갔다 (사용자 지적: 닫는 움직임이 이상함) */
+  justify-content: flex-start;
+  padding-inline-start: calc((var(--lg-btn) - var(--icon-size)) / 2);
+  transition:
+    width 320ms var(--lg-ease),
+    background-color 180ms var(--lg-ease),
+    transform 180ms var(--lg-ease);
+}
+
+.lg-kb-searching .bases-toolbar .bases-toolbar-search > .lg-kb-search-btn:not(#lg):not(#lg):not(#lg) {
+  width: var(--lg-kb-search-w);
+}
+
+/* 호버 유리는 넓어지든 줄어들든 늘 돋보기 자리의 원. 넓어진 동안만 두니 닫는 순간 호버 유리가 넓은 알약 전체에 50% 곡률로 퍼져
+   줄어드는 동안 타원으로 비쳤다 (사용자 지적: 닫을 때 중간에 원으로 바뀌었다 돌아옴) */
+.bases-toolbar .bases-toolbar-search > .lg-kb-search-btn:not(#lg):not(#lg):not(#lg) > .lg-hover-glass {
+  right: auto;
+  width: var(--lg-hover-d);
+}
+
+.lg-kb-searching .view-content > .bases-search-row:not(#lg) {
+  position: absolute;
+  z-index: 10;
+  top: var(--lg-kb-top, 0px);
+  right: var(--lg-kb-right, 0px);
+  left: auto;
+  width: calc(var(--lg-kb-search-w) - var(--lg-btn));
+  height: var(--lg-btn);
+  margin: 0;
+  padding: 0 4px 0 0;
+  display: flex;
+  align-items: center;
+  border: none;
+  background: none;
+  box-shadow: none;
+  animation: lg-kb-search-in 320ms var(--lg-ease);
+}
+
+.lg-kb-searching .bases-search-row .search-input-container:not(#lg) {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+}
+
+.lg-kb-searching .bases-search-row .search-input-container:not(#lg)::before {
+  display: none;
+}
+
+.lg-kb-searching .bases-search-row .search-input-container input:not(#lg):not(#lg) {
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  font-size: var(--font-ui-small);
+}
+
+/* 평평한 판 바탕 (카드 보기의 카드, 모바일 Bases 메뉴 검색창): 라이트는 편집창 바탕(흰색) */
+body {
+  --lg-flat-bg: var(--background-primary);
+}
+
+/* 다크: 평평한 판은 편집창 바탕보다 밝은 회색 (사용자 요청) */
+body.theme-dark {
+  --lg-flat-bg: color-mix(in srgb, var(--background-primary) 90%, #fff);
+}
+
+/* 칸반 보기 (사용자 요청, 애플 미리 알림의 열 보기 + 설정 앱 항목 묶음 참고): 바탕은 편집창 그대로(흰색), 목록은 판 없이 제목만 두고,
+   목록 안 카드들을 회색 둥근 사각형 하나로 합쳐(--lg-board-card) 카드 사이를 가로선으로 나눈다. 그림자는 없다 (사용자 요청).
+   Kanban 플러그인 보드도 같다 */
+body {
+  /* 설정 창 왼쪽 칸·좌우 패널과 같은 회색 (사용자 요청, 설정 창 묶음 색 #fafafa 는 너무 옅었다) */
+  --lg-board-card: var(--lg-panel-bg);
+  /* 묶음 곡률: 컴퓨터는 둥근 사각형 14px, 휴대폰·태블릿은 알약 (사용자 요청) */
+  --lg-board-r: 14px;
+  --lg-board-shape: var(--lg-rect-shape);
+  /* 묶음의 맨 위·맨 아래 여백: 카드 사이 가로선 위아래 틈(4px)과 같게 묶음을 위아래로 늘린다 (사용자 지적: 맨 위·아래 카드가 모서리에 붙어 보였다) */
+  --lg-board-pad: 4px;
+  /* 카드 글자 왼쪽 여백 (사용자 요청: 8px·12px 에서 늘림) */
+  --lg-board-text-x: 16px;
+}
+
+body.is-mobile {
+  /* 휴대폰 알약(손가락 크기 --touch-size-m)의 반지름. --lg-kb-r 은 컴퓨터 알약(34px) 기준이라 작게 보였다 (사용자 지적) */
+  --lg-board-r: calc(var(--touch-size-m) / 2);
+  --lg-board-shape: var(--lg-pill-shape);
+}
+
+.bases-kanban-column:not(#lg) {
+  border-radius: 22px;
+  corner-shape: var(--lg-rect-shape);
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
+/* 추가 버튼은 마지막 카드 바로 밑에 (사용자 요청): 카드 칸이 남은 높이를 다 차지하지 않고 카드만큼만 커진다(넘치면 스크롤).
+   위아래 여백은 묶음을 늘린 만큼(--lg-board-pad), 버튼과 묶음 사이는 목록 옆 여백(8px)과 같다 */
+.bases-kanban-column-content:not(#lg) {
+  flex: 0 1 auto;
+  padding-block: var(--lg-board-pad);
+  /* Obsidian 은 아래 8px 를 흐리게 가려(mask) 묶음 아래 끝이 흐려 보였다 */
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.bases-kanban-column-footer:not(#lg) {
+  padding: 8px;
+}
+
+/* 목록 아래 추가 버튼: 묶음 왼쪽 끝에 맞춘 원. 툴바의 원형 버튼(검색·새 항목)과 같은 유리 알약 그대로 (사용자 요청):
+   유리는 ::after, 링 그림자는 ::before, 호버 유리·굴절은 플러그인이 툴바 버튼과 같이 붙인다. 기호는 검정, 글자 "추가"는 숨긴다 */
+.bases-kanban-column-footer > .text-icon-button:not(#lg):not(#lg) {
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+  justify-content: center;
+  width: var(--lg-btn);
+  height: var(--lg-btn);
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  corner-shape: round;
+  background: none;
+  box-shadow: none;
+  color: var(--text-normal);
+  --icon-color: var(--text-normal);
+  --icon-color-hover: var(--text-normal);
+}
+
+.bases-kanban-column-footer > .text-icon-button:not(#lg):not(#lg)::after {
+  content: "";
+  position: absolute;
+  inset: calc(max(var(--lg-cres-w), var(--lg-dpx, 1px)) * -1);
+  z-index: -2;
+  pointer-events: none;
+  border-radius: inherit;
+  corner-shape: inherit;
+  background-color: var(--lg-glass-fill);
+  background-image: var(--lg-cres-img), var(--lg-sheen);
+  background-clip: border-area, padding-box;
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in);
+  -webkit-backdrop-filter: var(--lg-refract,) var(--lg-haze);
+  backdrop-filter: var(--lg-refract,) var(--lg-haze);
+}
+
+.bases-kanban-column-footer > .text-icon-button:not(#lg):not(#lg)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border: var(--lg-ring);
+  border-radius: inherit;
+  corner-shape: inherit;
+  background: none;
+  transform: translateY(var(--lg-ring-y));
+  filter: blur(var(--lg-ring-blur));
+}
+
+.bases-kanban-column-footer > .text-icon-button:not(#lg):not(#lg) > .text-button-label {
+  display: none;
+}
+
+@media (hover: hover) {
+  .bases-kanban-column-footer > .text-icon-button:not(#lg):not(#lg):hover {
+    background: none;
+  }
+}
+
+body .bases-kanban-column-footer > .text-icon-button:not(#lg) > .lg-hover-glass {
+  inset: calc((var(--lg-btn) - var(--lg-hover-d)) / 2);
+  border-radius: 50%;
+  corner-shape: round;
+  transform: translate(var(--lg-mx, 0px), var(--lg-my, 0px));
+}
+
+body:not(.is-mobile) .bases-kanban-column-footer > .text-icon-button:not(#lg) > .text-button-icon,
+body:not(.is-mobile) .bases-kanban-column-footer > .text-icon-button:not(#lg) > .text-button-label,
+body:not(.is-mobile) .bases-kanban-column-footer > .text-icon-button:not(#lg) > .flair {
+  transform: translate(calc(var(--lg-mx, 0px) * 0.45), calc(var(--lg-my, 0px) * 0.45));
+  transition: transform 460ms var(--lg-spring);
+}
+
+/* 유리 그림자가 잘리지 않게 */
+.bases-kanban-column-footer:not(#lg) {
+  overflow: visible;
+}
+
+.bases-kanban-column-header:not(#lg) {
+  background: none;
+}
+
+/* 카드들을 담은 칸(높이가 카드들 높이의 합)이 회색 묶음 하나가 된다(곡률은 알약과 같다, 사용자 요청). 카드는 투명하고 카드 사이 틈 가운데에 가로선 */
+.bases-kanban-column-inner:not(#lg) {
+  isolation: isolate;
+  border-radius: var(--lg-board-r);
+  corner-shape: var(--lg-board-shape);
+}
+
+/* 묶음 바탕은 뒤 층(::before)에 위아래로 --lg-board-pad 만큼 늘려 칠한다: 카드는 Obsidian 이 칸 맨 위부터 절대 위치로 놓아 안쪽 여백으로는 밀리지 않는다 */
+.bases-kanban-column-inner:not(#lg)::before {
+  content: "";
+  position: absolute;
+  inset: calc(var(--lg-board-pad) * -1) 0;
+  z-index: -1;
+  border-radius: inherit;
+  corner-shape: inherit;
+  background: var(--lg-board-card);
+  pointer-events: none;
+}
+
+.bases-kanban-card:not(#lg) {
+  border: none;
+  border-radius: var(--lg-board-r);
+  corner-shape: var(--lg-board-shape);
+  background: transparent;
+  box-shadow: none;
+  /* 카드 밖(위쪽 틈)에 그리는 가로선이 잘리지 않게. Obsidian 이 카드에 contain: strict 를 걸어 밖이 잘렸다:
+     그리기 제한(paint)만 풀고 크기·배치 제한은 남긴다. 표지 그림은 카드 모서리대로 따로 자른다 */
+  overflow: visible;
+  contain: size layout style;
+}
+
+/* 카드 글자 왼쪽(과 오른쪽) 여백 (Obsidian 8px) */
+.bases-kanban-card .bases-kanban-card-line:not(#lg),
+.bases-kanban-card .bases-kanban-card-label:not(#lg) {
+  padding-inline: var(--lg-board-text-x);
+}
+
+/* 카드 사이 가로선 (Kanban 플러그인과 같은 두께·여백). 카드는 절대 위치로 8px 씩 띄워 놓이므로 그 틈 가운데에 */
+.bases-kanban-column-inner > .bases-kanban-card + .bases-kanban-card:not(#lg)::before {
+  content: "";
+  position: absolute;
+  top: round(-4.5px, var(--lg-dpx, 1px));
+  left: 12px;
+  right: 12px;
+  height: round(1px, var(--lg-dpx, 1px));
+  background-color: var(--lg-divider);
+  pointer-events: none;
+}
+
+.bases-kanban-card > .bases-kanban-card-cover:not(#lg) {
+  border-start-start-radius: inherit;
+  border-start-end-radius: inherit;
+  overflow: hidden;
+}
+
+@media (hover: hover) {
+  .bases-kanban-card:not(#lg):hover {
+    background-color: var(--lg-hover-glass);
+  }
+}
+
+/* 카드 보기 */
+/* 모서리는 파일 탐색기 줄 호버 하이라이트와 같은 곡률 (사용자 요청). 카드는 유리 대신 평평한 바탕색 (사용자 요청: 테두리·하이라이트·그림자 없이). 글자는 가운데보다 2px 아래 (사용자 요청): Obsidian 은 위 여백을 읽어 속성 줄을
+   그만큼 내려 놓고 카드 높이는 내용 + 위아래 여백으로 정한다. 기본(위 8px·아래 2px)은 글자가 아래로 치우쳤다. 합 10px 은 그대로 */
+.bases-cards-item:not(#lg) {
+  border-radius: var(--lg-row-radius);
+  corner-shape: var(--lg-rect-shape);
+  /* 테두리만 칸반 카드 사이 가로선과 같은 회색(--lg-divider)으로 (사용자 요청, 묶음 회색은 너무 옅었다). 속성 줄은 테두리 안쪽에서 위 여백만큼 내려 놓이므로 위 여백에서 테두리 굵기를 빼고 아래에 더한다 */
+  --lg-card-bw: 2px;
+  padding-block: calc(7px - var(--lg-card-bw)) calc(3px + var(--lg-card-bw));
+  background: var(--lg-flat-bg);
+  border: var(--lg-card-bw) solid var(--lg-divider);
+  box-shadow: none;
+}
+
+/* 휴대폰·태블릿은 카드 모서리를 예전 알약 그대로 두고, 카드 높이는 다른 알약처럼 손가락 크기(--touch-size-m, 한 줄 카드 기준)로 (사용자 요청).
+   Obsidian 은 카드 높이를 내용 + 위아래 여백으로 정하므로 여백으로 키운다. 글자는 가운데보다 1px 아래 (사용자 요청, PC 는 2px) */
+body.is-mobile .bases-cards-item:not(#lg) {
+  border-radius: 999px; /* 끝이 반원 (카드 높이가 알약 높이보다 커서 --lg-kb-r 로는 네모나 보였다, 사용자 지적) */
+  corner-shape: var(--lg-pill-shape);
+  --lg-card-gap: calc((var(--touch-size-m) - 24px) / 2); /* 한 줄(24px) 카드의 위아래 틈 */
+  padding-block: calc(var(--lg-card-gap) + 1px - var(--lg-card-bw)) calc(var(--lg-card-gap) - 1px + var(--lg-card-bw));
+}
+
+/* 카드 안 글자는 왼쪽(과 오른쪽)을 띄운다: Obsidian 은 값 줄을 여백 없이 카드 끝에 붙인다 (사용자 요청). 이름표도 같은 여백 */
+.bases-cards-item .bases-cards-line:not(#lg),
+.bases-cards-item .bases-cards-label:not(#lg) {
+  padding-inline: var(--size-4-3);
+}
+
+/* =========================================================
    Kanban 플러그인 (obsidian-kanban) 연동: 플러그인은 그대로 두고 테마에서 모양만 바꾼다
    - 카드·카드 추가 버튼: 알약 (높이 --lg-pill-h, 끝이 반원). 여러 줄 카드는 같은 반지름의 둥근 사각형
    - 목록(lane): 유리판. 모서리는 안의 알약과 중심이 같게 (알약 반지름 + 안쪽 여백 8px)
@@ -6818,13 +7667,13 @@ body {
   --lg-kb-lane-r: calc(var(--lg-kb-r) + 8px);
 }
 
+/* 목록은 Bases 칸반 보기와 같이 판 없이 제목만, 안의 카드는 회색 묶음 하나 (사용자 요청). 안의 버튼은 그대로 유리 */
 .kanban-plugin__lane:not(#lg) {
+  border-radius: 22px;
+  corner-shape: var(--lg-rect-shape);
+  background: none;
   border: none;
-  border-radius: var(--lg-kb-lane-r);
-  corner-shape: var(--lg-pill-shape);
-  background-color: var(--lg-glass-fill);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim), var(--lg-shadow);
+  box-shadow: none;
 }
 
 /* 보드 위 버튼 줄: Kanban 이 머리 줄을 늘 보이게 하는데(display: flex !important) Obsidian 기본 높이(약 89px)라 버튼이 탭 줄에서
@@ -6840,14 +7689,15 @@ body.lg-ui:not(.is-phone) .mod-root .workspace-leaf-content[data-type="kanban"] 
   border: none;
 }
 
-/* 카드: 유리 없이 목록 유리판 위에 바로 놓고, 카드 사이만 가로선으로 나눈다 (사용자 요청, 처음엔 카드마다 알약 유리였다) */
+/* 카드: 목록 안에서 카드들이 회색 둥근 사각형 하나로 합쳐지고 가로선으로 나뉜다 (사용자 요청). 바탕은 카드를 감싼 칸(.kanban-plugin__item-wrapper)이
+   칠하고 틈 없이 붙인다. 첫 칸은 위, 마지막 칸은 아래 모서리만 둥글다 */
 .kanban-plugin__item:not(#lg) {
   border: none;
-  border-radius: var(--lg-kb-r);
-  corner-shape: var(--lg-pill-shape);
+  border-radius: var(--lg-board-r);
+  corner-shape: var(--lg-board-shape);
   background: transparent;
   box-shadow: none;
-  /* Kanban 은 카드 밖을 잘라(overflow: hidden) 체크박스 호버 글로우가 잘렸다 (사용자 지적). 카드에 배경이 없으니 자를 것이 없다 */
+  /* Kanban 은 카드 밖을 잘라(overflow: hidden) 체크박스 호버 글로우가 잘렸다 (사용자 지적). 카드 배경은 단색이라 자를 것이 없다 */
   overflow: visible;
 }
 
@@ -6859,18 +7709,33 @@ body.lg-ui:not(.is-phone) .mod-root .workspace-leaf-content[data-type="kanban"] 
 
 .kanban-plugin__lane-items > .kanban-plugin__item-wrapper:not(#lg) {
   position: relative;
+  background: var(--lg-board-card);
+  corner-shape: var(--lg-board-shape);
 }
 
+.kanban-plugin__lane-items > .kanban-plugin__item-wrapper:first-child:not(#lg) {
+  border-start-start-radius: var(--lg-board-r);
+  border-start-end-radius: var(--lg-board-r);
+  padding-top: var(--lg-board-pad);
+}
+
+/* 마지막 카드 칸 뒤에는 끌어 놓을 자리 표시(.kanban-plugin__placeholder)가 붙어 :last-child 로는 못 고른다 */
+.kanban-plugin__lane-items > .kanban-plugin__item-wrapper:nth-last-child(1 of .kanban-plugin__item-wrapper):not(#lg) {
+  border-end-start-radius: var(--lg-board-r);
+  border-end-end-radius: var(--lg-board-r);
+  padding-bottom: var(--lg-board-pad);
+}
+
+/* 카드 칸끼리 틈 없이 붙인다 (Kanban 은 칸마다 위 4px 를 띄운다) */
 .kanban-plugin__lane-items > .kanban-plugin__item-wrapper + .kanban-plugin__item-wrapper:not(#lg) {
-  margin-top: 8px;
+  margin-top: 0;
 }
 
-/* 두께·자리는 화면 픽셀 배수로 반올림한다(--lg-dpx, 제목 밑 가로줄과 같다): 125% 배율에서 1px 은 1.25픽셀이라 놓인 높이에 따라
-   1픽셀·2픽셀로 그려져 줄마다 두께가 달라 보였다 (사용자 지적) */
+/* 카드 사이 가로선: 두께·자리는 화면 픽셀 배수로 반올림한다(--lg-dpx) */
 .kanban-plugin__lane-items > .kanban-plugin__item-wrapper + .kanban-plugin__item-wrapper:not(#lg)::before {
   content: "";
   position: absolute;
-  top: round(-4.5px, var(--lg-dpx, 1px));
+  top: 0;
   left: 12px;
   right: 12px;
   height: round(1px, var(--lg-dpx, 1px));
@@ -6888,7 +7753,8 @@ body.lg-ui:not(.is-phone) .mod-root .workspace-leaf-content[data-type="kanban"] 
 }
 
 /* 카드 안쪽의 흰 배경은 걷어 유리가 보이게 */
-.kanban-plugin__item :is(.kanban-plugin__item-content-wrapper, .kanban-plugin__item-title-wrapper):not(#lg) {
+.kanban-plugin__item .kanban-plugin__item-content-wrapper:not(#lg),
+.kanban-plugin__item .kanban-plugin__item-title-wrapper:not(#lg) {
   background: transparent;
   border-radius: inherit;
 }
@@ -6896,7 +7762,7 @@ body.lg-ui:not(.is-phone) .mod-root .workspace-leaf-content[data-type="kanban"] 
 .kanban-plugin__item-title-wrapper:not(#lg) {
   min-height: var(--lg-pill-h);
   align-items: center;
-  padding-inline: 12px 10px;
+  padding-inline: var(--lg-board-text-x) 10px;
 }
 
 .kanban-plugin__new-item-button:not(#lg) {
@@ -6904,8 +7770,10 @@ body.lg-ui:not(.is-phone) .mod-root .workspace-leaf-content[data-type="kanban"] 
   border-radius: var(--lg-kb-r);
   corner-shape: var(--lg-pill-shape);
   background-color: var(--lg-glass-fill);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim), var(--lg-shadow-sm);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, border-box;
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in), var(--lg-shadow-sm);
   -webkit-backdrop-filter: var(--lg-refract,) var(--lg-haze);
   backdrop-filter: var(--lg-refract,) var(--lg-haze);
 }
@@ -6925,8 +7793,14 @@ body.lg-ui:not(.is-phone) .mod-root .workspace-leaf-content[data-type="kanban"] 
   }
 }
 
+/* 카드 추가 버튼의 + 기호는 숨기고 글자만 (사용자 요청) */
+.kanban-plugin__new-item-button > .kanban-plugin__item-button-plus:not(#lg) {
+  display: none;
+}
+
 /* 카드·목록의 ⋮ 버튼: 원형 */
-:is(.kanban-plugin__item-postfix-button, .kanban-plugin__lane-settings-button):not(#lg) {
+.kanban-plugin__item-postfix-button:not(#lg),
+.kanban-plugin__lane-settings-button:not(#lg) {
   border-radius: 50%;
 }
 
@@ -6948,12 +7822,13 @@ body.lg-ui:not(.is-phone) .mod-root .workspace-leaf-content[data-type="kanban"] 
   justify-content: center;
   min-height: var(--lg-pill-h);
   padding-inline: 12px;
-  border: none;
   border-radius: var(--lg-kb-r);
   corner-shape: var(--lg-pill-shape);
   background-color: var(--lg-glass-fill);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim), var(--lg-shadow-sm);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, border-box;
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in), var(--lg-shadow-sm);
   -webkit-backdrop-filter: var(--lg-refract,) var(--lg-haze);
   backdrop-filter: var(--lg-refract,) var(--lg-haze);
 }
@@ -6961,12 +7836,13 @@ body.lg-ui:not(.is-phone) .mod-root .workspace-leaf-content[data-type="kanban"] 
 /* 목록 추가 창 (보드 위 + 버튼): 메뉴처럼 떠 있는 유리판. 여닫는 애니메이션과 자리(+ 버튼이 오른쪽 위 꼭짓점)는 플러그인. 모서리는 안의 알약과 중심이 같게 (알약 반지름 + 안쪽 여백 10px).
    입력 칸과 버튼은 알약 (사용자 요청). 판에 흐림이 걸려 있어 입력 칸에는 흐림을 걸지 않는다 */
 .kanban-plugin__lane-form-wrapper:not(#lg) {
-  border: none;
   border-radius: calc(var(--lg-kb-r) + 10px);
   corner-shape: var(--lg-pill-shape);
   background-color: var(--lg-glass-fill);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim), var(--lg-shadow);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, border-box;
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in), var(--lg-shadow);
   -webkit-backdrop-filter: var(--lg-refract,) var(--lg-haze);
   backdrop-filter: var(--lg-refract,) var(--lg-haze);
 }
@@ -7037,13 +7913,15 @@ body.lg-ui:not(.is-phone) .mod-root .workspace-leaf-content[data-type="kanban"] 
   corner-shape: inherit; /* 붙은 요소의 모양을 따른다 (예전 전역 *::before 규칙 대신) */
   content: "";
   position: absolute;
-  inset: 0;
+  inset: calc(max(var(--lg-cres-w), var(--lg-dpx, 1px)) * -1); /* 가장자리 선(테두리)은 유리 바깥으로: 상자를 선 굵기만큼 키워 선이 원래 윤곽 밖에 놓인다 (사용자 요청). 1 화면 픽셀보다 가는 테두리는 1 화면 픽셀로 그려지므로 그만큼 */
   z-index: -2;
   pointer-events: none;
   border-radius: inherit;
   background-color: var(--lg-glass-fill);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim), var(--lg-shadow);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, padding-box; /* 채움은 원래 윤곽(테두리 안)까지 */
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in); /* 그림자는 링 (::before) */
   -webkit-backdrop-filter: var(--lg-refract,) var(--lg-haze);
   backdrop-filter: var(--lg-refract,) var(--lg-haze);
 }
@@ -7057,6 +7935,7 @@ body.lg-ui:not(.is-phone) .mod-root .workspace-leaf-content[data-type="kanban"] 
   corner-shape: var(--lg-pill-shape);
 }
 
+.view-actions .lg-kb-group .clickable-icon::before,
 .view-actions .lg-kb-group .clickable-icon::after {
   content: none;
 }
@@ -7083,7 +7962,7 @@ body {
 }
 
 /* 넓어진 검색 버튼의 호버 유리는 알약 가운데가 아니라 돋보기 자리에 (사용자 지적) */
-.lg-kb-searching .view-actions .lg-kb-search-btn:not(#lg):not(#lg)::before {
+.lg-kb-searching .view-actions .lg-kb-search-btn:not(#lg):not(#lg) > .lg-hover-glass {
   left: calc(var(--lg-btn) / 2);
 }
 
@@ -7175,7 +8054,9 @@ body.is-ios {
 }
 
 /* 탭 줄 높이: 위 --lg-gap + 알약 + 아래 4px (편집창은 문서 위 버튼 줄도 같은 높이) */
-body:not(.lg-ui):not(.is-mobile) :is(.mod-root, .mod-left-split, .mod-right-split) {
+body:not(.lg-ui):not(.is-mobile) .mod-root,
+body:not(.lg-ui):not(.is-mobile) .mod-left-split,
+body:not(.lg-ui):not(.is-mobile) .mod-right-split {
   --header-height: calc(var(--lg-pill-h) + var(--lg-gap) + 4px);
 }
 
@@ -7226,8 +8107,8 @@ body:not(.lg-ui):not(.is-phone) .mod-root .workspace-leaf-content[data-type="mar
 
 body:not(.lg-ui):not(.is-phone) .mod-root .workspace-leaf-content[data-type="markdown"] > .view-header:not(#lg)::before {
   box-shadow:
-    inset 0 -1px 0 var(--lg-slab-edge),
-    0 1px 0 color-mix(in srgb, var(--lg-hl) 8%, transparent),
+    inset 0 calc(var(--lg-px) * -1) 0 var(--lg-slab-edge),
+    0 var(--lg-px) 0 color-mix(in srgb, var(--lg-hl) 8%, transparent),
     0 6px 24px rgb(0 0 0 / 0.06);
 }
 
@@ -7297,8 +8178,10 @@ body:not(.lg-ui) .mod-root .workspace-leaf-content > .view-header .view-header-t
   border-radius: calc(var(--lg-pill-h) * var(--lg-pill-rx)) / calc(var(--lg-pill-h) / 2);
   corner-shape: var(--lg-pill-shape);
   background-color: var(--lg-glass-fill);
-  background-image: var(--lg-sheen);
-  box-shadow: var(--lg-rim), var(--lg-shadow);
+  background-image: var(--lg-cres-img), var(--lg-sheen); /* 가장자리 선 + 틴트 층 */
+  background-clip: border-area, border-box;
+  border: var(--lg-cres-bd);
+  box-shadow: var(--lg-rim-in), var(--lg-shadow);
   -webkit-backdrop-filter: var(--lg-haze);
   backdrop-filter: var(--lg-haze);
 }
@@ -7324,7 +8207,7 @@ body:not(.lg-ui):not(.is-phone) .menu:not(#lg) {
 }
 
 /* 버튼 묶음 안 버튼의 호버 유리: 버튼이 가로로 길어 원 대신 버튼 폭의 알약으로 (패널 탭과 같은 방식) */
-body:not(.lg-ui) :is(.nav-header .nav-buttons-container, .view-header-nav-buttons) .clickable-icon:not(#lg)::before {
+body:not(.lg-ui) :is(.nav-header .nav-buttons-container, .view-header-nav-buttons) .clickable-icon:not(#lg) > .lg-hover-glass {
   width: calc(100% + var(--lg-hover-d) - var(--lg-inner));
   border-radius: 999px;
   corner-shape: var(--lg-pill-shape);
@@ -7420,7 +8303,8 @@ body.is-tablet:not(.lg-ui) .workspace-drawer .workspace-leaf-content > .nav-head
 }
 
 /* 목록 위 여백: 버튼 줄이 있으면 둘째 줄 아래 8px, 없으면 첫 줄 아래 8px 부터 보인다 (스크롤하면 줄 밑으로 지나간다) */
-body.is-tablet:not(.lg-ui) .workspace-drawer .workspace-leaf-content > .nav-header ~ :is(.nav-files-container, .view-content):not(#lg):not(#lg) {
+body.is-tablet:not(.lg-ui) .workspace-drawer .workspace-leaf-content > .nav-header ~ .nav-files-container:not(#lg):not(#lg),
+body.is-tablet:not(.lg-ui) .workspace-drawer .workspace-leaf-content > .nav-header ~ .view-content:not(#lg):not(#lg) {
   padding-top: calc(var(--lg-dtab-row2) + var(--lg-pill-h) + 8px);
 }
 
