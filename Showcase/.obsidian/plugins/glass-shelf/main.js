@@ -327,9 +327,10 @@ var migrateGlassLevel = function(o) {
 };
 
 // src/constants.ts
-var HOVER_ICON = ".clickable-icon:not(.lg-tab-menu):not(.workspace-tab-header-inner-close-button), .bases-toolbar .bases-toolbar-item > .text-icon-button, .bases-kanban-column-footer > .text-icon-button";
+var HOVER_ICON = ".clickable-icon, .mod-root .workspace-tab-header-inner-close-button, .bases-toolbar .bases-toolbar-item > .text-icon-button, .bases-kanban-column-footer > .text-icon-button";
 var HOVER_GLASS = [
-  ".clickable-icon:not(.lg-tab-menu):not(.workspace-tab-header-inner-close-button)",
+  ".clickable-icon",
+  ".mod-root .workspace-tab-header-inner-close-button",
   ".workspace-drawer-vault-switcher",
   ".bases-toolbar .bases-toolbar-item > .text-icon-button",
   ".bases-kanban-column-footer > .text-icon-button",
@@ -486,7 +487,7 @@ var LENS_SHADE = 0.04;
 var LENS_TAB = { minify: 1.2, flat: 0.94, edge: 2, reach: 1.1, shape: 1, line: true, box: true };
 var LENS_TAB_PC = { ...LENS_TAB, minify: 1.3 };
 var LENS_TAB_TEXT = { minify: 1, flat: 0.6, edge: 0.2, reach: 0.9, shape: 1 };
-var PRESS_WHITE = "color(srgb 1 1 1)";
+var PRESS_WHITE = "var(--lg-press)";
 var PRESS_IMG = "var(--lg-cres-img), none";
 var Refractor = class {
   constructor() {
@@ -3276,14 +3277,30 @@ var pressMethods = {
         return g2;
       });
       this.register(() => {
-        doc.lgHoverPool?.forEach((g2) => g2.remove());
+        doc.lgHoverPool?.forEach((g2) => {
+          g2.lgGlassMo?.disconnect();
+          g2.remove();
+        });
         doc.lgHoverPool = void 0;
       });
     }
     const pool = doc.lgHoverPool;
     const g = pool.shift();
     pool.push(g);
+    g.lgGlassMo?.disconnect();
     el.prepend(g);
+    const win = doc.defaultView || window;
+    const mo = new win.MutationObserver((recs) => {
+      if (!recs.some((r) => [...r.removedNodes].includes(g))) return;
+      const added = recs.flatMap((r) => [...r.addedNodes]).filter((n) => n.nodeName.toLowerCase() === "svg");
+      const fresh2 = added[added.length - 1];
+      if (!fresh2 || g.parentElement) return;
+      const old = el.firstChild;
+      if (old && old !== fresh2 && old.nodeName.toLowerCase() === "svg") old.remove();
+      el.prepend(g);
+    });
+    mo.observe(el, { childList: true });
+    g.lgGlassMo = mo;
     return g;
   },
   // 단독 원형 버튼: 유리 층이 흰색으로 바뀌며 커졌다가 제자리로
@@ -4571,6 +4588,7 @@ var menusMethods = {
         const inner = ghost.querySelector(".menu-scroll");
         if (inner) this.pinSize(inner);
         if (inner) inner.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 60, easing: "ease-in", fill: "forwards" });
+        ghost.classList.add("lg-min-w0");
         this.shrinkBox(ghost, inner && !drop ? [{ el: inner, anchor: anchor || "left", layout: true }] : [], full, dot).onfinish = () => ghost.remove();
         if (src.lgHide) {
           src.lgHide.cancel();
@@ -6900,6 +6918,13 @@ var tabsMethods = {
       parent.insertBefore(node, next && next.parentElement === parent ? next : null);
     }
   },
+  // 보기의 버튼 줄 (Bases 툴바, Kanban 보드 버튼 줄). 없거나 숨어 있으면 null
+  viewBar(view) {
+    const type = view.getViewType();
+    const sel = type === "bases" ? ":scope > .view-content > .bases-header" : type === "kanban" ? ":scope > .view-header" : null;
+    const el = sel ? view.containerEl.querySelector(sel) : null;
+    return el && el.getClientRects().length ? el : null;
+  },
   // 경로 알약이 첫 줄에 보이는지 (경로 표시를 켰거나 탭 쌓기 모드, 휴대폰 제외)
   pathShown(tabsEl) {
     return !import_obsidian12.Platform.isPhone && (tabsEl.classList.contains("mod-stacked") || !!this.settings.showPath);
@@ -6949,6 +6974,15 @@ var tabsMethods = {
     if (switched) {
       void slab.offsetWidth;
       slab.classList.remove("lg-no-tr");
+    }
+    const bar = view && !import_obsidian12.Platform.isPhone ? this.viewBar(view) : null;
+    const hadBar = tabsEl.classList.contains("lg-slab-ext");
+    tabsEl.classList.toggle("lg-slab-ext", !!bar);
+    if (bar && switched) {
+      const cls = hadBar ? "lg-band-swap" : "lg-band-in";
+      bar.classList.remove("lg-band-in", "lg-band-swap");
+      void bar.offsetWidth;
+      bar.classList.add(cls);
     }
     const isMd = view instanceof import_obsidian12.MarkdownView;
     mode.classList.remove(HIDDEN);

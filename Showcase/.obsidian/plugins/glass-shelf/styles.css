@@ -322,7 +322,7 @@ body.lg-ui.is-tablet .workspace-drawer {
 /* 닫기(X)는 탭 맨 왼쪽, 메뉴(≡)는 오른쪽 끝 */
 .lg-ui .mod-root .workspace-tab-header-inner-close-button {
   order: -1;
-  position: static;
+  position: relative; /* 호버 유리(.lg-hover-glass)의 기준 */
 }
 
 .lg-tab-menu {
