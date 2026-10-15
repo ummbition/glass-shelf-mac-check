@@ -76,7 +76,12 @@ function capture(file, cropWork) {
 // 테마만 (플러그인 끔): 전체 화면 라이트·다크 두 장
 if (process.env.HOVERTEST === "themeonly") {
   await ev(`return await __sk.layout("single");`);
+  // 플러그인이 다 켜진 뒤에 끈다: 켜지는 도중에 끄면 남은 준비가 끈 뒤에 플러그인 화면(··· 버튼, 폴더 색 등)을 다시 붙였다(추정)
+  await sleep(6000);
   note("off", await ev(`await app.plugins.disablePlugin("glass-shelf"); return !app.plugins.plugins["glass-shelf"];`));
+  await sleep(2500);
+  note("left", await ev(`return { injected: document.querySelectorAll(".lg-injected").length, ui: document.body.classList.contains("lg-ui") };`));
+
   for (const dark of [false, true]) {
     await ev(`if (app.changeTheme) app.changeTheme(${JSON.stringify(dark ? "obsidian" : "moonstone")}); return 1;`);
     await ev(`return await __sk.full(true);`);
