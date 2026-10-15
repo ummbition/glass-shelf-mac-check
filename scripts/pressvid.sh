@@ -1,6 +1,7 @@
 #!/bin/bash
 # 기본 앱(Finder·Safari) 툴바 버튼을 짧게 누르고 꾹 누르는 모습 녹화 (hovertest=pressvid)
 OUT="$1"
+[ "$2" = dark ] && osascript -e 'tell application "System Events" to tell appearance preferences to set dark mode to true' && sleep 2
 brew install cliclick > /dev/null 2>&1 || true
 osascript -e 'tell application "Preview" to quit' || true
 open -a Finder "$HOME"; sleep 2

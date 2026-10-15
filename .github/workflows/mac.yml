@@ -178,8 +178,8 @@ jobs:
             mkdir -p "$OUT"; bash scripts/menushot.sh "$OUT" || true
             exit 0
           fi
-          if [ "${{ inputs.hovertest }}" = "pressvid" ]; then
-            mkdir -p "$OUT"; bash scripts/pressvid.sh "$OUT" || true
+          if [ "${{ inputs.hovertest }}" = "pressvid" ] || [ "${{ inputs.hovertest }}" = "pressviddark" ]; then
+            mkdir -p "$OUT"; bash scripts/pressvid.sh "$OUT" "$([ "${{ inputs.hovertest }}" = pressviddark ] && echo dark)" || true
             exit 0
           fi
           if [ "${{ inputs.hovertest }}" = "press" ]; then
