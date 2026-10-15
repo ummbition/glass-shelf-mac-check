@@ -174,6 +174,13 @@ jobs:
           LENSCMP10: ${{ inputs.hovertest == 'lenscmp10' && '1' || '' }}
           LENSCMP11: ${{ inputs.hovertest == 'lenscmp11' && '1' || '' }}
         run: |
+          if [ "${{ inputs.hovertest }}" = "native" ]; then
+            mkdir -p "$OUT"; swiftc -O scripts/native.swift -o native 2>&1 | tail -20 && ./native "$OUT" || true
+            open -a Finder "$HOME"; sleep 3; screencapture -x "$OUT/native-finder.png" || true
+            open -a Notes; sleep 4; screencapture -x "$OUT/native-notes.png" || true
+            open -a Safari https://example.com; sleep 5; screencapture -x "$OUT/native-safari.png" || true
+            exit 0
+          fi
           if [ "${{ inputs.hovertest }}" = "electronab" ]; then
             cd scripts/ab && npm i electron@43.7.7 --no-save --no-audit --no-fund > /dev/null 2>&1; npx electron --version
             ./node_modules/.bin/electron . > "$OUT/ab-electron.log" 2>&1 || true
