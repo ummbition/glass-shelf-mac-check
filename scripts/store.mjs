@@ -81,6 +81,18 @@ if (process.env.HOVERTEST === "themeonly") {
   note("off", await ev(`await app.plugins.disablePlugin("glass-shelf"); return !app.plugins.plugins["glass-shelf"];`));
   await sleep(2500);
   note("left", await ev(`return { injected: document.querySelectorAll(".lg-injected").length, ui: document.body.classList.contains("lg-ui") };`));
+  // 플러그인을 끈 채로 저장하고 Obsidian 을 다시 불러온다 (사용자 지시: 끄고 패널을 닫았다 열어도 접기 버튼이 리본 위로 안 옮겨지면 재시작)
+  if (!process.env.THEMEDIAG) {
+    note("offsave", await ev(`await app.plugins.disablePluginAndSave("glass-shelf"); return !app.plugins.enabledPlugins.has("glass-shelf");`));
+    await ev(`setTimeout(() => location.reload(), 50); return 1;`);
+    await sleep(4000);
+    for (let i = 0; i < 60; i++) { if (await ev(`return !!(window.app && app.workspace && app.workspace.layoutReady)`) === true) break; await sleep(1000); }
+    await sleep(3000);
+    note("kit-r", await ev(`${kit}; return typeof window.__sk;`));
+    note("zoom-r", await ev(`return __sk.zoom();`));
+    note("plugin-r", await ev(`return { on: !!app.plugins.plugins["glass-shelf"], injected: document.querySelectorAll(".lg-injected").length };`));
+  }
+  const tog = () => ev(`const e = document.querySelector(".sidebar-toggle-button.mod-left"); const b = e && e.getBoundingClientRect(); return b ? { x: Math.round(b.left), y: Math.round(b.top), in: e.parentElement.className.slice(0, 40) } : null;`);
 
   // 진단: 리본이 패널 위에 겹치는 상태를 무엇이 고치는지 단계마다 찍는다 (THEMEDIAG=1)
   if (process.env.THEMEDIAG) {
@@ -103,7 +115,9 @@ if (process.env.HOVERTEST === "themeonly") {
     await front();
     await sleep(3000);
     // 찍기 바로 전에 왼쪽 패널을 닫았다 연다: 플러그인을 끈 뒤 테마 UI 가 이렇게 해야 다시 자리를 잡는다 (사용자 지시)
+    note("tog-before", await tog());
     await ev(`app.workspace.leftSplit.collapse(); await new Promise(r => setTimeout(r, 1200)); app.workspace.leftSplit.expand(); await new Promise(r => setTimeout(r, 2000)); return 1;`);
+    note("tog-after", await tog());
     await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: Math.round(area.size.width * 0.62), y: Math.round(area.size.height * 0.8) });
     await sleep(700);
     const name = dark ? "theme-only-dark" : "theme-only-light";
