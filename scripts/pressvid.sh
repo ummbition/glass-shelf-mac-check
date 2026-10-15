@@ -19,15 +19,14 @@ press 1212; hold 1212 tag
 cliclick m:900,600
 wait $REC
 osascript -e 'tell application "Finder" to close every window' || true
-open -a Safari https://example.com; sleep 5
-osascript -e 'tell application "Safari" to set bounds of front window to {300, 200, 1624, 900}' || true
-sleep 1
+open -a Safari https://example.com; sleep 6
 screencapture -x "$OUT/safari-start.png"
 screencapture -x -V 18 "$OUT/safari.mov" &
 REC=$!
 sleep 1.5
-press 489; hold 489 sback
+Y=72
+press 411; hold 411 ssidebar
+press 1522; cliclick kp:esc w:600; hold 1522 sshare; cliclick kp:esc w:600
 press 1557; hold 1557 splus
-press 429; hold 429 ssidebar
 cliclick m:900,600
 wait $REC
