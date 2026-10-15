@@ -878,6 +878,11 @@ body:not(.is-mobile) .workspace-sidedock-vault-profile .workspace-drawer-vault-a
   content: none;
 }
 
+/* 목록 방식(.lg-tab-list)에서는 알약이 탭 목록 전체라 링 그림자가 목록 둘레를 감쌌다: 빼서 그림자 없이 둔다 (사용자 요청) */
+.workspace-split.lg-tab-list .workspace-tab-header-container > .lg-ptab-ring:not(#lg) {
+  display: none;
+}
+
 /* 편집창 탭 트랙: 플랫한 회색 */
 .mod-root .workspace-tab-header-container-inner {
   background-color: color-mix(in srgb, var(--lg-hl) calc(var(--lg-track-a) * 100%), transparent);
@@ -8136,9 +8141,15 @@ body:not(.lg-ui):not(.is-mobile) .mod-root .workspace-leaf-content > .view-heade
    Windows 처럼 리본 칸 맨 위(신호등 줄 아래)에 놓고, 리본 버튼들은 그만큼 내린다 (사용자 요청). 패널을 접으면 Obsidian 자리 그대로 */
 body.mod-macos:not(.lg-ui):not(.is-mobile) .mod-left-split .workspace-tabs.mod-top-left-space > .workspace-tab-header-container > .sidebar-toggle-button.mod-left:not(#lg):not(#lg) {
   position: fixed;
-  top: var(--header-height);
+  /* 리본 칸 맨 위 = 창 맨 위 줄(신호등 줄) 높이. 탭 줄 안의 --header-height 는 값이 달라 직접 쓴다 */
+  top: calc(var(--lg-pill-h) + var(--lg-gap) * 2);
   left: calc((var(--ribbon-width) - var(--lg-btn)) / 2);
   z-index: 30;
+}
+
+/* 버튼은 왼쪽 패널(쌓임 순서 5) 안에 있어 리본이 그 위를 덮었다(맥 측정: 그 자리를 누르면 리본이 잡힘). 리본을 패널 아래로 내린다. 둘은 겹치지 않는다 */
+body.mod-macos:not(.lg-ui):not(.is-mobile) .workspace.is-left-sidedock-open > .workspace-ribbon.mod-primary:not(#lg) {
+  z-index: 1;
 }
 
 body.mod-macos:not(.lg-ui):not(.is-mobile) .workspace.is-left-sidedock-open .workspace-ribbon.mod-primary > .side-dock-actions:not(#lg) {
