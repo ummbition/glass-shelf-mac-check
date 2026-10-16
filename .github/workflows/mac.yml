@@ -186,6 +186,10 @@ jobs:
             mkdir -p "$OUT"; bash scripts/safarivid.sh "$OUT" "$([ "${{ inputs.hovertest }}" = safarividdark ] && echo dark)" || true
             exit 0
           fi
+          if [ "${{ inputs.hovertest }}" = "safaritabs" ] || [ "${{ inputs.hovertest }}" = "safaritabsdark" ]; then
+            mkdir -p "$OUT"; bash scripts/safaritabs.sh "$OUT" "$([ "${{ inputs.hovertest }}" = safaritabsdark ] && echo dark)" || true
+            exit 0
+          fi
           if [ "${{ inputs.hovertest }}" = "safarichev" ]; then
             mkdir -p "$OUT"; bash scripts/safarichev.sh "$OUT" || true
             exit 0
