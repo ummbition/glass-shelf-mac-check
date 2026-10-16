@@ -186,6 +186,10 @@ jobs:
             mkdir -p "$OUT"; bash scripts/safarivid.sh "$OUT" "$([ "${{ inputs.hovertest }}" = safarividdark ] && echo dark)" || true
             exit 0
           fi
+          if [ "${{ inputs.hovertest }}" = "safarichev" ]; then
+            mkdir -p "$OUT"; bash scripts/safarichev.sh "$OUT" || true
+            exit 0
+          fi
           if [ "${{ inputs.hovertest }}" = "press" ]; then
             mkdir -p "$OUT"; swiftc -O scripts/press.swift -o press 2>&1 | tail -20 && ./press "$OUT" || true
             exit 0
