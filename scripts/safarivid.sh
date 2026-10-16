@@ -13,9 +13,12 @@ tap() { cliclick m:$1,$Y w:700 c:$1,$Y w:2200; screencapture -x "$OUT/open-$2.pn
 # + : 새 탭이 열리면 탭바가 생기므로 이후 좌표 다시 확인용으로 캡처
 tap 1557 plus
 screencapture -x "$OUT/after-plus.png"
-cliclick kp:esc w:400
-osascript -e 'tell application "Safari" to close current tab of front window' || true
-sleep 1.5
+cliclick kp:esc w:600
+# 탭바가 생긴 상태에서 다른 탭에 호버 (탭 안 버튼 보기)
+cliclick m:645,114 w:1800; screencapture -x "$OUT/tab-hover.png"
+cliclick m:1290,114 w:1800; screencapture -x "$OUT/tab-hover2.png"
+cliclick kd:cmd t:w ku:cmd w:1500
+screencapture -x "$OUT/after-close.png"
 tap 708 pagemenu
 cliclick w:800 kp:esc w:1000
 tap 1522 share
