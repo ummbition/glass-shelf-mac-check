@@ -31,10 +31,10 @@ await sleep(1500);
 await ev(`for (const b of document.querySelectorAll(".modal-container button")) if (/Trust author/i.test(b.textContent)) b.click();`);
 await sleep(1500);
 await step("setup", async () => {
-  note("setup", await ev(`if (app.plugins.setEnable) await app.plugins.setEnable(true); if (!app.plugins.plugins["glass-shelf"]) await app.plugins.enablePluginAndSave("glass-shelf"); app.customCss.setTheme("Glass Shelf"); app.setting.close();
+  note("setup", await ev(`if (app.plugins.setEnable) await app.plugins.setEnable(true); if (!app.plugins.plugins["glass-shelf"]) await app.plugins.enablePluginAndSave("glass-shelf"); app.customCss.setTheme("Glass Shelf"); app.setting.close(); const nat0 = app.vault.getConfig("nativeMenus"); app.vault.setConfig("nativeMenus", false); const wv = app.internalPlugins.getPluginById("webviewer"); if (wv && !wv.enabled) await wv.enable();
     await app.workspace.openLinkText("시험", "", false); await new Promise((r) => setTimeout(r, 1500));
     const pl = app.plugins.plugins["glass-shelf"];
-    return { cls: document.body.className, ver: pl && pl.manifest.version, rm: pl && pl.settings.reduceMotion, native: app.vault.getConfig("nativeMenus") };`));
+    return { cls: document.body.className, ver: pl && pl.manifest.version, rm: pl && pl.settings.reduceMotion, native0: nat0, native: app.vault.getConfig("nativeMenus"), wv: !!(wv && wv.enabled) };`));
   await sleep(1500); shot("00-start");
 });
 const setRm = (v) => ev(`const pl = app.plugins.plugins["glass-shelf"]; pl.settings.reduceMotion = "${v}"; await pl.saveSettings(); pl.applyBodyState(document); return document.body.classList.contains("lg-rm");`);
@@ -60,7 +60,7 @@ for (const rm of ["off", "pc"]) {
 await setRm("off"); await sleep(400);
 await step("graph", async () => {
   await ev(`app.commands.executeCommandById("graph:open");`); await sleep(2500);
-  note("graph-btn", await clickSel(".mod-root .graph-controls.is-close"));
+  note("graph-btn", await clickSel(".mod-root .graph-controls.is-close .graph-controls-button.mod-open") || await clickSel(".mod-root .graph-controls.is-close"));
   await sleep(900);
   note("graph", await ev(`const g = document.querySelector(".mod-root .graph-controls:not(.is-close)"); if (!g) return null; const cs = getComputedStyle(g); return { bg: cs.backgroundImage.slice(0, 120), clip: cs.backgroundClip, bt: cs.borderTopColor, r: cs.borderTopLeftRadius };`));
   shot("graph");
@@ -68,7 +68,7 @@ await step("graph", async () => {
   await ev(`await app.workspace.openLinkText("시험", "", false);`); await sleep(1000);
 });
 await step("junk", async () => {
-  note("junk", await ev(`const rr = document.querySelector(".workspace-ribbon.mod-right"); const a = createDiv({ cls: "side-dock-ribbon-action clickable-icon lg-test-rr", attr: { "aria-label": "시험 오른쪽 리본" } }); require("obsidian").setIcon(a, "star"); if (rr) (rr.querySelector(".side-dock-actions") || rr).appendChild(a);
+  note("junk", await ev(`const rr = document.querySelector(".workspace-ribbon.mod-right"); const a = createDiv({ cls: "side-dock-ribbon-action clickable-icon lg-test-rr", attr: { "aria-label": "시험 오른쪽 리본" } }); a.setText("★"); if (rr) (rr.querySelector(".side-dock-actions") || rr).appendChild(a);
     app.plugins.plugins["glass-shelf"].requestRefresh(); await new Promise((r) => setTimeout(r, 1200));
     const j = document.querySelector(".lg-junk"), m = document.querySelector(".lg-rib-menu"); const hc = m && m.closest(".workspace-tab-header-container");
     const R = (e) => { if (!e) return null; const b = e.getBoundingClientRect(); return [b.left, b.top, b.width].map(Math.round); };
@@ -78,7 +78,7 @@ await step("junk", async () => {
   shot("junk-menu"); await esc(); await sleep(400);
 });
 await step("acts", async () => {
-  note("acts", await ev(`const v = app.workspace.getActiveViewOfType(require("obsidian").MarkdownView); for (let i = 0; i < 7; i++) v.addAction(["star", "heart", "zap", "sun", "moon", "cloud", "flag"][i], "시험 " + i, () => {});
+  note("acts", await ev(`const v = app.workspace.activeLeaf.view; for (let i = 0; i < 7; i++) v.addAction(["star", "heart", "zap", "sun", "moon", "cloud", "flag"][i], "시험 " + i, () => {});
     app.plugins.plugins["glass-shelf"].requestRefresh(); await new Promise((r) => setTimeout(r, 1200));
     const t = document.querySelector(".mod-root .workspace-tabs.mod-active .lg-tab-tools") || document.querySelector(".mod-root .lg-tab-tools");
     return { shown: t ? t.querySelectorAll(".lg-act-btn:not(.lg-act-more)").length : null, more: !!(t && t.querySelector(".lg-act-more")), w: innerWidth };`));
