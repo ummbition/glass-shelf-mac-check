@@ -53,7 +53,7 @@ await step("setup", async () => {
     if (!fe) { fe = app.workspace.getLeftLeaf(false); await fe.setViewState({ type: "file-explorer" }); }
     const parent = fe.parent;
     for (const l of [...parent.children]) if (l !== fe && l.view && l.view.getViewType() !== "notebook-navigator") l.detach();
-    try { app.workspace.leftSplit.setSize(340); } catch (e) {}
+    try { app.workspace.leftSplit.setSize(520); } catch (e) {}
     for (const l of app.workspace.getLeavesOfType("notebook-navigator")) if (l.parent !== parent) l.detach();
     let nl = app.workspace.getLeavesOfType("notebook-navigator")[0];
     if (!nl) { nl = app.workspace.createLeafInParent(parent, parent.children.length); await nl.setViewState({ type: "notebook-navigator", active: false }); }
@@ -69,7 +69,7 @@ const sw = async (name, leafVar) => {
     const before = await ev(STATE);
     await ev(`window.__seq = []; const T = window.__nnTabs; const inner = T.querySelector(":scope > .workspace-tab-header-container > .workspace-tab-header-container-inner"); const header = T.querySelector(":scope > .workspace-tab-header-container");
       const t0 = performance.now(); const f = () => { const b = inner.getBoundingClientRect(); const row = header.querySelector(":scope > .lg-nav-row"); const rb = row && row.getBoundingClientRect();
-        window.__seq.push([Math.round(performance.now() - t0), Math.round(b.left * 10) / 10, Math.round(b.top * 10) / 10, Math.round(b.width * 10) / 10, T.classList.contains("lg-nn-one") ? 1 : 0, row ? (row.classList.contains("lg-nav-row-out") ? "out" : row.classList.contains("lg-nav-none") ? "none" : "in") : "-", rb ? Math.round(rb.width) : null, row ? [...row.querySelectorAll(".lg-nav-btn")].map((x) => Math.round(x.getBoundingClientRect().width)).join(",") : ""]);
+        window.__seq.push([Math.round(performance.now() - t0), Math.round(b.left * 10) / 10, Math.round(b.top * 10) / 10, Math.round(b.width * 10) / 10, T.classList.contains("lg-nn-one") ? 1 : 0, row ? (row.classList.contains("lg-nav-row-out") ? "out" : row.classList.contains("lg-nav-none") ? "none" : "in") : "-", rb ? Math.round(rb.width) : null, row ? [...row.querySelectorAll(".lg-nav-btn")].map((x) => Math.round(x.getBoundingClientRect().width)).join(",") : "", inner.getAnimations().length, inner.offsetWidth, T.classList.contains("lg-nav-fold") ? "fold" : ""]);
         if (performance.now() - t0 < 470) requestAnimationFrame(f); }; requestAnimationFrame(f);`);
     // 탭 머리를 실제로 눌러 바꾼다. 안 보이면 revealLeaf
     const pos = await ev(`const h = window.${leafVar}.tabHeaderEl; const b = h.getBoundingClientRect(); return b.width > 2 && h.offsetParent ? [b.left + b.width / 2, b.top + b.height / 2] : null;`);
