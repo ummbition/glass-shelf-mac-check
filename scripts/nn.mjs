@@ -43,7 +43,8 @@ await step("setup", async () => {
     if (!app.plugins.plugins["glass-shelf"]) await app.plugins.enablePluginAndSave("glass-shelf");
     if (!app.plugins.plugins["notebook-navigator"]) await app.plugins.enablePluginAndSave("notebook-navigator");
     app.customCss.setTheme("Glass Shelf"); app.setting.close(); app.vault.setConfig("nativeMenus", false);
-    const pl = app.plugins.plugins["glass-shelf"]; pl.settings.tabWide = true; pl.settings.reduceMotion = "off"; await pl.saveSettings(); pl.applyBodyState(document);
+    let pl; for (let i = 0; i < 40; i++) { pl = app.plugins.plugins["glass-shelf"]; if (pl && pl.settings) break; await new Promise((r) => setTimeout(r, 250)); }
+    pl = app.plugins.plugins["glass-shelf"]; pl.settings.tabWide = true; pl.settings.reduceMotion = "off"; await pl.saveSettings(); pl.applyBodyState(document);
     await app.workspace.openLinkText("시험", "", false); await new Promise((r) => setTimeout(r, 1500));
     const nnp = app.plugins.plugins["notebook-navigator"];
     return { body: document.body.className, ver: pl.manifest.version, nn: !!nnp, nnVer: nnp && nnp.manifest.version, tabWide: document.body.classList.contains("lg-tab-wide"), ua: navigator.userAgent.match(/obsidian\\/[\\d.]+/i) };`));
@@ -51,6 +52,8 @@ await step("setup", async () => {
   note("place", await ev(`let fe = app.workspace.getLeavesOfType("file-explorer")[0];
     if (!fe) { fe = app.workspace.getLeftLeaf(false); await fe.setViewState({ type: "file-explorer" }); }
     const parent = fe.parent;
+    for (const l of [...parent.children]) if (l !== fe && l.view && l.view.getViewType() !== "notebook-navigator") l.detach();
+    try { app.workspace.leftSplit.setSize(340); } catch (e) {}
     for (const l of app.workspace.getLeavesOfType("notebook-navigator")) if (l.parent !== parent) l.detach();
     let nl = app.workspace.getLeavesOfType("notebook-navigator")[0];
     if (!nl) { nl = app.workspace.createLeafInParent(parent, parent.children.length); await nl.setViewState({ type: "notebook-navigator", active: false }); }
