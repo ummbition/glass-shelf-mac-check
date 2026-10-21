@@ -1263,3 +1263,13 @@ body:not(.is-phone) :is(.menu, .lg-mdemo-menu).lg-has-hi:not(#lg) {
 .menu.lg-morph-w:not(#lg):not(#lg) {
   min-width: 0;
 }
+
+/* 왼쪽 패널 플러그인 보기와 보관함 줄 (vault-clear.ts): 바닥에 닿은 스크롤 칸은 안쪽 끝을 보관함 줄만큼 비워 목록이 그 밑으로 비치며 지나가고,
+   스크롤되지 않는 바닥 영역은 그만큼 위로 올린다. --lg-vault-gap 은 보기 칸이 보관함 줄과 겹치는 높이, --lg-vault-pb·mb 는 원래 여백 */
+.lg-vault-pad:not(#lg):not(#lg) {
+  padding-bottom: calc(var(--lg-vault-pb, 0px) + var(--lg-vault-gap, 0px));
+}
+
+.lg-vault-lift:not(#lg):not(#lg) {
+  margin-bottom: calc(var(--lg-vault-mb, 0px) + var(--lg-vault-gap, 0px));
+}
