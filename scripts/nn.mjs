@@ -43,7 +43,10 @@ await step("setup", async () => {
     if (!app.plugins.plugins["glass-shelf"]) await app.plugins.enablePluginAndSave("glass-shelf");
     if (!app.plugins.plugins["notebook-navigator"]) await app.plugins.enablePluginAndSave("notebook-navigator");
     app.customCss.setTheme("Glass Shelf"); app.setting.close(); app.vault.setConfig("nativeMenus", false);
-    let pl; for (let i = 0; i < 40; i++) { pl = app.plugins.plugins["glass-shelf"]; if (pl && pl.settings) break; await new Promise((r) => setTimeout(r, 250)); }
+    let pl; for (let i = 0; i < 120; i++) { pl = app.plugins.plugins["glass-shelf"]; if (pl && pl.settings) break;
+      if (i === 40 || i === 80) { app.customCss.setTheme(""); await new Promise((r) => setTimeout(r, 500)); await app.plugins.disablePlugin("glass-shelf"); await app.plugins.enablePlugin("glass-shelf"); app.customCss.setTheme("Glass Shelf"); }
+      await new Promise((r) => setTimeout(r, 250)); }
+    if (!pl || !pl.settings) return { fail: "glass-shelf core not started", body: document.body.className, theme: app.customCss.theme, loaded: Object.keys(app.plugins.plugins) };
     pl = app.plugins.plugins["glass-shelf"]; pl.settings.tabWide = true; pl.settings.reduceMotion = "off"; await pl.saveSettings(); pl.applyBodyState(document);
     await app.workspace.openLinkText("시험", "", false); await new Promise((r) => setTimeout(r, 1500));
     const nnp = app.plugins.plugins["notebook-navigator"];
