@@ -23,7 +23,7 @@ __export(main_exports, {
   default: () => GlassShelfCompanion
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian17 = require("obsidian");
+var import_obsidian18 = require("obsidian");
 
 // src/core.ts
 var import_obsidian5 = require("obsidian");
@@ -299,11 +299,10 @@ var DEFAULTS = {
   folderColorCustom: "#5fb0eb",
   // 창 제어 버튼(최소화·최대화·닫기)을 평소엔 작은 점으로, 올리면 제 크기로 (Windows·Linux)
   compactWindowControls: true,
-  // 패널 탭 전환 효과: "lens" = 렌즈가 옮겨 간다, "none" = 효과 없이 선택한 탭이 강조색 알약,
-  // "list" = 탭을 한 줄에 하나씩 세로로 늘어놓는다(tabListSides 의 패널만, 나머지 패널은 렌즈)
-  tabAnim: "lens",
-  // 목록 방식을 쓸 패널: "left" | "right" | "both"
-  tabListSides: "both",
+  // 패널 탭 전환 효과, 왼쪽·오른쪽 패널 따로 (사용자 요청): "lens" = 렌즈가 옮겨 간다, "none" = 효과 없이 선택한 탭이 강조색 알약,
+  // "list" = 탭을 한 줄에 하나씩 세로로 늘어놓는다(휴대폰은 렌즈), "widget" = 탭 묶음마다 둥근 카드(데스크톱만, 그 밖은 렌즈)
+  tabAnimLeft: "lens",
+  tabAnimRight: "lens",
   // 패널 탭 알약을 좌우 끝까지 넓게 (맨 위 묶음은 한 줄 내려서)
   tabWide: true,
   // 패널 탭 기호 오른쪽에 이름 (탭이 하나뿐이면 설정과 상관없이 붙는다)
@@ -321,6 +320,17 @@ var DEFAULTS = {
 };
 var OLD_DEVICE_KEYS = ["liquid-glass-device-only", "liquid-glass-device-settings"];
 var OBSIDIAN_PURPLE = "hsl(258 88% 66%)";
+var migrateTabAnim = function(o) {
+  if (o.tabAnimLeft == null && typeof o.tabAnim === "string") {
+    const anim = o.tabAnim;
+    const sides = typeof o.tabListSides === "string" ? o.tabListSides : "both";
+    const of = (side) => anim !== "list" ? anim : sides === "both" || sides === side ? "list" : "lens";
+    o.tabAnimLeft = of("left");
+    o.tabAnimRight = of("right");
+  }
+  delete o.tabAnim;
+  delete o.tabListSides;
+};
 var migrateGlassLevel = function(o) {
   if (o.glassLevel == null && typeof o.frostLevel === "number") {
     o.glassLevel = Math.min(10, 5 + Math.max(0, Math.round(o.frostLevel)));
@@ -338,6 +348,8 @@ var HOVER_GLASS = [
   ".bases-kanban-column-footer > .text-icon-button",
   ".mod-left-split .workspace-tab-header",
   ".mod-right-split .workspace-tab-header",
+  // 위젯 조절 표시를 펼쳤을 때의 위아래 화살표 (탭 기호처럼 한 자리)
+  ".lg-wg-open > .lg-wg-dots > .lg-wg-arrow",
   ".titlebar-button-container.mod-right .titlebar-button",
   "input.task-list-item-checkbox"
 ].join(", ");
@@ -1216,6 +1228,26 @@ var animate = (el, attr, values, keyTimes, mode) => {
   if (mode === "spline") a.setAttribute("keySplines", keyTimes.split(";").slice(1).map(() => "0.45 0 0.35 1").join(";"));
 };
 var drawTabAnim = (svg, kind, move) => {
+  if (kind === "widget") {
+    svgEl(svg, "rect", { x: 1.5, y: 1.5, width: 109, height: 77, rx: 10, fill: "currentColor", "fill-opacity": 0.06, stroke: "currentColor", "stroke-width": 3 });
+    svgEl(svg, "rect", { x: 3, y: 3, width: 52, height: 74, fill: "currentColor", "fill-opacity": 0.07 });
+    svgEl(svg, "rect", { x: 55, y: 3, width: 1.4, height: 74, fill: "currentColor", "fill-opacity": 0.25 });
+    for (const [k, w] of [[0, 30], [1, 24], [2, 34], [3, 20]]) pill(svg, 62, 12 + k * 9, w, 3, 0.18);
+    const clip = svgEl(svg, "clipPath", { id: "lg-wg-clip" });
+    svgEl(clip, "rect", { x: 3, y: 3, width: 52, height: 74 });
+    const track = svgEl(svg, "g", { "clip-path": "url(#lg-wg-clip)" });
+    const cards = svgEl(track, "g", {});
+    for (const y of [7, 77]) {
+      svgEl(cards, "rect", { x: 7, y, width: 38, height: 66, rx: 9, fill: "currentColor", "fill-opacity": 0.14 });
+      for (const [k, w] of [[0, 22], [1, 16], [2, 26]]) pill(cards, 13, y + 16 + k * 8, w, 3, 0.3);
+    }
+    if (move) svgEl(cards, "animateTransform", { attributeName: "transform", type: "translate", values: "0 0;0 0;0 -70;0 -70;0 0", keyTimes: "0;0.3;0.5;0.8;1", dur: "3.2s", repeatCount: "indefinite" });
+    for (const [i, y] of [[0, 34], [1, 40], [2, 46]]) {
+      const dot = svgEl(svg, "circle", { cx: 50, cy: y, r: 1.6, fill: "currentColor", "fill-opacity": i === 0 ? 0.7 : 0.25 });
+      if (move && i < 2) animate(dot, "fill-opacity", i === 0 ? "0.7;0.25;0.7" : "0.25;0.7;0.25", "0;0.4;0.9", "discrete");
+    }
+    return;
+  }
   svgEl(svg, "rect", { x: 1.5, y: 1.5, width: 109, height: 77, rx: 10, fill: "currentColor", "fill-opacity": 0.06, stroke: "currentColor", "stroke-width": 3 });
   svgEl(svg, "rect", { x: 3, y: 3, width: 52, height: 74, fill: "currentColor", "fill-opacity": 0.07 });
   svgEl(svg, "rect", { x: 55, y: 3, width: 1.4, height: 74, fill: "currentColor", "fill-opacity": 0.25 });
@@ -1254,7 +1286,7 @@ var GlassShelfSettingTab = class extends import_obsidian4.PluginSettingTab {
   }
   getControlValue(key) {
     if (key === "iosColors") return this.plugin.settings.toggleColor !== "accent";
-    if (key === "tabAnim" && this.plugin.settings.tabAnim === "lens" && this.plugin.settings.sideAcrylic && import_obsidian4.Platform.isWin && !import_obsidian4.Platform.isMobile) return "none";
+    if ((key === "tabAnimLeft" || key === "tabAnimRight") && super.getControlValue(key) === "lens" && this.plugin.settings.sideAcrylic && import_obsidian4.Platform.isWin && !import_obsidian4.Platform.isMobile) return "none";
     const v = super.getControlValue(key);
     const opts = this.options.get(key);
     if (opts && typeof v === "string" && !(v in opts)) return DEFAULTS[key];
@@ -1274,7 +1306,7 @@ var GlassShelfSettingTab = class extends import_obsidian4.PluginSettingTab {
     if (key === "navCompact") pl.remeasureExplorers();
     if (key === "fileStripes") pl.requestFolderColors(true);
     if (key === "sideAcrylic" && value === true) pl.noticeSimpleTabs();
-    if (key === "tint" || key === "taskColor" || key === "folderColor" || key === "tabAnim" || key === "sideAcrylic") this.update();
+    if (key === "tint" || key === "taskColor" || key === "folderColor" || key === "tabAnimLeft" || key === "tabAnimRight" || key === "sideAcrylic") this.update();
   }
   // 그림으로 고르는 설정 줄: 선택지마다 미리 보기 그림 + 이름 + 동그라미(고르면 강조색 체크). 줄 이름·설명은 위에 그대로 두고
   // 그림 묶음은 줄 아래에 폭 전체로 놓는다 (CSS: .lg-pick-row). 누르면 값을 바꾸고 표시만 바꾼다
@@ -1480,6 +1512,7 @@ var GlassShelfSettingTab = class extends import_obsidian4.PluginSettingTab {
   getSettingDefinitions() {
     const st = this.plugin.settings;
     const toggle = (key, name, desc, visible = true) => ({ name, desc, visible, control: { type: "toggle", key } });
+    const allWidget = () => this.plugin.tabAnimOf("left") === "widget" && this.plugin.tabAnimOf("right") === "widget";
     const dropdown = (key, name, desc, options, visible = true) => {
       this.options.set(key, options);
       return { name, desc, visible, control: { type: "dropdown", key, options } };
@@ -1562,7 +1595,7 @@ var GlassShelfSettingTab = class extends import_obsidian4.PluginSettingTab {
           },
           toggle("miniBar", tr("\uC2A4\uD06C\uB864 \uC2DC \uD0ED \uC904 \uCD95\uC18C", "Collapse tab bar on scroll"), tr("\uD3B8\uC9D1\uCC3D\uC744 \uC544\uB798\uB85C \uC2A4\uD06C\uB864\uD558\uBA74 \uD0ED \uC904\uC744 \uC811\uACE0 \uD604\uC7AC \uBB38\uC11C \uC81C\uBAA9\uB9CC \uC791\uAC8C \uD45C\uC2DC\uD569\uB2C8\uB2E4. \uC704\uB85C \uC2A4\uD06C\uB864\uD558\uAC70\uB098 \uC81C\uBAA9\uC744 \uB204\uB974\uBA74 \uB2E4\uC2DC \uD3BC\uCE69\uB2C8\uB2E4. (\uB370\uC2A4\uD06C\uD1B1, \uD0DC\uBE14\uB9BF)", "Scrolling down in the editor collapses the tab bar to a small title of the current note. Scroll up or click the title to expand it again. (Desktop, tablet)"), !import_obsidian4.Platform.isPhone),
           toggle("webTint", tr("\uBAB0\uC785\uD615 \uC6F9 \uBCF4\uAE30", "Immersive web view"), tr("\uC6F9 \uBDF0\uC5B4\uC5D0\uC11C \uD398\uC774\uC9C0\uAC00 \uD0ED \uC904 \uB4A4\uB85C \uC9C0\uB098\uAC00\uAC8C \uD558\uACE0, \uD0ED \uC904\uACFC \uBC84\uD2BC\uC744 \uD398\uC774\uC9C0\uC758 \uB300\uD45C \uC0C9\uC73C\uB85C \uCE60\uD569\uB2C8\uB2E4. (\uB370\uC2A4\uD06C\uD1B1, \uD0DC\uBE14\uB9BF)", "In the web viewer, lets the page scroll behind the tab bar and colors the tab bar and its buttons with the page's theme color. (Desktop, tablet)"), !import_obsidian4.Platform.isPhone),
-          toggle("folderTint", tr("\uD3F4\uB354 \uC0C9 \uD0ED \uC904", "Folder-colored tab bar"), tr("\uD3B8\uC9D1\uCC3D \uD0ED \uC904\uC744 \uC9C0\uAE08 \uBB38\uC11C\uAC00 \uB4E0 \uD3F4\uB354\uC758 \uC0C9\uC73C\uB85C \uC605\uAC8C \uCE60\uD569\uB2C8\uB2E4. \uC0AC\uC774\uB4DC\uBC14\uC5D0 Notebook Navigator\uAC00 \uBCF4\uC774\uBA74 \uADF8 \uD50C\uB7EC\uADF8\uC778\uC5D0\uC11C \uC815\uD55C \uD3F4\uB354 \uBC30\uACBD\uC0C9\uC744 \uB530\uB985\uB2C8\uB2E4. (\uB370\uC2A4\uD06C\uD1B1, \uD0DC\uBE14\uB9BF)", "Tints the editor tab bar with the color of the folder the current note is in. When Notebook Navigator is shown in a sidebar, follows the folder background colors set there. (Desktop, tablet)"), !import_obsidian4.Platform.isPhone),
+          toggle("folderTint", tr("\uD3F4\uB354 \uC0C9 \uD0ED \uC904", "Folder-colored tab bar"), tr("\uD3B8\uC9D1\uCC3D \uD0ED \uC904\uC744 \uC9C0\uAE08 \uBB38\uC11C\uAC00 \uB4E0 \uD3F4\uB354\uC758 \uC0C9\uC73C\uB85C \uCE60\uD569\uB2C8\uB2E4. \uC0AC\uC774\uB4DC\uBC14\uC5D0 Notebook Navigator\uAC00 \uBCF4\uC774\uBA74 \uADF8 \uD50C\uB7EC\uADF8\uC778\uC5D0\uC11C \uC815\uD55C \uD3F4\uB354 \uBC30\uACBD\uC0C9\uC744 \uB530\uB985\uB2C8\uB2E4. (\uB370\uC2A4\uD06C\uD1B1, \uD0DC\uBE14\uB9BF)", "Colors the editor tab bar with the color of the folder the current note is in. When Notebook Navigator is shown in a sidebar, follows the folder background colors set there. (Desktop, tablet)"), !import_obsidian4.Platform.isPhone),
           toggle("headingRule", tr("\uC81C\uBAA9 \uC544\uB798 \uAC00\uB85C\uC904", "Line under headings"), tr("\uC81C\uBAA9(H1~H6) \uC544\uB798\uC5D0 \uC587\uC740 \uAC00\uB85C\uC904\uC744 \uAE0B\uC2B5\uB2C8\uB2E4. \uB77C\uC774\uD2B8 \uBAA8\uB4DC\uC5D0\uC11C\uB294 \uAC80\uC740\uC0C9, \uB2E4\uD06C \uBAA8\uB4DC\uC5D0\uC11C\uB294 \uD770\uC0C9\uC785\uB2C8\uB2E4.", "Draws a thin line under headings (H1\u2013H6). Black in light mode, white in dark mode."))
         ]
       },
@@ -1570,40 +1603,33 @@ var GlassShelfSettingTab = class extends import_obsidian4.PluginSettingTab {
         type: "group",
         heading: tr("\uC0AC\uC774\uB4DC\uBC14 \uD0ED", "Sidebar tabs"),
         items: [
-          (() => {
+          ...(() => {
             const move = true;
             const anims = [
               // 좌우 패널 투명이 켜져 있으면 렌즈는 심플로 보이므로 고를 수 없게 뺀다 (사용자 요청)
               ...st.sideAcrylic && import_obsidian4.Platform.isWin && !import_obsidian4.Platform.isMobile ? [] : [{ value: "lens", label: tr("\uB80C\uC988", "Lens"), draw: (svg) => drawTabAnim(svg, "lens", move) }],
               { value: "none", label: tr("\uC2EC\uD50C", "Simple"), draw: (svg) => drawTabAnim(svg, "none", move) },
-              ...import_obsidian4.Platform.isPhone ? [] : [{ value: "list", label: tr("\uBAA9\uB85D", "List"), draw: (svg) => drawTabAnim(svg, "list", move) }]
+              ...import_obsidian4.Platform.isPhone ? [] : [{ value: "list", label: tr("\uBAA9\uB85D", "List"), draw: (svg) => drawTabAnim(svg, "list", move) }],
+              ...import_obsidian4.Platform.isMobile ? [] : [{ value: "widget", label: tr("\uC704\uC82F", "Widget"), draw: (svg) => drawTabAnim(svg, "widget", move) }]
             ];
-            this.options.set("tabAnim", Object.fromEntries(anims.map((a) => [a.value, a.label])));
-            return {
-              name: tr("\uD0ED \uC804\uD658 \uD6A8\uACFC", "Tab switch effect"),
-              desc: tr("\uB80C\uC988: \uC120\uD0DD \uD45C\uC2DC\uAC00 \uB80C\uC988\uCC98\uB7FC \uBBF8\uB044\uB7EC\uC9C0\uBA70 \uC62E\uACA8 \uAC11\uB2C8\uB2E4. \uC2EC\uD50C: \uD6A8\uACFC \uC5C6\uC774 \uC120\uD0DD\uD55C \uD0ED\uC744 \uAC15\uC870\uC0C9\uC73C\uB85C \uD45C\uC2DC\uD569\uB2C8\uB2E4. \uBAA9\uB85D: \uD0ED\uC744 \uBC84\uD2BC \uC904 \uC544\uB798\uC5D0 \uD55C \uC904\uC5D0 \uD558\uB098\uC529 \uB298\uC5B4\uB193\uACE0, \uC120\uD0DD\uD55C \uD0ED\uC744 \uAC15\uC870\uC0C9\uC73C\uB85C \uD45C\uC2DC\uD569\uB2C8\uB2E4. \uC88C\uC6B0 \uD328\uB110 \uD22C\uBA85\uC774 \uCF1C\uC838 \uC788\uC73C\uBA74 \uB80C\uC988 \uB300\uC2E0 \uC2EC\uD50C\uB85C \uBCF4\uC785\uB2C8\uB2E4. (\uBAA9\uB85D\uC740 \uB370\uC2A4\uD06C\uD1B1, \uD0DC\uBE14\uB9BF)", "Lens: the selection slides over like a lens. Simple: no effect; the selected tab is shown in the accent color. List: tabs are listed one per row below the button row, and the selected tab is shown in the accent color. With transparent side panels on, Simple is shown instead of Lens. (List: desktop, tablet)"),
-              render: (s) => this.pickRow(fresh(s), "tabAnim", anims)
-            };
-          })(),
-          // 목록을 고르면 바로 밑에 (하위 항목 표시 없이, 사용자 요청)
-          {
-            name: tr("\uBAA9\uB85D\uC744 \uC4F8 \uD328\uB110", "Panels using the list"),
-            desc: tr("\uBAA9\uB85D \uBC29\uC2DD\uC744 \uC4F8 \uD328\uB110\uC785\uB2C8\uB2E4. \uB098\uBA38\uC9C0 \uD328\uB110\uC740 \uB80C\uC988 \uD6A8\uACFC\uB97C \uC501\uB2C8\uB2E4. (\uB370\uC2A4\uD06C\uD1B1, \uD0DC\uBE14\uB9BF)", "Panels that use the list. Other panels use the lens effect. (Desktop, tablet)"),
-            visible: () => st.tabAnim === "list" && !import_obsidian4.Platform.isPhone,
-            render: (s) => {
-              fresh(s).addDropdown(
-                (d) => d.addOptions({ left: tr("\uC67C\uCABD \uD328\uB110\uB9CC", "Left panel only"), right: tr("\uC624\uB978\uCABD \uD328\uB110\uB9CC", "Right panel only"), both: tr("\uC591\uCABD \uD328\uB110 \uB2E4", "Both panels") }).setValue(st.tabListSides || "both").onChange((v) => void this.setControlValue("tabListSides", v))
-              );
-            }
-          }
+            const opts = Object.fromEntries(anims.map((a) => [a.value, a.label]));
+            this.options.set("tabAnimLeft", opts);
+            this.options.set("tabAnimRight", opts);
+            const desc = tr("\uB80C\uC988: \uC120\uD0DD \uD45C\uC2DC\uAC00 \uB80C\uC988\uCC98\uB7FC \uBBF8\uB044\uB7EC\uC9C0\uBA70 \uC62E\uACA8 \uAC11\uB2C8\uB2E4. \uC2EC\uD50C: \uD6A8\uACFC \uC5C6\uC774 \uC120\uD0DD\uD55C \uD0ED\uC744 \uAC15\uC870\uC0C9\uC73C\uB85C \uD45C\uC2DC\uD569\uB2C8\uB2E4. \uBAA9\uB85D: \uD0ED\uC744 \uBC84\uD2BC \uC904 \uC544\uB798\uC5D0 \uD55C \uC904\uC5D0 \uD558\uB098\uC529 \uB298\uC5B4\uB193\uACE0, \uC120\uD0DD\uD55C \uD0ED\uC744 \uAC15\uC870\uC0C9\uC73C\uB85C \uD45C\uC2DC\uD569\uB2C8\uB2E4. \uC704\uC82F: \uD0ED \uBB36\uC74C\uB9C8\uB2E4 \uB465\uADFC \uCE74\uB4DC\uAC00 \uB418\uACE0, \uCE74\uB4DC \uC606 \uC810 \uD45C\uC2DC\uB85C \uD0ED\uC744 \uC704\uC544\uB798\uB85C \uB118\uAE41\uB2C8\uB2E4. \uC88C\uC6B0 \uD328\uB110 \uD22C\uBA85\uC774 \uCF1C\uC838 \uC788\uC73C\uBA74 \uB80C\uC988 \uB300\uC2E0 \uC2EC\uD50C\uB85C \uBCF4\uC785\uB2C8\uB2E4. (\uBAA9\uB85D\uC740 \uB370\uC2A4\uD06C\uD1B1, \uD0DC\uBE14\uB9BF, \uC704\uC82F\uC740 \uB370\uC2A4\uD06C\uD1B1)", "Lens: the selection slides over like a lens. Simple: no effect; the selected tab is shown in the accent color. List: tabs are listed one per row below the button row, and the selected tab is shown in the accent color. Widget: each tab group becomes a rounded card; use the page dots beside the card to flip between tabs up and down. With transparent side panels on, Simple is shown instead of Lens. (List: desktop, tablet. Widget: desktop)");
+            return [
+              { name: tr("\uC67C\uCABD \uD328\uB110 \uD0ED \uC804\uD658 \uD6A8\uACFC", "Left panel tab switch effect"), desc, render: (s) => this.pickRow(fresh(s), "tabAnimLeft", anims) },
+              { name: tr("\uC624\uB978\uCABD \uD328\uB110 \uD0ED \uC804\uD658 \uD6A8\uACFC", "Right panel tab switch effect"), desc, render: (s) => this.pickRow(fresh(s), "tabAnimRight", anims) }
+            ];
+          })()
         ]
       },
       {
         type: "group",
         // 탭 전환 효과와 나누기만 한다 (사용자 요청: 묶음 이름은 두지 않는다)
         items: [
-          toggle("tabWide", tr("\uD0ED \uC904 \uB113\uAC8C", "Wide tab bar"), tr("\uC0AC\uC774\uB4DC\uBC14 \uD0ED\uC744 \uC0AC\uC774\uB4DC\uBC14 \uC88C\uC6B0 \uB05D\uAE4C\uC9C0 \uB113\uD788\uACE0, \uBCF4\uAE30\uC758 \uBC84\uD2BC\uB4E4\uC744 \uD3BC\uCCD0\uC11C \uBCF4\uC5EC \uC90D\uB2C8\uB2E4. \uB9E8 \uC704 \uD0ED \uBB36\uC74C\uC740 \uBC84\uD2BC \uC904 \uC544\uB798\uB85C \uD55C \uC904 \uB0B4\uB824 \uBC30\uCE58\uD569\uB2C8\uB2E4. (\uB370\uC2A4\uD06C\uD1B1, \uD0DC\uBE14\uB9BF)", "Stretches the sidebar tabs across the full sidebar width and shows the view's buttons expanded. The top tab group moves one row down, below the button row. (Desktop, tablet)"), !import_obsidian4.Platform.isMobile),
-          toggle("tabNames", tr("\uD0ED \uC774\uB984 \uD45C\uC2DC", "Show tab names"), tr("\uC0AC\uC774\uB4DC\uBC14 \uD0ED \uC544\uC774\uCF58 \uC606\uC5D0 \uC774\uB984\uC744 \uD45C\uC2DC\uD569\uB2C8\uB2E4. \uD0ED\uC774 \uD558\uB098\uBFD0\uC778 \uBB36\uC74C\uC740 \uC774 \uC124\uC815\uACFC \uAD00\uACC4\uC5C6\uC774 \uC774\uB984\uC744 \uD45C\uC2DC\uD569\uB2C8\uB2E4. (\uB370\uC2A4\uD06C\uD1B1, \uD0DC\uBE14\uB9BF)", "Shows names next to sidebar tab icons. Groups with a single tab always show the name. (Desktop, tablet)"), !import_obsidian4.Platform.isMobile)
+          // 위젯은 탭 줄을 숨기고 늘 넓게 펼쳐 두 패널 다 위젯이면 뺀다 (사용자 요청)
+          toggle("tabWide", tr("\uD0ED \uC904 \uB113\uAC8C", "Wide tab bar"), tr("\uC0AC\uC774\uB4DC\uBC14 \uD0ED\uC744 \uC0AC\uC774\uB4DC\uBC14 \uC88C\uC6B0 \uB05D\uAE4C\uC9C0 \uB113\uD788\uACE0, \uBCF4\uAE30\uC758 \uBC84\uD2BC\uB4E4\uC744 \uD3BC\uCCD0\uC11C \uBCF4\uC5EC \uC90D\uB2C8\uB2E4. \uB9E8 \uC704 \uD0ED \uBB36\uC74C\uC740 \uBC84\uD2BC \uC904 \uC544\uB798\uB85C \uD55C \uC904 \uB0B4\uB824 \uBC30\uCE58\uD569\uB2C8\uB2E4. (\uB370\uC2A4\uD06C\uD1B1, \uD0DC\uBE14\uB9BF)", "Stretches the sidebar tabs across the full sidebar width and shows the view's buttons expanded. The top tab group moves one row down, below the button row. (Desktop, tablet)"), () => !import_obsidian4.Platform.isMobile && !allWidget()),
+          toggle("tabNames", tr("\uD0ED \uC774\uB984 \uD45C\uC2DC", "Show tab names"), tr("\uC0AC\uC774\uB4DC\uBC14 \uD0ED \uC544\uC774\uCF58 \uC606\uC5D0 \uC774\uB984\uC744 \uD45C\uC2DC\uD569\uB2C8\uB2E4. \uD0ED\uC774 \uD558\uB098\uBFD0\uC778 \uBB36\uC74C\uC740 \uC774 \uC124\uC815\uACFC \uAD00\uACC4\uC5C6\uC774 \uC774\uB984\uC744 \uD45C\uC2DC\uD569\uB2C8\uB2E4. (\uB370\uC2A4\uD06C\uD1B1, \uD0DC\uBE14\uB9BF)", "Shows names next to sidebar tab icons. Groups with a single tab always show the name. (Desktop, tablet)"), () => !import_obsidian4.Platform.isMobile && !allWidget())
         ]
       },
       {
@@ -1898,10 +1924,12 @@ var coreMethods = {
   async startCore() {
     const raw = await this.loadData() || {};
     migrateGlassLevel(raw);
+    migrateTabAnim(raw);
     delete raw.frost;
     delete raw.hoverSize;
     delete raw.activeTabColor;
     delete raw.activeTabColorCustom;
+    delete raw.widgetDecor;
     this.shared = Object.assign({}, DEFAULTS, raw);
     this.settings = this.shared;
     try {
@@ -1939,16 +1967,19 @@ var coreMethods = {
         const now = wsEl.hasClass("is-left-sidedock-open");
         if (now === open) return;
         open = now;
-        document.body.removeClass("lg-rib-anim");
-        void document.body.offsetWidth;
-        document.body.addClass("lg-rib-anim");
+        const ribs = els(wsEl.querySelectorAll(".workspace-ribbon:is(.mod-left, .mod-primary)"));
+        if (ribs.some((r) => r.hasClass("lg-rib-anim"))) {
+          ribs.forEach((r) => r.removeClass("lg-rib-anim"));
+          void wsEl.offsetWidth;
+        }
+        ribs.forEach((r) => r.addClass("lg-rib-anim"));
         window.clearTimeout(timer);
-        timer = window.setTimeout(() => document.body.removeClass("lg-rib-anim"), 520);
+        timer = window.setTimeout(() => ribs.forEach((r) => r.removeClass("lg-rib-anim")), 520);
       });
       obs.observe(wsEl, { attributes: true, attributeFilter: ["class"] });
       this.register(() => {
         obs.disconnect();
-        document.body.removeClass("lg-rib-anim");
+        wsEl.querySelectorAll(".lg-rib-anim").forEach((r) => r.removeClass("lg-rib-anim"));
         document.body.removeClass("lg-right-open");
       });
       const rootEl = () => this.app.workspace.rootSplit && this.app.workspace.rootSplit.containerEl;
@@ -2067,7 +2098,8 @@ var coreMethods = {
       }
     }
     document.body.classList.toggle("lg-acrylic", want);
-    document.body.classList.toggle("lg-tab-plain", this.tabPlain());
+    this.markTabList(this.app.workspace.leftSplit, "left");
+    this.markTabList(this.app.workspace.rightSplit, "right");
     this.acrylicTheme(want);
     this.acrylicHoles(want && !mac);
     if (mac && want) this.vibNudge();
@@ -2077,13 +2109,30 @@ var coreMethods = {
   // 패널 탭이 심플(렌즈 없이 선택한 탭을 강조색으로) 방식인지. 좌우 패널 투명이 켜져 있으면 렌즈를 쓰지 않는다 (사용자 결정):
   // 렌즈가 떠 오는 화면에 패널 바탕이 없어 원래 탭 줄 테두리와 렌즈 안 테두리가 두 줄로 보였고, 맥은 렌즈가 매 프레임 다시 그려져
   // 반투명 덧칠 깜빡임이 늘었다(측정: 목록이 렌즈보다 4~10배 적다). 목록 방식 패널은 그대로 목록이다
-  tabPlain() {
-    return this.settings.tabAnim === "none" || document.body.classList.contains("lg-acrylic");
+  // 패널은 왼쪽·오른쪽 따로 정한다(tabAnimOf). 요소를 주면 그 요소가 든 패널, 패널 밖이면 어느 한쪽이라도 심플인지
+  tabPlain(el) {
+    const side = el ? this.tabSideOf(el) : null;
+    return side ? this.tabPlainOf(side) : this.tabPlainOf("left") || this.tabPlainOf("right");
   },
-  // 좌우 패널 투명을 켤 때 알린다: 렌즈를 쓰던 패널 탭이 심플로 보인다 (사용자 요청). 렌즈를 쓰는 패널이 없으면(심플, 양쪽 목록) 알리지 않는다
+  tabPlainOf(side) {
+    const a = this.tabAnimOf(side);
+    return a === "none" || a === "lens" && document.body.classList.contains("lg-acrylic");
+  },
+  // 요소가 든 패널 (데스크톱 좌우 패널, 모바일 서랍)
+  tabSideOf(el) {
+    if (el.closest(".mod-left-split, .workspace-drawer.mod-left")) return "left";
+    if (el.closest(".mod-right-split, .workspace-drawer.mod-right")) return "right";
+    return null;
+  },
+  // 패널의 탭 전환 효과 (사용자 요청: 왼쪽·오른쪽 패널을 따로 고른다). 이 기기에 없는 효과는 렌즈다: 목록은 휴대폰에 없고, 위젯은 데스크톱만
+  tabAnimOf(side) {
+    const v = side === "left" ? this.settings.tabAnimLeft : this.settings.tabAnimRight;
+    if (v === "list" && import_obsidian5.Platform.isPhone || v === "widget" && import_obsidian5.Platform.isMobile) return "lens";
+    return v === "none" || v === "list" || v === "widget" ? v : "lens";
+  },
+  // 좌우 패널 투명을 켤 때 알린다: 렌즈를 쓰던 패널 탭이 심플로 보인다 (사용자 요청). 렌즈를 쓰는 패널이 없으면 알리지 않는다
   noticeSimpleTabs() {
-    const s = this.settings;
-    if (s.tabAnim === "none" || s.tabAnim === "list" && (s.tabListSides || "both") === "both") return;
+    if (this.tabAnimOf("left") !== "lens" && this.tabAnimOf("right") !== "lens") return;
     new import_obsidian5.Notice(tr("\uC88C\uC6B0 \uD328\uB110 \uD22C\uBA85\uC774 \uCF1C\uC838 \uC788\uC73C\uBA74 \uD0ED \uC804\uD658 \uD6A8\uACFC\uB294 \uB80C\uC988 \uB300\uC2E0 \uC2EC\uD50C\uB85C \uBCF4\uC785\uB2C8\uB2E4.", "With see-through side panels on, the tab switch effect is shown as Simple instead of Lens."));
   },
   vibNudge() {
@@ -2239,7 +2288,7 @@ var coreMethods = {
     b.style.setProperty("--lg-tint-p", `${s.tintLevel * 4}%`);
     b.classList.toggle("lg-tint-ink-light", s.tint !== "none" && !!s.tintWhiteInk);
     b.style.removeProperty("--lg-active-tab-color");
-    b.classList.toggle("lg-tab-plain", this.tabPlain());
+    b.classList.remove("lg-tab-plain");
     b.classList.toggle("lg-tab-wide", !!s.tabWide);
     b.classList.toggle("lg-tab-names", !!s.tabNames);
     b.classList.toggle("lg-ficon-none", s.fileIcons === "none");
@@ -2371,6 +2420,7 @@ var coreMethods = {
       this.setupSidebar(ws.leftSplit, "left");
       this.setupSidebar(ws.rightSplit, "right");
       this.vaultClearAll();
+      this.widgetToolbar();
     } else {
       this.markTabList(ws.leftSplit, "left");
       this.markTabList(ws.rightSplit, "right");
@@ -3114,7 +3164,7 @@ var eventsPressMethods = {
       if (rip) this.pressRipple(rip, e);
       else if (this.tabPlain()) {
         const tab = e.target.closest(":is(.mod-left-split, .mod-right-split) .workspace-tab-header-container .workspace-tab-header");
-        if (tab && !tab.closest(".lg-tab-list")) {
+        if (tab && !tab.closest(".lg-tab-list") && this.tabPlain(tab)) {
           const pill2 = tab.closest(PRESS_PILL);
           const d = (pill2 ? pill2.offsetHeight : tab.offsetHeight) * TAB_RIPPLE_K;
           const from = Math.min(1, Math.max(tab.offsetWidth, tab.offsetHeight) / d);
@@ -3572,7 +3622,7 @@ var SegmentLens = class {
     return { hr, innerH, ir, tabs };
   }
   moveTo(fromTab, toTab) {
-    if (this.plugin.tabPlain() || this.header.closest(".lg-tab-list")) return this.stop();
+    if (this.plugin.tabPlain(this.header) || this.header.closest(".lg-tab-list, .lg-tab-widget")) return this.stop();
     if (!fromTab.getBoundingClientRect().width || !toTab.getBoundingClientRect().width) return;
     const from = this.raf && this.cur ? Object.assign({}, this.cur) : this.rectOf(fromTab);
     const to = this.rectOf(toTab);
@@ -3728,7 +3778,7 @@ var SegmentLens = class {
   }
   // 탭 하나가 지나는 렌즈 크기들의 지도를 쉬는 틈에 미리 굽는다. 처음 탭을 바꿀 때 매 프레임 새 지도를 굽느라 끊기던 것 (측정 확인)
   prebake(tab) {
-    if (!this.plugin.refractOn() || !tab || this.plugin.tabPlain() || this.header.closest(".lg-tab-list")) return;
+    if (!this.plugin.refractOn() || !tab || this.plugin.tabPlain(this.header) || this.header.closest(".lg-tab-list, .lg-tab-widget")) return;
     const r = tab.getBoundingClientRect();
     const Hc = this.inner.getBoundingClientRect().height || r.height;
     if (!r.width || !r.height) return;
@@ -4062,7 +4112,7 @@ var pressMethods = {
       if (this.pressClick) return;
       if (el.matches(".workspace-tab-header") && el.closest(".lg-tab-list")) return;
       const r = pill2.getBoundingClientRect();
-      const tab = el.matches(".workspace-tab-header") && !this.tabPlain();
+      const tab = el.matches(".workspace-tab-header") && !this.tabPlain(el);
       const group = pill2.matches(PRESS_GROUP);
       const k = 1 + Math.min(0.2, 16 / Math.max(r.width, r.height, 1)) * (tab ? TAB_PRESS_K : group ? GROUP_PRESS_K : 1);
       const opt = { duration: 470, easing: EASE.press };
@@ -4112,7 +4162,7 @@ var pressMethods = {
         if (!el) return false;
         const r = el.getBoundingClientRect();
         k = 1 + Math.min(0.2, 16 / Math.max(r.width, r.height, 1));
-        white = !el.matches(".workspace-drawer-tab-options-list") || this.tabPlain();
+        white = !el.matches(".workspace-drawer-tab-options-list") || this.tabPlain(el);
         dur = 470;
       }
       if (el.matches(".modal-setting-back-button")) {
@@ -4996,7 +5046,7 @@ var menusMethods = {
         const list = target && target.closest(".mod-root .workspace-tab-header-tab-list");
         const tabMenu = target && target.closest(".lg-tab-menu");
         const pathMenu = target && target.closest(".lg-path-menu");
-        if (list) this.placeUnderTabBar(menu, list, null);
+        if (list) this.placeUnderTabBar(menu, list, list.closest(".lg-tab-tools") || list);
         else if (pathMenu) this.placeUnderTabBar(menu, pathMenu, pathMenu.closest(".lg-path-pill"), true);
         else if (tabMenu) this.placeUnderTabBar(menu, tabMenu, tabMenu.closest(".workspace-tab-header"));
         const rib = target && target.closest(".lg-rib-menu");
@@ -5106,6 +5156,7 @@ var menusMethods = {
       placeSugg(pop, cx - w / 2, cy - host.offsetHeight / 2 + input.offsetTop + input.offsetHeight, w);
       host.style.setProperty("--lg-sugg-h", `${pop.offsetHeight}px`);
     };
+    host.lgSuggPlace = place;
     const ro = new win.ResizeObserver(place);
     ro.observe(pop);
     const moved = new win.MutationObserver(place);
@@ -5126,6 +5177,7 @@ var menusMethods = {
       moved.disconnect();
       host.style.removeProperty("--lg-sugg-h");
       host.classList.remove("lg-sugg-host");
+      if (host.lgSuggPlace === place) host.lgSuggPlace = null;
       this.releasePop(pop);
     });
     done.observe(doc.body, { childList: true });
@@ -6098,7 +6150,7 @@ var foldersMethods = {
   },
   // 사이드바에 Notebook Navigator 가 보이는지. 보이면 그 플러그인의 폴더 색을 읽어 둔다(loadNnBg)
   nnShown() {
-    const shown = this.app.workspace.getLeavesOfType("notebook-navigator").some((l) => l.view.containerEl.getClientRects().length > 0);
+    const shown = this.app.workspace.getLeavesOfType("notebook-navigator").some((l) => !!l.tabHeaderEl && l.tabHeaderEl.classList.contains("is-active") && l.view.containerEl.closest(".is-sidedock-collapsed") === null && l.view.containerEl.isConnected);
     if (shown) this.loadNnBg();
     return shown;
   },
@@ -6144,8 +6196,13 @@ var foldersMethods = {
     const head = leaf.tabHeaderEl;
     if (!head) return;
     const v = leaf.view;
-    const file = v instanceof import_obsidian12.FileView ? v.file : null;
-    const hex = file ? this.folderColorOf(file.path) : "";
+    let path = v instanceof import_obsidian12.FileView && v.file ? v.file.path : "";
+    if (!path) {
+      const st = leaf.getViewState();
+      const f = st && st.state ? st.state.file : null;
+      if (typeof f === "string") path = f;
+    }
+    const hex = path ? this.folderColorOf(path) : "";
     for (const el of [head, v && v.containerEl]) {
       if (!el) continue;
       el.classList.toggle("lg-tab-fc", !!hex);
@@ -6550,6 +6607,8 @@ var foldersMethods = {
 
 // src/sidebar.ts
 var import_obsidian13 = require("obsidian");
+var NN_SMOOTH_MS = 24;
+var NN_WAIT_MS = 500;
 var sidebarMethods = {
   // 좌우 패널 투명(아크릴)에서 패널 위 알약·버튼 밑 구멍 (사용자 요청): 알약 유리는 Obsidian 화면만 떠 와 창 뒤 아크릴을 비추지 못하므로,
   // 패널 바탕은 패널 밖 바로 뒤의 층(.lg-panel-under, 패널 자리·크기를 따라간다)에 칠하고, 그 층을 패널마다 문서 안 SVG 마스크
@@ -6967,15 +7026,16 @@ var sidebarMethods = {
       this.observers.push(obs);
     });
   },
-  // 탭 전환 효과 "목록"을 쓰는 패널 (CSS: .workspace-split.lg-tab-list, 태블릿은 서랍 .workspace-drawer.lg-tab-list, 사용자 요청). 휴대폰은 렌즈
+  // 탭 전환 효과 "목록"·"심플"을 쓰는 패널 (CSS: .workspace-split.lg-tab-list·lg-tab-plain, 태블릿은 서랍 .workspace-drawer). 패널마다 따로 고른다 (사용자 요청)
   markTabList(split, side) {
     if (!split || !split.containerEl) return;
-    const st = this.settings;
-    split.containerEl.classList.toggle("lg-tab-list", st.tabAnim === "list" && !import_obsidian13.Platform.isPhone && (st.tabListSides === "both" || st.tabListSides === side));
+    split.containerEl.classList.toggle("lg-tab-list", this.tabAnimOf(side) === "list");
+    split.containerEl.classList.toggle("lg-tab-plain", this.tabPlainOf(side));
   },
   setupSidebar(split, side) {
     if (!split || !split.containerEl) return;
     this.markTabList(split, side);
+    this.markTabWidget(split, side);
     const groups = split.containerEl.querySelectorAll(".workspace-tabs");
     groups.forEach((tabsEl, i) => {
       this.watchSegments(tabsEl);
@@ -7025,9 +7085,9 @@ var sidebarMethods = {
   },
   // 넓게 모드에서 버튼 줄이 탭 줄 폭에 다 들어가지 않으면 줄을 숨기고 ··· 하나로 묶는다 (사용자 요청: 패널을 줄이거나 창이 작아질 때).
   // ··· 은 보기의 버튼을 모두 메뉴로 보인다. 잠깐 펴서 버튼 줄에 필요한 폭과 받은 폭을 잰다(그리기 전이라 화면에는 보이지 않는다)
-  // 넓게 모드처럼 버튼 줄을 펼치는 탭 묶음: 탭 줄 넓게 설정이거나, 목록 방식 패널 (목록은 넓게의 첫 줄 버튼을 그대로 쓴다)
+  // 넓게 모드처럼 버튼 줄을 펼치는 탭 묶음: 탭 줄 넓게 설정이거나, 목록·위젯 방식 패널 (둘 다 넓게의 첫 줄 버튼을 그대로 쓴다)
   tabWideOf(tabsEl) {
-    return tabsEl.ownerDocument.body.classList.contains("lg-tab-wide") || !!tabsEl.closest(".lg-tab-list");
+    return tabsEl.ownerDocument.body.classList.contains("lg-tab-wide") || !!tabsEl.closest(".lg-tab-list, .lg-tab-widget");
   },
   navFoldCheck(tabsEl) {
     const header = tabsEl.querySelector(":scope > .workspace-tab-header-container");
@@ -7242,6 +7302,7 @@ var sidebarMethods = {
       tabsEl.classList.toggle("lg-nav-two", buttons.length > 0);
     }
     this.nnTabRow(tabsEl, leaf);
+    this.widgetSync(tabsEl, leaf);
     const inner = header.querySelector(":scope > .workspace-tab-header-container-inner");
     const count = inner ? inner.querySelectorAll(":scope > .workspace-tab-header").length : 0;
     const listed = !!tabsEl.closest(".lg-tab-list");
@@ -7371,21 +7432,29 @@ var sidebarMethods = {
   nnTabRow(tabsEl, leaf) {
     const nn = !!leaf && !!leaf.view && leaf.view.getViewType() === "notebook-navigator";
     tabsEl.classList.toggle("lg-nn", nn);
+    const shown = this.nnShown();
+    if (this.nnWasShown !== shown) {
+      this.nnWasShown = shown;
+      this.requestRefresh();
+    }
     const split = tabsEl.closest(".workspace-split");
     if (split) split.classList.toggle("lg-nn-shown", !!split.querySelector(":scope > .workspace-tabs.lg-nn"));
-    const want = nn && tabsEl.classList.contains("mod-top") && this.tabWideOf(tabsEl);
-    if (tabsEl.classList.contains("lg-nn-one") === want) return;
+    const list = !!tabsEl.closest(".lg-tab-list");
+    const want = nn && tabsEl.classList.contains("mod-top") && (list || this.tabWideOf(tabsEl) && !tabsEl.closest(".lg-tab-widget"));
+    const cls = list ? "lg-nn-list" : "lg-nn-one";
+    tabsEl.classList.remove(list ? "lg-nn-one" : "lg-nn-list");
+    if (tabsEl.classList.contains(cls) === want) return;
     const header = tabsEl.querySelector(":scope > .workspace-tab-header-container");
     const inner = header && header.querySelector(":scope > .workspace-tab-header-container-inner");
     if (!header || !inner || header.offsetParent === null) {
-      tabsEl.classList.toggle("lg-nn-one", want);
+      tabsEl.classList.toggle(cls, want);
       return;
     }
     const h0 = header.offsetHeight;
     const r0 = inner.getBoundingClientRect();
     const row = header.querySelector(":scope > .lg-nav-row");
     const cb = row && row.offsetParent;
-    if (want && row && cb && !row.classList.contains("lg-nav-row-out") && row.querySelector(".lg-nav-leaving")) {
+    if (want && !list && row && cb && !row.classList.contains("lg-nav-row-out") && row.querySelector(".lg-nav-leaving")) {
       const rr = row.getBoundingClientRect();
       const cr = cb.getBoundingClientRect();
       row.setCssProps({ "--lg-rx": `${rr.left - cr.left - cb.clientLeft}px`, "--lg-ry": `${rr.top - cr.top - cb.clientTop}px`, "--lg-rw": `${rr.width}px` });
@@ -7396,23 +7465,51 @@ var sidebarMethods = {
         row.classList.remove("lg-nav-row-out");
       }, 260);
     }
-    tabsEl.classList.toggle("lg-nn-one", want);
+    const sec = list ? header.querySelector(":scope > .lg-list-section") : null;
+    const s0 = sec ? sec.getBoundingClientRect() : null;
+    tabsEl.classList.toggle(cls, want);
     const r1 = inner.getBoundingClientRect();
-    if (inner.lgNnAnim) inner.lgNnAnim.cancel();
-    inner.lgNnAnim = inner.animate(
-      [
-        // 자리만 옮긴다. 폭(flex-basis·max-width)까지 움직이면 줄바꿈 배치가 흔들려 알약과 옆 버튼이 잠깐 다른 줄로 튀었다 (측정)
-        { transform: `translate(${(r0.left - r1.left).toFixed(1)}px, ${(r0.top - r1.top).toFixed(1)}px)` },
-        { transform: "none" }
-      ],
-      { duration: 240, easing: EASE.move }
-    );
+    const opt = { duration: 240, easing: EASE.settle };
+    const anims = [];
+    const run = (el, kf) => {
+      if (el.lgNnAnim) el.lgNnAnim.cancel();
+      el.lgNnAnim = el.animate(kf, opt);
+      anims.push(el.lgNnAnim);
+    };
+    const from = { transform: `translate(${(r0.left - r1.left).toFixed(1)}px, ${(r0.top - r1.top).toFixed(1)}px)` };
+    const to = { transform: "none" };
+    const dw = r1.width - r0.width;
+    if (list && Math.abs(dw) > 0.5) {
+      if (dw < 0) {
+        from.marginInlineEnd = `${dw.toFixed(1)}px`;
+        to.marginInlineEnd = "0px";
+      } else {
+        const right = !!tabsEl.closest(".mod-right-split");
+        const pad = right ? "paddingInlineStart" : "paddingInlineEnd";
+        from[pad] = `${dw.toFixed(1)}px`;
+        to[pad] = "0px";
+        if (right) from.transform = `translate(0px, ${(r0.top - r1.top).toFixed(1)}px)`;
+      }
+    }
+    run(inner, [from, to]);
+    if (sec && s0) {
+      const s1 = sec.getBoundingClientRect();
+      if (Math.abs(s0.top - s1.top) > 0.5) run(sec, [{ transform: `translateY(${(s0.top - s1.top).toFixed(1)}px)` }, { transform: "none" }]);
+    }
     const dh = h0 - header.offsetHeight;
     const cont = tabsEl.querySelector(":scope > .workspace-tab-container");
-    if (cont && Math.abs(dh) > 0.5) {
-      if (cont.lgNnAnim) cont.lgNnAnim.cancel();
-      cont.lgNnAnim = cont.animate([{ transform: `translateY(${dh.toFixed(1)}px)` }, { transform: "none" }], { duration: 240, easing: EASE.move });
-    }
+    if (cont && Math.abs(dh) > 0.5) run(cont, [{ transform: `translateY(${dh.toFixed(1)}px)` }, { transform: "none" }]);
+    anims.forEach((a) => a.pause());
+    const t0 = window.performance.now();
+    let last = t0;
+    let calm = 0;
+    const wait = (now) => {
+      calm = now - last < NN_SMOOTH_MS ? calm + 1 : 0;
+      last = now;
+      if (calm >= 2 || now - t0 > NN_WAIT_MS) anims.forEach((a) => a.playState === "paused" && a.play());
+      else window.requestAnimationFrame(wait);
+    };
+    window.requestAnimationFrame(wait);
   },
   navRowCollapse(tabsEl, header, h0) {
     if (tabsEl.lgCollapseEnd) tabsEl.lgCollapseEnd();
@@ -8451,6 +8548,7 @@ var tabsMethods = {
       if (fc || pc) this.paintTabTint(tabsEl, fc ? this.darkDim(fc, doc) : null, true, pc ? this.darkDim(pc, doc) : "");
       else if (tabsEl.classList.contains("lg-web-tinted") || tabsEl.classList.contains("lg-folder-tinted")) this.paintTabTint(tabsEl, null);
     }
+    this.widgetWc();
     tabsEl.querySelectorAll(":scope > .workspace-tab-header-container .workspace-tab-header.lg-tab-fc").forEach((h) => this.tabIconFix(h));
     if (switched) {
       void slab.offsetWidth;
@@ -8964,7 +9062,7 @@ var webMethods = {
   // folder: 폴더 색이면 .lg-folder-tinted. 그 위 버튼은 기본 유리라 유리 세트를 섞지 않는다 (사용자 요청).
   // 버튼 유리 채움은 기본 유리 바탕(--lg-glass-bg)을 폴더 색에 소프트 라이트로 섞은 색(--lg-folder-fill, 테마가 채움에 쓴다):
   // 채움에만 섞기를 걸면 알약이 층을 따로 묶어 판까지 닿지 않아, 판 색에 섞은 결과를 미리 계산해 넣는다 (사용자 요청: 채움에만 소프트 라이트).
-  // 외곽선·양옆 선도 원래 색(검정)을 폴더 색에 소프트 라이트로 섞은 색(--lg-folder-line)으로 (사용자 요청)
+  // 외곽선·양옆 선도 원래 색(검정)을 폴더 색에 소프트 라이트로 섞은 색(--lg-folder-edge)으로 (사용자 요청). 폴더 기호 마스크(--lg-folder-line, body)와 이름을 나눈다
   // pill: 폴더 색 탭 줄에서 알약만 따로 따르는 색(Notebook Navigator 폴더 글자색). 없으면 c 를 따른다. c 없이 pill 만 있으면 유리판은 칠하지 않는다
   paintTabTint(tabs, c, folder = false, pill2 = "") {
     if (c) tabs.setCssProps({ "--lg-web-tint": c });
@@ -8975,10 +9073,10 @@ var webMethods = {
     const doc = tabs.ownerDocument;
     const src = base ? resolveRgb(doc, "var(--lg-glass-bg)") : null;
     const dst = base && src ? resolveRgb(doc, base) : null;
-    if (src && dst) tabs.setCssProps({ "--lg-folder-fill": softLight(src, dst), "--lg-folder-line": softLight([0, 0, 0], dst) });
+    if (src && dst) tabs.setCssProps({ "--lg-folder-fill": softLight(src, dst), "--lg-folder-edge": softLight([0, 0, 0], dst) });
     else {
       tabs.style.removeProperty("--lg-folder-fill");
-      tabs.style.removeProperty("--lg-folder-line");
+      tabs.style.removeProperty("--lg-folder-edge");
     }
     const header = tabs.querySelector(":scope > .workspace-tab-header-container");
     const L = c && !folder ? colorLightness(c, tabs.ownerDocument) : null;
@@ -9132,8 +9230,443 @@ var vaultClearMethods = {
   }
 };
 
+// src/widget.ts
+var import_obsidian17 = require("obsidian");
+var WG_MS = 560;
+var WG_SHRINK = 0.35;
+var WG_GROW = 0.65;
+var WG_SCALE = 0.86;
+var WG_GAP = 24;
+var WG_BAR_CLOSE_MS = 400;
+var WG_BAR_IDLE_MS = 2500;
+var WG_DRAG_NEAR = 40;
+var WG_POP_MS = 200;
+var WG_ARROW_NEAR = 40;
+var WG_WHEEL_STEP = 100;
+var WG_WHEEL_IDLE_MS = 180;
+var widgetMethods = {
+  // 위젯 방식 패널 (CSS: .workspace-split.lg-tab-widget). 데스크톱만. 패널마다 마우스 감시를 한 번 단다
+  markTabWidget(split, side) {
+    if (!split || !split.containerEl) return;
+    const el = split.containerEl;
+    const on = this.tabAnimOf(side) === "widget";
+    el.classList.toggle("lg-tab-widget", on);
+    if (!on) {
+      el.querySelectorAll(".lg-wg-dots, .lg-wg-title").forEach((d) => d.remove());
+      el.querySelectorAll(".lg-wg-open").forEach((t) => t.classList.remove("lg-wg-open"));
+      return;
+    }
+    this.widgetDragWire();
+    if (el.lgWgWired) return;
+    el.lgWgWired = true;
+    this.registerDomEvent(el, "pointermove", (e) => this.widgetHover(el, e));
+    this.registerDomEvent(el, "pointerleave", () => this.widgetHover(el, null));
+  },
+  // 위젯 방식 패널이 하나라도 있으면 편집창 툴바를 좌우 끝까지 쓴다 (사용자 요청, 테마 body.lg-wg-bar): 편집창 맨 위 줄의 탭 묶음 중 왼쪽 끝 묶음은 왼쪽 패널 폭만큼,
+  // 오른쪽 끝 묶음은 오른쪽 패널 폭만큼 툴바를 늘리고(.lg-wg-xl/xr, --lg-wg-xl/xr), 패널은 툴바 아래에서 시작한다(--lg-wg-tbh, 툴바 높이).
+  // 툴바가 접혀 있을 때(.lg-mini)는 높이를 새로 재지 않는다
+  widgetToolbar() {
+    const doc = document;
+    const ws = this.app.workspace;
+    const wl = this.tabAnimOf("left") === "widget";
+    const wr = this.tabAnimOf("right") === "widget";
+    const on = (wl || wr) && !this.unloaded;
+    doc.body.classList.toggle("lg-wg-bar", on);
+    doc.body.classList.toggle("lg-wg-r", on && wr);
+    const rootEl = ws.rootSplit && ws.rootSplit.containerEl;
+    const groups = rootEl ? els(rootEl.querySelectorAll(".workspace-tabs")) : [];
+    if (!on || !rootEl) {
+      groups.forEach((t) => t.classList.remove("lg-wg-xl", "lg-wg-xr", "lg-wg-full", "lg-wg-fl", "lg-wg-fr"));
+      doc.body.style.removeProperty("--lg-wg-tbh");
+      this.wgAllFull = false;
+      return;
+    }
+    const put = (el, name, v) => {
+      if (el.style.getPropertyValue(name) !== v) el.style.setProperty(name, v);
+    };
+    const rr = rootEl.getBoundingClientRect();
+    const side = (s) => s && s.containerEl ? s.containerEl.getBoundingClientRect().width : 0;
+    let lw = -1;
+    let rw = -1;
+    const widths = () => {
+      if (lw < 0) {
+        lw = side(ws.leftSplit);
+        rw = side(ws.rightSplit);
+      }
+    };
+    let tbh = 0;
+    let allFull = true;
+    for (const t of groups) {
+      const header = t.querySelector(":scope > .workspace-tab-header-container");
+      if (!header) continue;
+      const r = t.getBoundingClientRect();
+      const top = Math.abs(r.top - rr.top) < 1;
+      const atL = top && Math.abs(r.left - rr.left) < 1;
+      const atR = top && Math.abs(r.right - rr.right) < 1;
+      const one = atL && atR;
+      const full = one && wl && wr;
+      const fl = one && wl && !wr;
+      const fr = one && wr && !wl;
+      const fixed = full || fl || fr;
+      const xl = atL && wl && !fixed ? (widths(), lw) : 0;
+      const xr = atR && wr && !fixed ? (widths(), rw) : 0;
+      if (top && !fixed) allFull = false;
+      t.classList.toggle("lg-wg-full", full);
+      t.classList.toggle("lg-wg-fl", fl);
+      t.classList.toggle("lg-wg-fr", fr);
+      t.classList.toggle("lg-wg-xl", xl > 0);
+      t.classList.toggle("lg-wg-xr", xr > 0);
+      put(header, "--lg-wg-xl", `${xl}px`);
+      put(header, "--lg-wg-xr", `${xr}px`);
+      put(header, "--lg-wg-y", `${rr.top}px`);
+      if (top && !t.classList.contains("lg-mini")) tbh = Math.max(tbh, header.offsetHeight);
+    }
+    if (tbh) put(doc.body, "--lg-wg-tbh", `${tbh}px`);
+    this.wgAllFull = allFull;
+    if (!this.wgToolbarRo) {
+      this.wgToolbarRo = new ResizeObserver(() => {
+        if (!this.wgAllFull) this.widgetToolbar();
+      });
+      for (const s of [ws.leftSplit, ws.rightSplit, ws.rootSplit]) if (s && s.containerEl) this.wgToolbarRo.observe(s.containerEl);
+      const ro = this.wgToolbarRo;
+      this.register(() => ro.disconnect());
+    }
+  },
+  // 위젯 방식에서 창 제어 알약(오른쪽 위)을 그 아래 툴바 알약과 같은 바탕으로 (사용자 요청): 오른쪽 끝 툴바가 폴더 색으로 칠해져 있으면
+  // 그 알약 채움 바탕(--lg-folder-fill)을 옮겨 단다(테마 .lg-wg-wc, --lg-wc-bg). 창 제어 알약은 편집창 밖 요소라 변수를 물려받지 못한다
+  widgetWc() {
+    const wc = document.querySelector(".titlebar-button-container.mod-right");
+    if (!wc) return;
+    const rootEl = this.app.workspace.rootSplit && this.app.workspace.rootSplit.containerEl;
+    const tabs = rootEl ? rootEl.querySelector(".workspace-tabs.lg-wg-full, .workspace-tabs.lg-wg-fr, .workspace-tabs.lg-wg-xr") : null;
+    const bg = document.body.classList.contains("lg-wg-bar") && tabs && tabs.classList.contains("lg-folder-tinted") ? tabs.style.getPropertyValue("--lg-folder-fill") : "";
+    wc.classList.toggle("lg-wg-wc", !!bg);
+    if (bg) {
+      if (wc.style.getPropertyValue("--lg-wc-bg") !== bg) wc.style.setProperty("--lg-wc-bg", bg);
+    } else wc.style.removeProperty("--lg-wc-bg");
+  },
+  // 탭 끌기(Obsidian 탭은 브라우저 끌어 놓기를 쓴다): 끄는 동안에는 마우스 이동이 오지 않아 탭 줄이 반응 없음으로 접혔다 (사용자 지적).
+  // 끄는 동안은 접지 않고, 끈 채 조절 표시 근처(WG_DRAG_NEAR)에 오면 그 묶음의 탭 줄을 펼친다 (다른 패널의 탭을 옮겨 넣을 때). 끝나면 다시 접기를 센다
+  widgetDragWire() {
+    if (this.wgDragWired) return;
+    this.wgDragWired = true;
+    let frame = 0;
+    let at = null;
+    const check = () => {
+      frame = 0;
+      if (!at || !this.wgDragging) return;
+      for (const tabsEl of els(document.querySelectorAll(".lg-tab-widget > .workspace-tabs"))) {
+        const dots = tabsEl.querySelector(":scope > .lg-wg-dots");
+        if (!dots) continue;
+        const r = dots.getBoundingClientRect();
+        const near = at.x >= r.left - WG_DRAG_NEAR && at.x <= r.right + WG_DRAG_NEAR && at.y >= r.top - WG_DRAG_NEAR && at.y <= r.bottom + WG_DRAG_NEAR;
+        if (near && !tabsEl.classList.contains("lg-wg-open")) this.widgetBar(tabsEl, true);
+      }
+    };
+    this.registerDomEvent(document, "dragstart", () => {
+      this.wgDragging = true;
+      window.setTimeout(() => {
+        if (!this.wgDragging) return;
+        document.querySelectorAll(".lg-tab-widget > .workspace-tabs.lg-wg-open").forEach((t) => t.classList.add("lg-wg-drag"));
+      }, 0);
+    });
+    this.registerDomEvent(
+      document,
+      "dragover",
+      (e) => {
+        if (!this.wgDragging) return;
+        at = { x: e.clientX, y: e.clientY };
+        if (!frame) frame = window.requestAnimationFrame(check);
+      },
+      { passive: true }
+    );
+    const end = () => {
+      if (!this.wgDragging) return;
+      this.wgDragging = false;
+      at = null;
+      document.querySelectorAll(".lg-tab-widget > .workspace-tabs.lg-wg-drag").forEach((t) => t.classList.remove("lg-wg-drag"));
+      document.querySelectorAll(".lg-tab-widget > .workspace-tabs.lg-wg-open").forEach((t) => this.widgetIdle(t));
+    };
+    this.registerDomEvent(document, "dragend", end);
+    this.registerDomEvent(document, "drop", () => window.setTimeout(end, 0));
+  },
+  // 탭 묶음을 맞춘다 (renderNavRow 가 부른다): 탭 이름·조절 표시를 고치고, 고른 탭이 바뀌었으면 카드를 넘긴다
+  widgetSync(tabsEl, leaf) {
+    if (!tabsEl.closest(".lg-tab-widget")) {
+      tabsEl.lgWgLeaf = null;
+      return;
+    }
+    const group = leaf && leaf.parent && "children" in leaf.parent ? leaf.parent.children : null;
+    this.widgetTitle(tabsEl, leaf);
+    this.widgetDots(tabsEl, group, leaf);
+    const prev = tabsEl.lgWgLeaf;
+    tabsEl.lgWgLeaf = leaf;
+    const stepped = tabsEl.lgWgDir;
+    tabsEl.lgWgDir = 0;
+    if (!prev || !leaf || prev === leaf || !group) return;
+    const from = group.indexOf(prev);
+    const to = group.indexOf(leaf);
+    if (from < 0 || to < 0 || !tabsEl.offsetParent) return;
+    this.widgetFlip(tabsEl, prev, leaf, stepped || (to > from ? 1 : -1));
+  },
+  // 버튼 줄 밑 왼쪽에 지금 탭 이름 (강조색, 사용자 요청)
+  widgetTitle(tabsEl, leaf) {
+    const header = tabsEl.querySelector(":scope > .workspace-tab-header-container");
+    if (!header) return;
+    let t = header.querySelector(":scope > .lg-wg-title");
+    if (!t) t = header.createDiv({ cls: ["lg-wg-title", INJECTED] });
+    let text = t.querySelector(":scope > span");
+    if (!text) {
+      t.empty();
+      text = t.createSpan();
+    }
+    const name = leaf ? leaf.getDisplayText() : "";
+    if (text.textContent !== name) text.setText(name);
+    const room = t.offsetLeft + text.offsetLeft + text.offsetWidth + 8;
+    const leftOf = (el) => {
+      let x = 0;
+      let e = el;
+      while (e && e !== header) {
+        x += e.offsetLeft;
+        e = e.offsetParent;
+      }
+      return e === header ? x : Infinity;
+    };
+    const busy = els(header.querySelectorAll(".lg-nav-btn:not(.lg-nav-leaving), .lg-panel-toggle, .lg-nav-more:not(.lg-nav-more-off), .sidebar-toggle-button")).some(
+      (b) => b.offsetWidth > 0 && b.getClientRects().length > 0 && leftOf(b) < room
+    );
+    tabsEl.classList.toggle("lg-wg-title-up", !busy && !!name);
+  },
+  // 조절 표시: 세로로 [︿] 점들 [﹀]. 점은 탭마다 하나, 고른 탭은 흰 점. 화살표는 이전·다음 탭으로, 점을 누르면 탭 줄을 띄운다.
+  // 탭 줄이 떠 있는 동안에는 점을 숨기고 표시가 우리 알약으로 탭 줄 길이만큼 커져 위아래에 화살표만 남는다
+  widgetDots(tabsEl, group, leaf) {
+    let dots = tabsEl.querySelector(":scope > .lg-wg-dots");
+    if (!dots) {
+      dots = tabsEl.createDiv({ cls: ["lg-wg-dots", INJECTED] });
+      const prev = dots.createDiv({ cls: ["lg-wg-arrow", "lg-wg-prev"] });
+      (0, import_obsidian17.setIcon)(prev, "chevron-up");
+      dots.createDiv({ cls: "lg-wg-pips" });
+      const next = dots.createDiv({ cls: ["lg-wg-arrow", "lg-wg-next"] });
+      (0, import_obsidian17.setIcon)(next, "chevron-down");
+      dots.addEventListener("pointerdown", (e) => e.stopPropagation());
+      dots.addEventListener("wheel", (e) => this.widgetWheel(tabsEl, e), { passive: false });
+      const inner = tabsEl.querySelector(":scope > .workspace-tab-header-container > .workspace-tab-header-container-inner");
+      if (inner)
+        this.registerDomEvent(inner, "wheel", (e) => {
+          if (tabsEl.classList.contains("lg-wg-open") && tabsEl.closest(".lg-tab-widget")) this.widgetWheel(tabsEl, e);
+        }, { passive: false });
+      dots.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const arrow = isEl(e.target) ? e.target.closest(".lg-wg-arrow") : null;
+        if (arrow) {
+          this.widgetStep(tabsEl, arrow.classList.contains("lg-wg-next") ? 1 : -1);
+          this.widgetIdle(tabsEl);
+        } else if (!tabsEl.classList.contains("lg-wg-open")) this.widgetBar(tabsEl, true);
+      });
+    }
+    const pips = dots.querySelector(":scope > .lg-wg-pips");
+    if (!pips) return;
+    const n = group ? group.length : 0;
+    let at = group && leaf ? group.indexOf(leaf) : -1;
+    const p = tabsEl.lgWgWheel ? tabsEl.lgWgWheel.pending : 0;
+    if (p && n && at >= 0) at = ((at + p) % n + n) % n;
+    while (pips.childElementCount < n) pips.createDiv({ cls: "lg-wg-pip" });
+    while (pips.childElementCount > n && pips.lastElementChild) pips.lastElementChild.remove();
+    els(pips.children).forEach((p2, i) => p2.classList.toggle("is-active", i === at));
+    if (dots.style.getPropertyValue("--lg-wg-n") !== String(n)) dots.setCssProps({ "--lg-wg-n": String(n) });
+  },
+  // 조절 표시(접힌 점·펼친 알약·탭 줄)에서 휠을 돌리면 이전·다음 탭으로 넘긴다 (사용자 요청). 아래로 돌리면 다음 탭.
+  // 돌리는 동안은 넘기지 않고 칸 수만 모아 조절 표시에 갈 곳을 바로 보여 주고(widgetPreview), 휠이 멈추면 그 탭으로 한 번에 넘긴다
+  // (사용자 요청: 드르륵 돌려도 한 칸씩만 넘어가거나, 한 번 넘어갔다가 다시 넘어가지 않게)
+  widgetWheel(tabsEl, e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const d = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+    const w = tabsEl.lgWgWheel || (tabsEl.lgWgWheel = { acc: 0, pending: 0, timer: 0 });
+    if (Math.sign(d) !== Math.sign(w.acc)) w.acc = 0;
+    w.acc += e.deltaMode === 1 ? d * 16 : d;
+    let n = 0;
+    while (Math.abs(w.acc) >= WG_WHEEL_STEP) {
+      const s = Math.sign(w.acc);
+      n += s;
+      w.acc -= s * WG_WHEEL_STEP;
+    }
+    if (n) {
+      w.pending += n;
+      this.widgetPreview(tabsEl, w.pending);
+    }
+    window.clearTimeout(w.timer);
+    w.timer = window.setTimeout(() => {
+      w.timer = 0;
+      w.acc = 0;
+      const p = w.pending;
+      w.pending = 0;
+      this.widgetPreview(tabsEl, 0);
+      if (p) this.widgetStep(tabsEl, p);
+    }, WG_WHEEL_IDLE_MS);
+    this.widgetIdle(tabsEl);
+  },
+  // 휠로 갈 곳(지금 탭에서 p 칸, 끝에서 한 바퀴)을 조절 표시에 미리 보여 준다: 접힌 점은 그 점을 흰 점으로, 펼친 탭 줄은 그 탭을 고른 탭처럼
+  // (.lg-wg-pick, 고른 탭 하이라이트는 그동안 끈다 .lg-wg-picking). p 가 0 이면 원래대로
+  widgetPreview(tabsEl, p) {
+    const leaf = this.activeLeafOf(tabsEl);
+    const group = leaf && leaf.parent && "children" in leaf.parent ? leaf.parent.children : null;
+    if (!leaf || !group) return;
+    const n = group.length;
+    const cur = group.indexOf(leaf);
+    const to = p ? ((cur + p) % n + n) % n : cur;
+    const pips = tabsEl.querySelector(":scope > .lg-wg-dots > .lg-wg-pips");
+    if (pips) els(pips.children).forEach((el, i) => el.classList.toggle("is-active", i === to));
+    const heads = els(tabsEl.querySelectorAll(":scope > .workspace-tab-header-container > .workspace-tab-header-container-inner > .workspace-tab-header"));
+    heads.forEach((h, i) => h.classList.toggle("lg-wg-pick", !!p && i === to && to !== cur));
+    tabsEl.classList.toggle("lg-wg-picking", !!p && to !== cur);
+  },
+  // 이전·다음 탭으로
+  widgetStep(tabsEl, d) {
+    const leaf = this.activeLeafOf(tabsEl);
+    const group = leaf && leaf.parent && "children" in leaf.parent ? leaf.parent.children : null;
+    if (!leaf || !group) return;
+    const n = group.length;
+    const next = group[((group.indexOf(leaf) + d) % n + n) % n];
+    if (!next || next === leaf) return;
+    tabsEl.lgWgDir = Math.sign(d);
+    this.app.workspace.setActiveLeaf(next, { focus: true });
+    window.setTimeout(() => tabsEl.lgWgDir = 0, 0);
+  },
+  // 탭 줄이 떠 있는 동안 마우스가 조절 표시·탭 줄 위에 있으면 두고, 벗어나면 조금 뒤 접는다
+  widgetHover(split, e) {
+    for (const dots of els(split.querySelectorAll(":scope > .workspace-tabs > .lg-wg-dots"))) {
+      let near = false;
+      if (e) {
+        const r = dots.getBoundingClientRect();
+        near = e.clientX >= r.left - WG_ARROW_NEAR && e.clientX <= r.right + WG_ARROW_NEAR && e.clientY >= r.top - WG_ARROW_NEAR && e.clientY <= r.bottom + WG_ARROW_NEAR;
+      }
+      if (dots.classList.contains("lg-wg-near") !== near) dots.classList.toggle("lg-wg-near", near);
+    }
+    for (const tabsEl of els(split.querySelectorAll(":scope > .workspace-tabs.lg-wg-open"))) {
+      const dots = tabsEl.querySelector(":scope > .lg-wg-dots");
+      const inner = tabsEl.querySelector(":scope > .workspace-tab-header-container > .workspace-tab-header-container-inner");
+      const over = !!e && isEl(e.target) && [dots, inner].some((x) => !!x && x.contains(e.target));
+      if (over) this.widgetIdle(tabsEl);
+      else {
+        window.clearTimeout(tabsEl.lgWgCloseTimer);
+        tabsEl.lgWgCloseTimer = window.setTimeout(() => this.widgetBar(tabsEl, false), WG_BAR_CLOSE_MS);
+      }
+    }
+  },
+  // 탭 줄을 띄운 채 마우스가 그 둘레에 있으면 접기를 미룬다. 아무 반응이 없으면 WG_BAR_IDLE_MS 뒤 접는다
+  widgetIdle(tabsEl) {
+    if (!tabsEl.classList.contains("lg-wg-open")) return;
+    window.clearTimeout(tabsEl.lgWgCloseTimer);
+    tabsEl.lgWgCloseTimer = window.setTimeout(() => this.widgetBar(tabsEl, false), WG_BAR_IDLE_MS);
+  },
+  // 기호만 있는 세로 탭 줄을 조절 표시 자리에 띄운다(open). 표시는 우리 알약으로 탭 줄 길이만큼 커지고, 탭 줄은 커지며 나타나 작아지며 사라진다.
+  // 탭 줄 자리는 틀 높이 가운데(테마 --lg-wg-h), 알약 길이는 탭 줄 길이(--lg-wg-bh)로 잡는다
+  widgetBar(tabsEl, open) {
+    window.clearTimeout(tabsEl.lgWgCloseTimer);
+    const inner = tabsEl.querySelector(":scope > .workspace-tab-header-container > .workspace-tab-header-container-inner");
+    const dots = tabsEl.querySelector(":scope > .lg-wg-dots");
+    const was = tabsEl.classList.contains("lg-wg-open");
+    const closing = tabsEl.lgWgCloseAnims;
+    if (closing) {
+      tabsEl.lgWgCloseAnims = null;
+      closing.forEach((a) => a.cancel());
+    }
+    if (!open) {
+      if (!was || this.wgDragging) return;
+      if (document.querySelector(".menu:not(.lg-menu-ghost)")) {
+        tabsEl.lgWgCloseTimer = window.setTimeout(() => this.widgetBar(tabsEl, false), WG_BAR_CLOSE_MS);
+        return;
+      }
+      const close = () => {
+        tabsEl.classList.remove("lg-wg-open", "lg-wg-drag");
+        if (dots) {
+          dots.style.removeProperty("--lg-wg-bh");
+          dots.animate([{ opacity: 0 }, { opacity: 1 }], { duration: WG_POP_MS * 0.8, easing: EASE.settle });
+        }
+      };
+      const kf = [
+        { opacity: 1, scale: "1" },
+        { opacity: 0, scale: "0.85" }
+      ];
+      const anims = [inner, dots].filter((x) => !!x).map((x) => x.animate(kf, { duration: WG_POP_MS, easing: EASE.exit, fill: "forwards" }));
+      if (!anims.length) return close();
+      tabsEl.lgWgCloseAnims = anims;
+      anims[0].onfinish = () => {
+        if (tabsEl.lgWgCloseAnims !== anims) return;
+        tabsEl.lgWgCloseAnims = null;
+        close();
+        anims.forEach((a) => a.cancel());
+      };
+      return;
+    }
+    tabsEl.setCssProps({ "--lg-wg-h": `${tabsEl.clientHeight}px` });
+    tabsEl.classList.add("lg-wg-open");
+    tabsEl.classList.toggle("lg-wg-drag", !!this.wgDragging);
+    if (inner) {
+      if (dots) dots.setCssProps({ "--lg-wg-bh": `${inner.offsetWidth}px` });
+      inner.animate([{ opacity: 0, scale: "0.85" }, { opacity: 1, scale: "1" }], { duration: WG_POP_MS, delay: WG_POP_MS * 0.5, easing: EASE.settle, fill: "backwards" });
+    }
+    this.widgetIdle(tabsEl);
+  },
+  // 카드 넘기기: 유리 틀(내용 칸)은 그대로 두고 그 안에서 옛 보기·새 보기를 각자 카드로 그려(.lg-wg-card) 틀에 가려진 채 옮긴다.
+  // 이동은 처음부터 끝까지 이어지고, 크기는 처음에 작아졌다(옛 카드) 끝에 커진다(새 카드).
+  // Obsidian 이 숨긴 옛 보기(display: none)를 움직이는 동안만 다시 보이게 하고, 끝나면 그때도 고른 탭이 아니면 다시 숨긴다
+  widgetFlip(tabsEl, from, to, dir) {
+    if (tabsEl.lgWgEnd) tabsEl.lgWgEnd();
+    const cont = tabsEl.querySelector(":scope > .workspace-tab-container");
+    const oldEl = from.containerEl;
+    const newEl2 = to.containerEl;
+    if (!cont || !oldEl || !newEl2 || oldEl.parentElement !== cont || newEl2.parentElement !== cont) return;
+    const h = cont.clientHeight;
+    const dy = h * (1 + WG_SCALE) / 2 + WG_GAP;
+    const hidden = oldEl.style.display === "none";
+    oldEl.style.removeProperty("display");
+    oldEl.classList.add("lg-wg-card", "lg-wg-old");
+    newEl2.classList.add("lg-wg-card");
+    const out = -dir * dy;
+    const opt = { duration: WG_MS, fill: "both" };
+    const s = String(WG_SCALE);
+    const anims = [
+      oldEl.animate([{ translate: "0 0" }, { translate: `0 ${out}px` }], { ...opt, easing: EASE.move }),
+      oldEl.animate([{ scale: "1", easing: EASE.settle }, { scale: s, offset: WG_SHRINK }, { scale: s }], opt),
+      newEl2.animate([{ translate: `0 ${-out}px` }, { translate: "0 0" }], { ...opt, easing: EASE.move }),
+      newEl2.animate([{ scale: s }, { scale: s, offset: WG_GROW, easing: EASE.settle }, { scale: "1" }], opt)
+    ];
+    let ended = false;
+    let follow = 0;
+    const sugg = () => {
+      const host = newEl2.querySelector(".lg-sugg-host");
+      if (host && host.lgSuggPlace) host.lgSuggPlace();
+    };
+    const tick = () => {
+      sugg();
+      follow = window.requestAnimationFrame(tick);
+    };
+    follow = window.requestAnimationFrame(tick);
+    document.body.classList.add("lg-wg-flip");
+    const end = () => {
+      if (ended) return;
+      ended = true;
+      window.cancelAnimationFrame(follow);
+      anims.forEach((a) => a.cancel());
+      oldEl.classList.remove("lg-wg-card", "lg-wg-old");
+      newEl2.classList.remove("lg-wg-card");
+      if (hidden && !(from.tabHeaderEl && from.tabHeaderEl.classList.contains("is-active"))) oldEl.setCssProps({ display: "none" });
+      newEl2.querySelectorAll(".nav-files-container").forEach((list) => this.applyStripes(list));
+      sugg();
+      if (!document.querySelector(".lg-wg-card")) document.body.classList.remove("lg-wg-flip");
+      if (tabsEl.lgWgEnd === end) tabsEl.lgWgEnd = null;
+    };
+    tabsEl.lgWgEnd = end;
+    anims[3].onfinish = end;
+    window.setTimeout(end, WG_MS + 200);
+  }
+};
+
 // src/main.ts
-var Base = import_obsidian17.Plugin;
+var Base = import_obsidian18.Plugin;
 var GlassShelfCompanion = class extends Base {
   // 테마가 켜져 있는 동안의 모든 동작은 자식 Component(this.core) 하나에 묶는다. 테마가 바뀌면(켜짐·꺼짐) 그 자식만 떼고 붙인다.
   // 예전엔 플러그인이 스스로 껐다 켰는데(app.plugins 비공개 API), 그 방식은 심사 지적 대상이고 끌 때마다 옛 인스턴스가 남기는 것이 생겼다 (검토 지적).
@@ -9149,4 +9682,4 @@ var GlassShelfCompanion = class extends Base {
     await this.syncCore();
   }
 };
-Object.assign(GlassShelfCompanion.prototype, coreMethods, eventsMethods, eventsPressMethods, eventsMenusMethods, pressMethods, kanbanMethods, menusMethods, morphMethods, foldersMethods, sidebarMethods, tabsMethods, webMethods, vaultClearMethods);
+Object.assign(GlassShelfCompanion.prototype, coreMethods, eventsMethods, eventsPressMethods, eventsMenusMethods, pressMethods, kanbanMethods, menusMethods, morphMethods, foldersMethods, sidebarMethods, tabsMethods, webMethods, vaultClearMethods, widgetMethods);
