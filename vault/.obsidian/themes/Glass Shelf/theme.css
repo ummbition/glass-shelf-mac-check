@@ -3390,9 +3390,10 @@ body.lg-acrylic.is-translucent .workspace-split.mod-sidedock:not(#lg):not(#lg) {
   background-color: transparent;
 }
 
-/* 맥: 위젯 패널(.lg-tab-widget)은 반투명 창이어도 편집창 바탕 그대로 (사용자 요청: 위젯이면 패널이 바뀌지 않게) */
+/* 맥: 위젯 패널(.lg-tab-widget)은 반투명 창이어도 편집창 바탕 그대로 (사용자 요청: 위젯이면 패널이 바뀌지 않게).
+   Obsidian 이 반투명 창에서 패널 바탕색을 !important 로 비우므로(app.css .is-translucent .workspace-split) 바탕색 대신 한 색 그라데이션 그림으로 칠한다 */
 body.lg-acrylic.is-translucent .workspace-split.mod-sidedock.lg-tab-widget:not(#lg):not(#lg) {
-  background-color: var(--background-primary);
+  background-image: linear-gradient(var(--background-primary), var(--background-primary));
 }
 
 /* 맥: 재질이나 창 라이트·다크가 바뀐 뒤 예전 화면이 남았다(측정). 플러그인이 두 프레임 붙이는 클래스로 앱 화면을 다시 그리게 한다 */
