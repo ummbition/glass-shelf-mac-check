@@ -63,7 +63,7 @@ const TRAFFIC = `const R = (e) => { const b = e.getBoundingClientRect(); return 
   const tabs = app.workspace.rootSplit.containerEl.querySelector(".workspace-tabs.mod-top"); const hd = tabs && tabs.querySelector(":scope > .workspace-tab-header-container");
   return { body: [...document.body.classList].filter((c) => /lg-wg|frameless|lg-tab/.test(c)), rootTabs: tabs && tabs.className.split(" ").filter((c) => c.startsWith("lg-wg")), header: hd && R(hd), left: R(app.workspace.leftSplit.containerEl), right: R(app.workspace.rightSplit.containerEl), dragNearTraffic: regs, frameLeft: getComputedStyle(document.body).getPropertyValue("--frame-left-space"), inner: [innerWidth, innerHeight] };`;
 
-const scenarios = [["lens", "lens"], ["widget", "widget"], ["widget", "lens"], ["lens", "widget"]];
+const scenarios = process.env.DRAGONLY ? [] : [["lens", "lens"], ["widget", "widget"], ["widget", "lens"], ["lens", "widget"]];
 for (const [L, Rt] of scenarios) {
   const tag = `${L}-${Rt}`;
   await step(tag, async () => {
@@ -112,13 +112,13 @@ await step("widget-funcs", async () => {
     if (open && open.tab) {
       await send("Input.setInterceptDrags", { enabled: true });
       const n0 = intercepted; const [x, y] = open.tab;
-      await mouse("mouseMoved", x, y); await mouse("mousePressed", x, y);
+      await mouse("mouseMoved", x, y); await mouse("mousePressed", x, y, { buttons: 1 });
       for (let i = 1; i <= 8; i++) { await mouse("mouseMoved", x + i * 2, y + i * 3, { buttons: 1 }); await sleep(20); }
       await sleep(400);
       drag = { intercepted: intercepted - n0, horiz: await ev(`return window.__T.classList.contains("lg-wg-drag");`) };
       shot(side + "-drag");
       await send("Input.dispatchDragEvent", { type: "dragCancel", x, y, data: { items: [], dragOperationsMask: 1 } });
-      await mouse("mouseReleased", x, y); await sleep(300);
+      await mouse("mouseReleased", x, y, { buttons: 0 }); await sleep(300);
       await ev(`document.dispatchEvent(new DragEvent("dragend", { bubbles: true }));`);
       await send("Input.setInterceptDrags", { enabled: false });
     }

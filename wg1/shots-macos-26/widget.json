@@ -1,0 +1,327 @@
+[
+ {
+  "k": "tools",
+  "v": {
+   "cliclick": true,
+   "sw": "26.6.2"
+  }
+ },
+ {
+  "k": "setup",
+  "v": {
+   "ver": "2.2.1",
+   "body": "mod-macos is-frameless is-hidden-frameless obsidian-app theme-light is-translucent show-inline-title is-floating-nav auto-full-screen show-ribbon show-view-header is-focused lg-ui lg-show-path lg-web-under lg-mini-bar lg-wc-compact lg-tab-wide lg-tab-names lg-acrylic lg-vib-nudge lg-editing",
+   "frameLeft": "calc(80px - 0px)",
+   "right": [
+    "backlink",
+    "outgoing-link",
+    "tag",
+    "all-properties",
+    "outline"
+   ]
+  }
+ },
+ {
+  "k": "lens-lens-state",
+  "v": {
+   "st": {
+    "body": [
+     "is-frameless",
+     "is-hidden-frameless",
+     "lg-tab-wide",
+     "lg-tab-names"
+    ],
+    "rootTabs": [],
+    "header": [
+     300,
+     0,
+     424,
+     96
+    ],
+    "left": [
+     0,
+     0,
+     300,
+     800
+    ],
+    "right": [
+     724,
+     0,
+     300,
+     800
+    ],
+    "dragNearTraffic": [
+     [
+      "lg-drag-band lg-injected",
+      0,
+      0,
+      300,
+      48
+     ]
+    ],
+    "frameLeft": "calc(80px - 0px)",
+    "inner": [
+     1024,
+     800
+    ]
+   },
+   "win": [
+    448,
+    76,
+    1024,
+    800
+   ]
+  }
+ },
+ {
+  "k": "widget-widget-state",
+  "v": {
+   "st": {
+    "body": [
+     "is-frameless",
+     "is-hidden-frameless",
+     "lg-tab-wide",
+     "lg-tab-names",
+     "lg-wg-bar",
+     "lg-wg-r"
+    ],
+    "rootTabs": [
+     "lg-wg-full"
+    ],
+    "header": [
+     0,
+     0,
+     1024,
+     96
+    ],
+    "left": [
+     0,
+     96,
+     300,
+     704
+    ],
+    "right": [
+     724,
+     96,
+     300,
+     704
+    ],
+    "dragNearTraffic": [
+     [
+      "lg-drag-band lg-injected",
+      0,
+      0,
+      1024,
+      48
+     ]
+    ],
+    "frameLeft": "calc(80px - 0px)",
+    "inner": [
+     1024,
+     800
+    ]
+   },
+   "win": [
+    448,
+    76,
+    1024,
+    800
+   ]
+  }
+ },
+ {
+  "k": "widget-lens-state",
+  "v": {
+   "st": {
+    "body": [
+     "is-frameless",
+     "is-hidden-frameless",
+     "lg-tab-wide",
+     "lg-tab-names",
+     "lg-wg-bar"
+    ],
+    "rootTabs": [
+     "lg-wg-fl"
+    ],
+    "header": [
+     0,
+     0,
+     724,
+     96
+    ],
+    "left": [
+     0,
+     96,
+     300,
+     704
+    ],
+    "right": [
+     724,
+     0,
+     300,
+     800
+    ],
+    "dragNearTraffic": [
+     [
+      "lg-drag-band lg-injected",
+      0,
+      0,
+      724,
+      48
+     ]
+    ],
+    "frameLeft": "calc(80px - 0px)",
+    "inner": [
+     1024,
+     800
+    ]
+   },
+   "win": [
+    448,
+    76,
+    1024,
+    800
+   ]
+  }
+ },
+ {
+  "k": "lens-widget-state",
+  "v": {
+   "st": {
+    "body": [
+     "is-frameless",
+     "is-hidden-frameless",
+     "lg-tab-wide",
+     "lg-tab-names",
+     "lg-wg-bar",
+     "lg-wg-r"
+    ],
+    "rootTabs": [
+     "lg-wg-fr"
+    ],
+    "header": [
+     300,
+     0,
+     724,
+     96
+    ],
+    "left": [
+     0,
+     0,
+     300,
+     800
+    ],
+    "right": [
+     724,
+     96,
+     300,
+     704
+    ],
+    "dragNearTraffic": [
+     [
+      "lg-drag-band lg-injected",
+      0,
+      0,
+      300,
+      48
+     ]
+    ],
+    "frameLeft": "calc(80px - 0px)",
+    "inner": [
+     1024,
+     800
+    ]
+   },
+   "win": [
+    448,
+    76,
+    1024,
+    800
+   ]
+  }
+ },
+ {
+  "k": "left-dots",
+  "v": {
+   "x": 284,
+   "y": 448,
+   "act": "Files",
+   "n": 3,
+   "widget": true
+  }
+ },
+ {
+  "k": "left-funcs",
+  "v": {
+   "before": "Files",
+   "during": [
+    [
+     "Files",
+     1
+    ],
+    [
+     "Files",
+     2
+    ]
+   ],
+   "afterWheel": [
+    "Bookmarks",
+    2
+   ],
+   "open": {
+    "open": true,
+    "tab": [
+     284,
+     448
+    ],
+    "hit": "workspace-tab-header-inner-icon"
+   },
+   "drag": {
+    "intercepted": 0,
+    "horiz": false
+   }
+  }
+ },
+ {
+  "k": "right-dots",
+  "v": {
+   "x": 740,
+   "y": 448,
+   "act": "Outline",
+   "n": 5,
+   "widget": true
+  }
+ },
+ {
+  "k": "right-funcs",
+  "v": {
+   "before": "Outline",
+   "during": [
+    [
+     "Outline",
+     0
+    ],
+    [
+     "Outline",
+     1
+    ]
+   ],
+   "afterWheel": [
+    "Outgoing links",
+    1
+   ],
+   "open": {
+    "open": true,
+    "tab": [
+     740,
+     402
+    ],
+    "hit": "workspace-tab-header-inner-icon"
+   },
+   "drag": {
+    "intercepted": 0,
+    "horiz": false
+   }
+  }
+ }
+]
