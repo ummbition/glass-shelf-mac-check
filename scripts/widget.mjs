@@ -111,11 +111,11 @@ await step("widget-funcs", async () => {
     let drag = null;
     if (open && open.tab) {
       await send("Input.setInterceptDrags", { enabled: true });
-      const n0 = intercepted; const [x, y] = open.tab;
+      const n0 = intercepted; const [x, y] = open.tab; await ev(`window.__ds = 0; document.addEventListener("dragstart", () => window.__ds++, { capture: true, once: true });`);
       await mouse("mouseMoved", x, y); await mouse("mousePressed", x, y, { buttons: 1 });
-      for (let i = 1; i <= 8; i++) { await mouse("mouseMoved", x + i * 2, y + i * 3, { buttons: 1 }); await sleep(20); }
+      for (let i = 1; i <= 8; i++) { await mouse("mouseMoved", x + i * 2, y + i * 3, { button: "left", buttons: 1 }); await sleep(20); }
       await sleep(400);
-      drag = { intercepted: intercepted - n0, horiz: await ev(`return window.__T.classList.contains("lg-wg-drag");`) };
+      drag = { intercepted: intercepted - n0, dragstart: await ev(`return window.__ds || 0;`), horiz: await ev(`return window.__T.classList.contains("lg-wg-drag");`) };
       shot(side + "-drag");
       await send("Input.dispatchDragEvent", { type: "dragCancel", x, y, data: { items: [], dragOperationsMask: 1 } });
       await mouse("mouseReleased", x, y, { buttons: 0 }); await sleep(300);
