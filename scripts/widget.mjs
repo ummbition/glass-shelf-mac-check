@@ -63,7 +63,7 @@ const TRAFFIC = `const R = (e) => { const b = e.getBoundingClientRect(); return 
   const tabs = app.workspace.rootSplit.containerEl.querySelector(".workspace-tabs.mod-top"); const hd = tabs && tabs.querySelector(":scope > .workspace-tab-header-container");
   return { body: [...document.body.classList].filter((c) => /lg-wg|frameless|lg-tab/.test(c)), rootTabs: tabs && tabs.className.split(" ").filter((c) => c.startsWith("lg-wg")), header: hd && R(hd), left: R(app.workspace.leftSplit.containerEl), right: R(app.workspace.rightSplit.containerEl), dragNearTraffic: regs, frameLeft: getComputedStyle(document.body).getPropertyValue("--frame-left-space"), inner: [innerWidth, innerHeight] };`;
 
-const scenarios = process.env.DRAGONLY ? [] : [["lens", "lens"], ["widget", "widget"], ["widget", "lens"], ["lens", "widget"]];
+const scenarios = process.env.BGONLY ? [["widget", "widget"]] : process.env.DRAGONLY ? [] : [["lens", "lens"], ["widget", "widget"], ["widget", "lens"], ["lens", "widget"]];
 for (const [L, Rt] of scenarios) {
   const tag = `${L}-${Rt}`;
   await step(tag, async () => {
@@ -71,6 +71,9 @@ for (const [L, Rt] of scenarios) {
     const st = await ev(TRAFFIC);
     const wp = winPos();
     note(tag + "-state", { st, win: wp });
+    note(tag + "-bg", await ev(`const L = app.workspace.leftSplit.containerEl; const r = L.getBoundingClientRect(); const x = r.right - 6, y = r.top + 300;
+      const stack = document.elementsFromPoint(x, y).slice(0, 8).map((e) => { const cs = getComputedStyle(e); return [e.tagName + "." + String(e.className).slice(0, 50), cs.backgroundColor, cs.opacity, cs.backdropFilter.slice(0, 30)]; });
+      return { split: getComputedStyle(L).backgroundColor, splitCls: L.className, bodyBg: getComputedStyle(document.body).backgroundColor, bgPrimary: getComputedStyle(document.body).getPropertyValue("--background-primary"), stack };`));
     shot(tag + "-full");
     if (wp && hasCliclick) {
       const [wx, wy] = wp;
