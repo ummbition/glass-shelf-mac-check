@@ -38,7 +38,8 @@ await step("setup", async () => {
     if (!app.plugins.plugins["glass-shelf"]) await app.plugins.enablePluginAndSave("glass-shelf");
     if (!app.plugins.plugins["sidebar-columns"]) await app.plugins.enablePluginAndSave("sidebar-columns");
     app.customCss.setTheme("Glass Shelf"); app.setting.close(); app.vault.setConfig("nativeMenus", false);
-    let pl; for (let i = 0; i < 120; i++) { pl = app.plugins.plugins["glass-shelf"]; if (pl && pl.settings) break; await new Promise((r) => setTimeout(r, 250)); }
+    let pl; const t0 = Date.now(); for (let i = 0; i < 480; i++) { pl = app.plugins.plugins["glass-shelf"]; if (pl && pl.settings) break; await new Promise((r) => setTimeout(r, 250)); }
+    window.__wait = Date.now() - t0;
     if (!pl || !pl.settings) return { fail: "glass-shelf core not started" };
     pl.settings.reduceMotion = "off"; pl.settings.tabAnimLeft = "widget"; pl.settings.tabAnimRight = "widget"; await pl.saveSettings(); if (pl.applySettings) pl.applySettings();
     await app.workspace.openLinkText("시험", "", false); await new Promise((r) => setTimeout(r, 1200));
@@ -52,7 +53,7 @@ await step("setup", async () => {
     app.workspace.leftSplit.expand(); app.workspace.rightSplit.expand(); app.workspace.revealLeaf(fe); app.workspace.revealLeaf(ol);
     window.__pl = pl;
     const sc = app.plugins.plugins["sidebar-columns"];
-    return { ver: pl.manifest.version, sc: sc && sc.manifest.version, ack: sc && sc.settings, right: app.workspace.rightSplit.children.map((c) => c.type + ":" + (c.children || []).map((l) => l.view && l.view.getViewType()).join(",")) };`));
+    return { wait: window.__wait, ver: pl.manifest.version, sc: sc && sc.manifest.version, ack: sc && sc.settings, right: app.workspace.rightSplit.children.map((c) => c.type + ":" + (c.children || []).map((l) => l.view && l.view.getViewType()).join(",")) };`));
   await sleep(1200);
   // 아래 묶음(백링크)을 오른쪽으로 나누고, 새 칸에 태그 보기를 연다
   note("split", await ev(`const bl = app.workspace.getLeavesOfType("backlink")[0]; app.workspace.setActiveLeaf(bl, { focus: true }); await new Promise((r) => setTimeout(r, 400));
