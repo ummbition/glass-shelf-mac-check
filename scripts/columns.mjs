@@ -38,9 +38,12 @@ await step("setup", async () => {
     if (!app.plugins.plugins["glass-shelf"]) await app.plugins.enablePluginAndSave("glass-shelf");
     if (!app.plugins.plugins["sidebar-columns"]) await app.plugins.enablePluginAndSave("sidebar-columns");
     app.customCss.setTheme("Glass Shelf"); app.setting.close(); app.vault.setConfig("nativeMenus", false);
-    let pl; const t0 = Date.now(); for (let i = 0; i < 480; i++) { pl = app.plugins.plugins["glass-shelf"]; if (pl && pl.settings) break; await new Promise((r) => setTimeout(r, 250)); }
+    let pl; const t0 = Date.now(); for (let i = 0; i < 240; i++) { pl = app.plugins.plugins["glass-shelf"]; if (pl && pl.settings) break;
+      // 테마가 늦게 붙으면 코어가 시작하지 않는다(widget.mjs 와 같은 우회): 테마를 껐다 켜고 플러그인을 다시 켠다
+      if (i === 40 || i === 80 || i === 160) { app.customCss.setTheme(""); await new Promise((r) => setTimeout(r, 500)); await app.plugins.disablePlugin("glass-shelf"); await app.plugins.enablePlugin("glass-shelf"); app.customCss.setTheme("Glass Shelf"); }
+      await new Promise((r) => setTimeout(r, 250)); }
     window.__wait = Date.now() - t0;
-    if (!pl || !pl.settings) return { fail: "glass-shelf core not started" };
+    if (!pl || !pl.settings) return { fail: "glass-shelf core not started", keys: Object.keys(app.plugins.plugins), enabled: [...app.plugins.enabledPlugins], theme: app.customCss.theme, pl: !!pl, plKeys: pl ? Object.keys(pl).slice(0, 30) : null };
     pl.settings.reduceMotion = "off"; pl.settings.tabAnimLeft = "widget"; pl.settings.tabAnimRight = "widget"; await pl.saveSettings(); if (pl.applySettings) pl.applySettings();
     await app.workspace.openLinkText("시험", "", false); await new Promise((r) => setTimeout(r, 1200));
     let fe = app.workspace.getLeavesOfType("file-explorer")[0]; if (!fe) { fe = app.workspace.getLeftLeaf(false); await fe.setViewState({ type: "file-explorer" }); }
