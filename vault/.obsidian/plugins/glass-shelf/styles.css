@@ -406,8 +406,8 @@ body:not(.theme-dark) .lg-seg-lens {
   /* 틴트는 받지 않는다: 원래 테두리 (사용자 요청) */
   /* 외곽선은 가장자리 선과 함께 테두리 칸에 칠한다(--lg-cres-img-plain), 그림자에는 위아래 하이라이트만 */
   box-shadow: var(--lg-rim-in-plain, var(--lg-rim-in));
-  -webkit-backdrop-filter: var(--lg-refract,) var(--lg-bright,);
-  backdrop-filter: var(--lg-refract,) var(--lg-bright,);
+  -webkit-backdrop-filter: var(--lg-refract,);
+  backdrop-filter: var(--lg-refract,);
 }
 
 /* 그래프 설정창이 열리는 동안 토글을 반올림 없이 그리는 장치 (플러그인이 붙였다가 완전히 멈춘 뒤 뗀다).

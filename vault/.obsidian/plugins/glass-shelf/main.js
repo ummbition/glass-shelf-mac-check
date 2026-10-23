@@ -28,192 +28,6 @@ var import_obsidian18 = require("obsidian");
 // src/core.ts
 var import_obsidian5 = require("obsidian");
 
-// src/web-page.ts
-var isWebView = (v) => !!v && typeof v.getViewType === "function" && v.getViewType() === "webviewer";
-var WEB_KEYS_PASS = /* @__PURE__ */ new Set(["Enter", "Escape", "ArrowUp", "ArrowDown", "Tab"]);
-var WEB_CARD_K = 2;
-var WEB_PAGE_SCRIPT = `(() => {
-  const prevX = window.__lgInset;
-  window.__lgInset = __LG_INSET__;
-  // \uACE0\uC815 \uC694\uC18C\uAC00 \uC0C8 \uC790\uB9AC\uB85C \uC6C0\uC9C1\uC774\uB294 \uC2DC\uAC04(ms). \uD0ED \uC904\uC744 \uC811\uACE0 \uD3BC \uB54C \uB760\uC640 \uAC19\uC774 \uC6C0\uC9C1\uC774\uAC8C \uD55C\uB2E4. \uC774\uBC88\uC5D0 \uB9DE\uCD9C \uB54C\uB9CC \uC4F4\uB2E4
-  window.__lgAnim = __LG_ANIM__;
-  // \uD50C\uB7EC\uADF8\uC778\uC774 \uBCF4\uB0B8 \uC2DC\uAC01. \uD398\uC774\uC9C0\uC5D0 \uB2FF\uAE30\uAE4C\uC9C0 \uAC78\uB9B0 \uC2DC\uAC04\uB9CC\uD07C \uC6C0\uC9C1\uC784\uC744 \uC55E\uB2F9\uACA8 \uB760\uC640 \uB9DE\uCD98\uB2E4: \uADF8\uB9CC\uD07C \uB9C9\uB300\uAC00 \uB760\uBCF4\uB2E4 \uB2A6\uAC8C \uCD9C\uBC1C\uD588\uB2E4 (\uC0AC\uC6A9\uC790 \uC9C0\uC801)
-  window.__lgLate = Math.max(0, Date.now() - __LG_SENT__);
-  // \uB2E4\uC2DC \uB123\uC744 \uB54C(\uD0ED \uC904 \uCD95\uC18C\uB85C \uB760 \uB192\uC774\uAC00 \uBC14\uB01C) \uC704 \uC5EC\uBC31\uC774 \uBC14\uB010 \uB9CC\uD07C \uC2A4\uD06C\uB864\uC744 \uC62E\uACA8, \uC77D\uB358 \uB0B4\uC6A9\uC774 \uC81C\uC790\uB9AC\uC5D0 \uC788\uAC8C \uD55C\uB2E4
-  if (window.__lgGS) { window.__lgGS(); window.__lgAnim = 0; if (prevX != null && scrollY > 0) scrollBy(0, window.__lgInset - prevX); return; }
-  const root = document.documentElement;
-  // \uD654\uBA74 \uC704\uCABD\uC5D0 \uBD99\uB294 \uACE0\uC815\xB7\uC2A4\uD2F0\uD0A4 \uC694\uC18C\uB97C \uC5EC\uBC31\uB9CC\uD07C \uB0B4\uB9B0\uB2E4. \uACE0\uC815 \uC694\uC18C\uB294 \uD0ED \uC904 \uC544\uB798 FIX_BAND(px)\uAE4C\uC9C0 \uCC3E\uB294\uB2E4: \uB9E8 \uC704 \uB760\uB9CC \uBCF4\uBA74
-  // \uC720\uD29C\uBE0C\uCC98\uB7FC \uC0C1\uB2E8 \uBC14 \uBC11\uC5D0 \uBD99\uB294 \uACE0\uC815 \uC694\uC18C(\uC67C\uCABD \uBA54\uB274\xB7\uCE69 \uC904)\uAC00 \uC81C\uC790\uB9AC\uC5D0 \uB0A8\uC544 \uB0B4\uB824\uC628 \uC0C1\uB2E8 \uBC14\uC640 \uACB9\uCCE4\uB2E4 (\uC0AC\uC6A9\uC790 \uC9C0\uC801).
-  // \uD398\uC774\uC9C0 \uC2A4\uD06C\uB9BD\uD2B8\uAC00 \uC9C1\uC811 \uC790\uB9AC\uB97C \uC815\uD558\uB294 \uC694\uC18C(\uC778\uB77C\uC778 top, \uD234\uD301\xB7\uD31D\uC5C5)\uB294 \uAC74\uB4DC\uB9AC\uC9C0 \uC54A\uB294\uB2E4. \uC2A4\uD2F0\uD0A4\uB294 \uD654\uBA74 \uB9E8 \uC704\uC5D0 \uBD99\uC740 \uAC83\uB9CC
-  const FIX_BAND = 300;
-  // \uC694\uC18C e \uC758 top \uC744 v \uB85C \uC62E\uAE34\uB2E4. \uB760\uC640 \uAC19\uC774 \uC6C0\uC9C1\uC77C \uB54C(__lgAnim)\uB294 \uC7A0\uAE50 top \uC804\uD658\uC744 \uAC74\uB2E4(\uC6D0\uB798 \uC778\uB77C\uC778 \uC804\uD658\uC740 \uB05D\uB098\uBA74 \uB418\uB3CC\uB9B0\uB2E4).
-  // \uD398\uC774\uC9C0 \uD2C0(lgPage)\uC740 \uC2A4\uD06C\uB864 \uBCF4\uC815\uACFC \uD568\uAED8 \uBC14\uB85C \uC62E\uAE34\uB2E4: \uCC9C\uCC9C\uD788 \uC62E\uAE30\uBA74 \uBCF4\uC815\uC73C\uB85C \uD55C \uBC88, \uD2C0\uC774 \uC6C0\uC9C1\uC5EC \uB610 \uD55C \uBC88 \uB0B4\uC6A9\uC774 \uB35C\uCEF9\uAC70\uB838\uB2E4 (\uC720\uD29C\uBE0C).
-  // \uCC98\uC74C \uC62E\uAE38 \uB54C(fresh)\uB3C4 \uC0AC\uC774\uD2B8\uAC00 top \uC5D0 \uAC78\uC5B4 \uB454 \uC804\uD658\uC744 \uC7A0\uAE50 \uAEBC \uBC14\uB85C \uC62E\uAE34\uB2E4: \uC0C8 \uD398\uC774\uC9C0\uB9C8\uB2E4 \uB9C9\uB300\uAC00 \uB9E8 \uC704\uC5D0\uC11C \uBBF8\uB044\uB7EC\uC838 \uB0B4\uB824\uC654\uB2E4 (obsidian.md)
-  const put = (e, v, fresh) => {
-    const ms = window.__lgAnim || 0;
-    const page = e.dataset.lgPage !== undefined;
-    if (ms && !page) {
-      if (e.dataset.lgTr === undefined) {
-        e.dataset.lgTr = e.style.getPropertyValue("transition");
-        e.style.setProperty("transition", "top " + ms + "ms cubic-bezier(0.2, 0.8, 0.2, 1) -" + (window.__lgLate || 0) + "ms", "important");
-        setTimeout(() => {
-          if (e.dataset.lgTr === undefined) return;
-          if (e.dataset.lgTr) e.style.setProperty("transition", e.dataset.lgTr); else e.style.removeProperty("transition");
-          delete e.dataset.lgTr;
-        }, ms + 50);
-      }
-      e.style.setProperty("top", v, "important");
-    } else if (fresh || page) {
-      const tr = e.style.getPropertyValue("transition");
-      const pr = e.style.getPropertyPriority("transition");
-      e.style.setProperty("transition", "none", "important");
-      e.style.setProperty("top", v, "important");
-      void e.offsetTop;
-      if (tr) e.style.setProperty("transition", tr, pr); else e.style.removeProperty("transition");
-    } else e.style.setProperty("top", v, "important");
-  };
-  const pageCB = () => getComputedStyle(document.body).position === "static" && getComputedStyle(root).position === "static";
-  // quick: \uC774\uBBF8 \uC62E\uAE34 \uC694\uC18C\uB9CC \uB9DE\uCD98\uB2E4 (\uBB38\uC11C\uAC00 \uBC14\uB010 \uADF8 \uC790\uB9AC\uC5D0\uC11C \uBD80\uB978\uB2E4)
-  const fixTop = (reset, quick) => {
-    const X = window.__lgInset || 0;
-    if (reset) {
-      document.querySelectorAll("[data-lg-top]").forEach((e) => { e.style.removeProperty("top"); delete e.dataset.lgTop; delete e.dataset.lgPage; });
-      return;
-    }
-    if (!X) return;
-    const seen = new Set();
-    // \uC774\uBBF8 \uC62E\uAE34 \uC694\uC18C\uB294 \uC9C0\uAE08 \uC790\uB9AC\uC640 \uC0C1\uAD00\uC5C6\uC774 \uC0C8 \uC5EC\uBC31\uC73C\uB85C \uC62E\uAE34\uB2E4. \uCC0D\uC5B4 \uCC3E\uAE30\uB9CC \uD558\uBA74 \uC5EC\uBC31\uC774 \uCEE4\uC9C8 \uB54C(\uD0ED \uC904\uC744 \uD3BC \uB54C) \uB0AE\uC740 \uC0C1\uB2E8 \uBC14\uAC00
-    // \uCC0D\uB294 \uC790\uB9AC \uC704\uC5D0 \uC788\uC5B4 \uAC78\uB9AC\uC9C0 \uC54A\uC558\uB2E4 (\uC720\uD29C\uBE0C, \uC0AC\uC6A9\uC790 \uC9C0\uC801)
-    for (const e of document.querySelectorAll("[data-lg-top]")) {
-      seen.add(e);
-      // \uC2A4\uD06C\uB864\uC5D0 \uB530\uB77C \uACE0\uC815\uACFC \uC77C\uBC18 \uBC30\uCE58\uB97C \uC624\uAC00\uB294 \uC694\uC18C(\uC720\uD29C\uBE0C \uBD84\uB958 \uCE69 \uC904)\uB294 \uACE0\uC815\uC77C \uB54C\uB9CC \uB0B4\uB9B0\uB2E4. \uC77C\uBC18 \uBC30\uCE58\uB85C \uB3CC\uC544\uC654\uC744 \uB54C top \uC774 \uB0A8\uC544 \uC788\uC73C\uBA74
-      // \uC774\uBBF8 \uB0B4\uB824\uAC04 \uD398\uC774\uC9C0 \uD2C0 \uC548\uC5D0\uC11C \uD55C \uBC88 \uB354 \uB0B4\uB824\uAC14\uB2E4 (\uC0AC\uC6A9\uC790 \uC9C0\uC801)
-      const pos = getComputedStyle(e).position;
-      if (e.dataset.lgPage !== undefined ? pos !== "absolute" : pos !== "fixed" && pos !== "sticky") {
-        if (e.style.getPropertyValue("top")) e.style.removeProperty("top");
-        continue;
-      }
-      const v = (parseFloat(e.dataset.lgTop) + X) + "px";
-      if (e.style.getPropertyValue("top") === v && e.style.getPropertyPriority("top") === "important") continue;
-      put(e, v, false);
-    }
-    if (quick) return;
-    const w = window.innerWidth;
-    const ys = [1, Math.max(1, X - 1)];
-    for (let y = X + 4; y < X + FIX_BAND && y < window.innerHeight; y += 24) ys.push(y);
-    for (const fx of [0.02, 0.15, 0.3, 0.5, 0.7, 0.85, 0.98]) {
-      for (const y of ys) {
-        for (const el of document.elementsFromPoint(w * fx, y)) {
-          for (let e = el; e && e !== root && e !== document.body; e = e.parentElement) {
-            if (seen.has(e)) break;
-            seen.add(e);
-            const cs = getComputedStyle(e);
-            const fixed = cs.position === "fixed";
-            // \uBB38\uC11C \uAE30\uC900 \uC808\uB300 \uC704\uCE58 \uD2C0(body \uBC14\uB85C \uC544\uB798, \uC704\uCE58 \uC7A1\uD78C \uC870\uC0C1 \uC5C6\uC74C)\uC740 html \uC704 \uC5EC\uBC31\uC744 \uB530\uB974\uC9C0 \uC54A\uC544 \uB0B4\uC6A9\uC774 \uD0ED \uC904 \uB4A4\uC5D0 \uB0A8\uC558\uB2E4
-            // (\uC720\uD29C\uBE0C ytd-app, \uC0AC\uC6A9\uC790 \uC9C0\uC801). \uACE0\uC815 \uC694\uC18C\uCC98\uB7FC top \uC5D0 \uC5EC\uBC31\uC744 \uB354\uD55C\uB2E4
-            const page = cs.position === "absolute" && e.parentElement === document.body && pageCB();
-            if (!fixed && !page && cs.position !== "sticky") continue;
-            let fresh = false;
-            if (e.dataset.lgTop === undefined) {
-              if (e.style.top) continue;
-              if (!fixed && !page && y > X) continue;
-              const t = parseFloat(cs.top);
-              if (!isFinite(t)) continue;
-              e.dataset.lgTop = String(t);
-              if (page) e.dataset.lgPage = "";
-              fresh = true;
-            }
-            const v = (parseFloat(e.dataset.lgTop) + X) + "px";
-            // \uAC19\uC740 \uAC12\uC774\uBA74 \uB2E4\uC2DC \uC4F0\uC9C0 \uC54A\uB294\uB2E4 (\uC4F0\uBA74 \uBB38\uC11C \uBCC0\uD654 \uAC10\uC2DC\uAC00 \uB2E4\uC2DC \uBD88\uB824 \uB05D\uC5C6\uC774 \uB3C8\uB2E4)
-            if (e.style.getPropertyValue("top") !== v || e.style.getPropertyPriority("top") !== "important") {
-              put(e, v, fresh);
-            }
-          }
-        }
-      }
-    }
-  };
-  let raf = 0;
-  let timer = 0;
-  const tick = () => { raf = 0; fixTop(false); };
-  const soon = () => { if (!raf) raf = requestAnimationFrame(tick); };
-  const later = () => { clearTimeout(timer); timer = setTimeout(tick, 250); };
-  addEventListener("scroll", soon, { passive: true, capture: true });
-  addEventListener("resize", soon);
-  // \uD398\uC774\uC9C0\uB97C \uADF8\uB9AC\uB294 \uC911(webEarly \uB85C \uC77C\uCC0D \uB123\uC5C8\uC744 \uB54C)\uC5D0\uB294 \uB2E4\uC74C \uD654\uBA74 \uC804\uC5D0 \uBC14\uB85C \uB9DE\uCD98\uB2E4: \uBBF8\uB8E8\uBA74 \uACE0\uC815 \uB9C9\uB300\uAC00 \uB9E8 \uC704\uC5D0 \uADF8\uB824\uC84C\uB2E4\uAC00 \uB0B4\uB824\uC654\uB2E4
-  // \uC774\uBBF8 \uC62E\uAE34 \uC694\uC18C\uB294 \uBB38\uC11C\uAC00 \uBC14\uB010 \uADF8 \uC790\uB9AC(\uB2E4\uC74C \uD654\uBA74 \uC804)\uC5D0\uC11C \uBC14\uB85C \uB9DE\uCD98\uB2E4: \uC0AC\uC774\uD2B8\uAC00 \uACE0\uC815\uC744 \uD480\uAC70\uB098 \uB2E4\uC2DC \uAC78\uBA74 \uD55C \uD654\uBA74 \uB3D9\uC548 \uC5C9\uB6B1\uD55C \uC790\uB9AC\uC5D0 \uADF8\uB824\uC84C\uB2E4 (\uC720\uD29C\uBE0C \uBD84\uB958 \uCE69 \uC904).
-  // \uACE0\uC815\uC744 \uBC14\uAFB8\uB294 \uC18D\uC131\uC740 \uC0AC\uC774\uD2B8\uB9C8\uB2E4 \uB2EC\uB77C(class, style \uC678 \uC0AC\uC6A9\uC790 \uC815\uC758 \uC18D\uC131) \uBAA8\uB4E0 \uC18D\uC131 \uBCC0\uD654\uB97C \uBCF8\uB2E4
-  new MutationObserver(() => { if (window.__lgInset) fixTop(false, true); if (document.readyState === "loading") soon(); else later(); }).observe(root, { childList: true, subtree: true, attributes: true });
-  // \uD398\uC774\uC9C0 \uC2A4\uD06C\uB864\uBC14\uAC00 \uD0ED \uC904 \uB4A4\uAE4C\uC9C0 \uC62C\uB77C\uAC00\uC9C0 \uC54A\uAC8C \uC704 \uB05D\uC744 \uC5EC\uBC31\uB9CC\uD07C \uB0B4\uB9B0\uB2E4 (\uC0AC\uC6A9\uC790 \uC9C0\uC801). \uC2A4\uD06C\uB864\uBC14 \uC704\uCE58\uB294 \uAE30\uBCF8 \uC2A4\uD06C\uB864\uBC14\uC5D0\uC120 \uBABB \uBC14\uAFD4,
-  // \uC0AC\uC774\uD2B8\uAC00 \uB530\uB85C \uAFB8\uBBF8\uC9C0 \uC54A\uC558\uC73C\uBA74 \uC587\uC740 \uBC18\uD22C\uBA85 \uC2A4\uD06C\uB864\uBC14\uB85C \uBC14\uAFBC\uB2E4(:where \uB77C \uC0AC\uC774\uD2B8 \uAFB8\uBC08\uC774 \uC774\uAE34\uB2E4)
-  const sheet = () => {
-    let st = document.getElementById("lg-gs-style");
-    if (!st) { st = document.createElement("style"); st.id = "lg-gs-style"; (document.head || root).appendChild(st); }
-    const X = window.__lgInset || 0;
-    st.textContent = X ? ":where(html)::-webkit-scrollbar{width:12px;height:12px;background:transparent}" +
-      ":where(html)::-webkit-scrollbar-thumb{background-color:rgba(128,128,128,.45);border:3px solid transparent;background-clip:padding-box;border-radius:8px}" +
-      ":where(html)::-webkit-scrollbar-thumb:hover{background-color:rgba(128,128,128,.7)}" +
-      ":where(html)::-webkit-scrollbar-track,:where(html)::-webkit-scrollbar-corner{background:transparent}" +
-      "html::-webkit-scrollbar-track{margin-top:" + X + "px !important}" : "";
-  };
-  window.__lgGS = (reset) => {
-    const X = window.__lgInset || 0;
-    if (X) {
-      root.style.setProperty("padding-top", X + "px", "important");
-      root.style.setProperty("scroll-padding-top", X + "px", "important");
-    } else {
-      root.style.removeProperty("padding-top");
-      root.style.removeProperty("scroll-padding-top");
-    }
-    sheet();
-    // \uC5EC\uBC31\uC774 \uB0A8\uC544 \uC788\uC73C\uBA74 \uCC98\uC74C \uAE30\uC5B5\uD55C \uC6D0\uB798 top \uC5D0 \uC0C8 \uC5EC\uBC31\uB9CC \uB354\uD55C\uB2E4. \uC9C0\uC6B0\uACE0 \uB2E4\uC2DC \uC77D\uC73C\uBA74 \uC0AC\uC774\uD2B8\uAC00 top \uC5D0 \uC804\uD658\uC744 \uAC78\uC5B4 \uB454 \uACBD\uC6B0
-    // \uC544\uC9C1 \uB0B4\uB824\uAC00 \uC788\uB294 \uAC12\uC744 \uC6D0\uB798 \uAC12\uC73C\uB85C \uC77D\uC5B4, \uD0ED \uC904\uC744 \uC811\uACE0 \uD3BC \uB54C\uB9C8\uB2E4 \uACE0\uC815 \uB9C9\uB300\uAC00 \uC810\uC810 \uB0B4\uB824\uAC14\uB2E4 (\uC0AC\uC6A9\uC790 \uC9C0\uC801)
-    if (!X || reset) fixTop(true);
-    if (!reset) tick();
-  };
-  window.__lgGS();
-  window.__lgAnim = 0;
-})();`;
-var WEB_MOUSE_SCRIPT = `(() => {
-  if (window.__lgMouse) return;
-  window.__lgMouse = true;
-  addEventListener("mouseup", (e) => {
-    if (e.button === 3) { e.preventDefault(); window.__lgNavReq = "back"; }
-    else if (e.button === 4) { e.preventDefault(); window.__lgNavReq = "forward"; }
-  }, true);
-})();`;
-var WEB_SCROLL_SCRIPT = "(() => { const n = window.__lgNavReq || ''; window.__lgNavReq = ''; return [(document.scrollingElement || document.documentElement).scrollTop, n]; })()";
-var WEB_MINI_POLL_MS = 120;
-var WEB_COLOR_SCRIPT = `(() => {
-  const root = document.documentElement;
-  // \uBC18\uD22C\uBA85 \uBC30\uACBD\uC740 \uAC74\uB108\uB6F4\uB2E4: \uADF8 \uC0C9\uC744 \uC4F0\uBA74 \uD0ED \uC904 \uBC84\uD2BC\xB7\uAE00\uC790 \uC0C9\uAE4C\uC9C0 \uBC18\uD22C\uBA85\uD574\uC838 \uB9E8 \uC704\uB85C \uC62C\uB838\uC744 \uB54C \uC0AC\uB77C\uC84C\uB2E4 (\uC0AC\uC6A9\uC790 \uC9C0\uC801)
-  const alpha = (c) => {
-    const m = /\\/\\s*([\\d.]+)(%?)\\s*\\)$/.exec(c) || /^rgba\\([^)]*,\\s*([\\d.]+)(%?)\\s*\\)$/.exec(c);
-    return m ? parseFloat(m[1]) / (m[2] ? 100 : 1) : 1;
-  };
-  const clear = (bg) => !bg || bg === "transparent" || alpha(bg) < 0.95;
-  // \uD398\uC774\uC9C0 \uBC30\uACBD\uC0C9: html, \uC5C6\uC73C\uBA74 body \uBC30\uACBD (\uC0AC\uC6A9\uC790 \uC694\uCCAD: \uB300\uD45C \uC0C9(theme-color)\uBCF4\uB2E4 \uC790\uC5F0\uC2A4\uB7FD\uB2E4).
-  // \uB458 \uB2E4 \uD22C\uBA85\uC774\uBA74 \uBE0C\uB77C\uC6B0\uC800 \uAE30\uBCF8 \uBC14\uD0D5(\uB77C\uC774\uD2B8 \uD770\uC0C9, \uB2E4\uD06C \uC0C9 \uCCB4\uACC4\uBA74 Chromium \uAE30\uBCF8 #121212)
-  for (const el of [root, document.body]) {
-    const bg = el && getComputedStyle(el).backgroundColor;
-    if (!clear(bg)) return bg;
-  }
-  const dark = /dark/.test(getComputedStyle(root).colorScheme) && matchMedia("(prefers-color-scheme: dark)").matches;
-  return dark ? "#121212" : "#ffffff";
-})()`;
-var WEB_TINT_POLL_MS = 1e3;
-var webHost = (view) => {
-  const url = view && view.url;
-  try {
-    const u = new URL(url);
-    if (/^https?:$/.test(u.protocol) && u.hostname) return u.hostname.replace(/^www\./, "");
-  } catch {
-  }
-  return view && typeof view.getDisplayText === "function" && view.getDisplayText() || "";
-};
-var WEB_DARK_DIM = 0.5;
-var WEB_DARK_DIM_FROM = 0.6;
-
 // src/util.ts
 var import_obsidian = require("obsidian");
 var LANG_KO = (() => {
@@ -243,6 +57,7 @@ var strs = (list) => Array.from(list);
 var menuKey = function(t) {
   return t.closest(".tree-item-self, .nav-file-title, .nav-folder-title, .workspace-tab-header, .metadata-property, .cm-line, .clickable-icon, a, .internal-link") || t;
 };
+var laidOut = (el) => !!el && el.isConnected && el.offsetWidth > 0 && el.getClientRects().length > 0;
 var layoutBottom = function(el) {
   const r = el.getBoundingClientRect();
   return r.top + r.height / 2 + el.offsetHeight / 2;
@@ -305,8 +120,9 @@ var DEFAULTS = {
   tabAnimRight: "lens",
   // 패널 탭 알약을 좌우 끝까지 넓게 (맨 위 묶음은 한 줄 내려서)
   tabWide: true,
-  // 패널 탭 기호 오른쪽에 이름 (탭이 하나뿐이면 설정과 상관없이 붙는다)
-  tabNames: true,
+  // 패널 탭 표시 방법 (사용자 요청): "icon" = 기호만, "both" = 기호 오른쪽에 이름, "name" = 이름만.
+  // 탭이 하나뿐이면 설정과 상관없이 이름이 붙는다. 렌즈·심플 패널에만 쓰인다(목록·위젯은 제 방식)
+  tabLabel: "both",
   // 제목(h1~h6) 밑 가로줄 (CSS: body.lg-hrule)
   headingRule: false,
   // 파일 탐색기 줄무늬
@@ -330,6 +146,10 @@ var migrateTabAnim = function(o) {
   }
   delete o.tabAnim;
   delete o.tabListSides;
+};
+var migrateTabLabel = function(o) {
+  if (o.tabLabel == null && typeof o.tabNames === "boolean") o.tabLabel = o.tabNames ? "both" : "icon";
+  delete o.tabNames;
 };
 var migrateGlassLevel = function(o) {
   if (o.glassLevel == null && typeof o.frostLevel === "number") {
@@ -372,8 +192,9 @@ var PRESS_POP = [
 var MORPH_DASH = 30;
 var BASES_MENU_BTN = ":is(.bases-toolbar-views-menu, .bases-toolbar-result-count, .bases-toolbar-sort-menu, .bases-toolbar-group-menu, .bases-toolbar-filter-menu, .bases-toolbar-properties-menu) > .text-icon-button";
 var PRESS_ABORT_RATE = 2;
-var HOLD_RETURN_MS = 260;
 var HOLD_EASE_SPAN = 0.14;
+var PRESS_POP_K = 1.2;
+var PRESS_GROW_K = 0.6;
 var PRESS_SLOP = 10;
 var MORPH_OVERSHOOT = 5;
 var MORPH_NUDGE = 3;
@@ -460,6 +281,9 @@ var HOST_DOM = [
   ".workspace-leaf-content .view-header .view-actions"
 ];
 var MAGNET_COMPACT = 0.6;
+var PANEL_ANIM_MS = 300;
+var FIT_SETTLE_MS = 150;
+var STARTUP_QUIET_MS = 5e3;
 
 // src/refract.ts
 var import_obsidian2 = require("obsidian");
@@ -529,6 +353,8 @@ var Refractor = class {
     this.warm = [];
     this.warmIO = null;
     this.warmTimer = 0;
+    this.bakeQueue = /* @__PURE__ */ new Set();
+    this.bakeIdle = 0;
     this.stores = /* @__PURE__ */ new Map();
     this.maps = /* @__PURE__ */ new Map();
     this.resizeObs = new ResizeObserver((entries) => {
@@ -660,7 +486,9 @@ var Refractor = class {
     }
     this.update(el);
   }
-  update(el) {
+  // now 가 아니면 아직 없는 지도는 그 자리에서 굽지 않고 쉬는 틈에 굽는다(그동안은 굴절 없이 또는 예전 크기 지도로 둔다).
+  // 시작할 때 화면을 처음 맞추며 모든 유리 버튼의 지도를 한꺼번에 굽느라 첫 화면이 늦었다 (사용자 지적, 측정: 한 번에 약 290ms 중 대부분)
+  update(el, now = false) {
     if (this.paused) {
       el.lgRfStale = true;
       return;
@@ -674,9 +502,41 @@ var Refractor = class {
     const w = o.w || Math.round(el.offsetWidth);
     const h = o.h || Math.round(el.offsetHeight);
     if (w < 4 || h < 4) return;
+    if (!now && !this.maps.has(this.mapKeyOf(w, h, o.outward, o.look ? o.look.bezel : BEZEL_RATIO, o.look ? o.look.spread : REFRACT_SPREAD, o.look && o.look.lens || LENS_DEFAULT, BEZEL_MAX))) {
+      this.queueBake(el);
+      return;
+    }
     const id = this.filterFor(w, h, o.strength, o.chroma, o.outward, el.ownerDocument, o.look ? o.look.bezel : BEZEL_RATIO, o.look ? o.look.spread : REFRACT_SPREAD, o.look && o.look.lens);
     const v = `url(#${id})`;
     if (el.style.getPropertyValue("--lg-refract") !== v) el.style.setProperty("--lg-refract", v);
+  }
+  // 쉬는 틈에 구워 건다 (한 번에 쉬는 시간 안에서만, 남으면 다음 쉬는 틈에)
+  queueBake(el) {
+    this.bakeQueue.add(el);
+    if (this.bakeIdle) return;
+    const win = el.ownerDocument.defaultView || window;
+    const idle = (fn) => win.requestIdleCallback ? win.requestIdleCallback(fn, { timeout: 1e3 }) : win.setTimeout(fn, 50);
+    const run = (dl) => {
+      this.bakeIdle = 0;
+      if (!this.enabled) return this.bakeQueue.clear();
+      for (const e of this.bakeQueue) {
+        if (dl && dl.timeRemaining() < 4 && !dl.didTimeout) break;
+        this.bakeQueue.delete(e);
+        if (e.lgRefract && this.tracked.has(e)) this.update(e, true);
+      }
+      if (this.bakeQueue.size) this.bakeIdle = 1;
+      if (this.bakeQueue.size) idle(run);
+    };
+    this.bakeIdle = 1;
+    idle(run);
+  }
+  // 지도 캐시 키 (filterFor 와 같은 규칙)
+  mapKeyOf(w, h, outward, bezel, spread, lens, bezelMax) {
+    if (outward) {
+      const lensTag = lens === LENS_DEFAULT ? "lens" : `lens-${[lens.minify, lens.flat, lens.edge, lens.reach, lens.shape || 2].join("-").replace(/\./g, "p")}${lens.line ? "-ln" : ""}${lens.box ? "-bx" : ""}`;
+      return `${w}x${h}-${lensTag}`;
+    }
+    return `${w}x${h}-b${Math.round(bezel * 100)}-s${Math.round(spread * 100)}-m${Math.round(bezelMax * 10)}`;
   }
   // bezel: 굴절이 일어나는 가장자리 폭 (반지름 대비 비율)
   // 지도가 없는 곳은 무변위(회색 128) 바탕으로 채워, 필터 결과에 투명한 곳이 생기지 않게 한다 (안전장치)
@@ -689,7 +549,7 @@ var Refractor = class {
     const lensTag = lens === LENS_DEFAULT ? "lens" : `lens-${[lens.minify, lens.flat, lens.edge, lens.reach, lens.shape || 2].join("-").replace(/\./g, "p")}${lens.line ? "-ln" : ""}${lens.box ? "-bx" : ""}`;
     const bm = Math.round(bezelMax * 10);
     const shade = outward && !chroma && shadeTag ? shadeTag : "";
-    const mapKey = outward ? `${w}x${h}-${lensTag}` : `${w}x${h}-b${bz}-s${sp}-m${bm}`;
+    const mapKey = this.mapKeyOf(w, h, outward, bezel, spread, lens, bezelMax);
     let baked = this.maps.get(mapKey);
     if (baked) this.maps.delete(mapKey);
     else {
@@ -981,9 +841,6 @@ var Refractor = class {
   }
 };
 
-// src/settings-tab.ts
-var import_obsidian4 = require("obsidian");
-
 // src/color.ts
 var lightCanvas = null;
 var canvasOf = (doc) => {
@@ -1118,6 +975,9 @@ var fileIconUrl = function(rgb) {
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='-0.3 -0.3 14.6 17.6'><defs><linearGradient id='p' x1='0' y1='1' x2='1' y2='0'><stop offset='0' stop-color='${mix(0.8)}'/><stop offset='0.55' stop-color='${mix(0.62)}'/><stop offset='1' stop-color='${mix(0.2)}'/></linearGradient></defs><path d='M1.5 0h6.9L14 5.6v9.9c0 .8-.7 1.5-1.5 1.5h-11C.7 17 0 16.3 0 15.5v-14C0 .7.7 0 1.5 0z' fill='url(#p)' stroke='${edge}' stroke-width='0.5' stroke-linejoin='round'/><path d='M8.4 0v4.1c0 .8.7 1.5 1.5 1.5H14z' fill='${mix(0.72)}' stroke='${edge}' stroke-width='0.5' stroke-linejoin='round'/></svg>`;
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 };
+
+// src/settings-tab.ts
+var import_obsidian4 = require("obsidian");
 
 // src/folder-modal.ts
 var import_obsidian3 = require("obsidian");
@@ -1286,7 +1146,7 @@ var GlassShelfSettingTab = class extends import_obsidian4.PluginSettingTab {
   }
   getControlValue(key) {
     if (key === "iosColors") return this.plugin.settings.toggleColor !== "accent";
-    if ((key === "tabAnimLeft" || key === "tabAnimRight") && super.getControlValue(key) === "lens" && this.plugin.settings.sideAcrylic && import_obsidian4.Platform.isWin && !import_obsidian4.Platform.isMobile) return "none";
+    if ((key === "tabAnimLeft" || key === "tabAnimRight") && ["lens", "widget"].includes(super.getControlValue(key)) && this.plugin.sideSeeThrough()) return "none";
     const v = super.getControlValue(key);
     const opts = this.options.get(key);
     if (opts && typeof v === "string" && !(v in opts)) return DEFAULTS[key];
@@ -1305,7 +1165,6 @@ var GlassShelfSettingTab = class extends import_obsidian4.PluginSettingTab {
     if (key === "glassLevel") this.syncDemoDoc();
     if (key === "navCompact") pl.remeasureExplorers();
     if (key === "fileStripes") pl.requestFolderColors(true);
-    if (key === "sideAcrylic" && value === true) pl.noticeSimpleTabs();
     if (key === "tint" || key === "taskColor" || key === "folderColor" || key === "tabAnimLeft" || key === "tabAnimRight" || key === "sideAcrylic") this.update();
   }
   // 그림으로 고르는 설정 줄: 선택지마다 미리 보기 그림 + 이름 + 동그라미(고르면 강조색 체크). 줄 이름·설명은 위에 그대로 두고
@@ -1438,7 +1297,7 @@ var GlassShelfSettingTab = class extends import_obsidian4.PluginSettingTab {
     this.motionStop = stop;
     const EASE_SPRING = "cubic-bezier(0.3, 1.25, 0.5, 1)";
     const press = (rm) => btn.animate(
-      rm ? [{ scale: "1" }, { scale: "1.08", offset: 0.4 }, { scale: "1" }] : [{ scale: "1", filter: "brightness(1)" }, { scale: "1.28", filter: "brightness(1.12)", offset: 0.45 }, { scale: "1", filter: "brightness(1)" }],
+      rm ? [{ scale: "1" }, { scale: "1.08", offset: 0.4 }, { scale: "1" }] : [{ scale: "1", filter: "brightness(1)" }, { scale: "1.2", filter: "brightness(1.12)", offset: 0.45 }, { scale: "1", filter: "brightness(1)" }],
       { duration: rm ? 260 : 500, easing: "ease-out" }
     );
     const origin = () => {
@@ -1513,6 +1372,7 @@ var GlassShelfSettingTab = class extends import_obsidian4.PluginSettingTab {
     const st = this.plugin.settings;
     const toggle = (key, name, desc, visible = true) => ({ name, desc, visible, control: { type: "toggle", key } });
     const allWidget = () => this.plugin.tabAnimOf("left") === "widget" && this.plugin.tabAnimOf("right") === "widget";
+    const pillTabs = () => ["left", "right"].some((side) => ["lens", "none"].includes(this.plugin.tabAnimOf(side)));
     const dropdown = (key, name, desc, options, visible = true) => {
       this.options.set(key, options);
       return { name, desc, visible, control: { type: "dropdown", key, options } };
@@ -1560,7 +1420,7 @@ var GlassShelfSettingTab = class extends import_obsidian4.PluginSettingTab {
             }
           ),
           toggle("popupOpaque", tr("\uBD88\uD22C\uBA85\uD55C \uD31D\uC5C5", "Opaque popups"), tr("\uB300\uD654\uC0C1\uC790, \uBA85\uB839 \uD314\uB808\uD2B8, \uB9C1\uD06C \uBBF8\uB9AC\uBCF4\uAE30, \uC54C\uB9BC, \uD234\uD301 \uAC19\uC740 \uD31D\uC5C5\uC758 \uBC30\uACBD\uC785\uB2C8\uB2E4. \uB044\uBA74 \uBA54\uB274\uCC98\uB7FC \uB4A4\uAC00 \uC0B4\uC9DD \uBE44\uCE58\uACE0, \uCF1C\uBA74 \uBD88\uD22C\uBA85\uD558\uAC8C \uCC44\uC6C1\uB2C8\uB2E4.", "Background of popups such as dialogs, the command palette, link previews, notices and tooltips. Off: slightly see-through like menus. On: filled opaque.")),
-          toggle("sideAcrylic", tr("\uC88C\uC6B0 \uD328\uB110 \uD22C\uBA85", "See-through side panels"), tr("\uC88C\uC6B0 \uD328\uB110 \uB4A4\uB85C \uBC14\uD0D5\uD654\uBA74\uACFC \uB2E4\uB978 \uCC3D\uC774 \uD750\uB9AC\uAC8C \uBE44\uCE69\uB2C8\uB2E4. Windows 11 22H2 \uC774\uC0C1\uC5D0\uC11C \uB3D9\uC791\uD558\uACE0, Windows \uC124\uC815\uC758 \uD22C\uBA85 \uD6A8\uACFC\uAC00 \uCF1C\uC838 \uC788\uC5B4\uC57C \uD569\uB2C8\uB2E4. \uCF1C\uBA74 \uD0ED \uC804\uD658 \uD6A8\uACFC\uB294 \uB80C\uC988 \uB300\uC2E0 \uC2EC\uD50C\uB85C \uBCF4\uC785\uB2C8\uB2E4. (Windows)", "Your desktop and other windows show through the left and right panels, blurred. Works on Windows 11 22H2 or later with transparency effects turned on in Windows settings. When on, the tab switch effect is shown as Simple instead of Lens. (Windows)"), import_obsidian4.Platform.isWin && !import_obsidian4.Platform.isMobile),
+          toggle("sideAcrylic", tr("\uC88C\uC6B0 \uD328\uB110 \uD22C\uBA85", "See-through side panels"), tr("\uC88C\uC6B0 \uD328\uB110 \uB4A4\uB85C \uBC14\uD0D5\uD654\uBA74\uACFC \uB2E4\uB978 \uCC3D\uC774 \uD750\uB9AC\uAC8C \uBE44\uCE69\uB2C8\uB2E4. Windows 11 22H2 \uC774\uC0C1\uC5D0\uC11C \uB3D9\uC791\uD558\uACE0, Windows \uC124\uC815\uC758 \uD22C\uBA85 \uD6A8\uACFC\uAC00 \uCF1C\uC838 \uC788\uC5B4\uC57C \uD569\uB2C8\uB2E4. \uCF1C\uBA74 \uD0ED \uC804\uD658 \uD6A8\uACFC\uB294 \uB80C\uC988\xB7\uC704\uC82F \uB300\uC2E0 \uC2EC\uD50C\uB85C \uBCF4\uC785\uB2C8\uB2E4. (Windows)", "Your desktop and other windows show through the left and right panels, blurred. Works on Windows 11 22H2 or later with transparency effects turned on in Windows settings. When on, the tab switch effect is shown as Simple instead of Lens or Widget. (Windows)"), import_obsidian4.Platform.isWin && !import_obsidian4.Platform.isMobile),
           toggle("refraction", tr("\uAD74\uC808", "Refraction"), tr("\uC720\uB9AC \uAC00\uC7A5\uC790\uB9AC\uC5D0\uC11C \uB4A4 \uBC30\uACBD\uC774 \uB80C\uC988\uCC98\uB7FC \uD718\uC5B4 \uBCF4\uC785\uB2C8\uB2E4. \uD654\uBA74\uC774 \uB290\uB824\uC9C0\uBA74 \uAEBC \uC8FC\uC138\uC694. iOS\uC640 iPadOS\uC5D0\uC11C\uB294 \uC9C0\uC6D0\uB418\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.", "Bends the background at the glass edges like a lens. Turn off if the app feels slow. Not supported on iOS and iPadOS.")),
           (() => {
             const opts = { off: tr("\uB054", "Off"), pc: tr("\uB370\uC2A4\uD06C\uD1B1\uB9CC", "Desktop only"), pcTablet: tr("\uB370\uC2A4\uD06C\uD1B1\xB7\uD0DC\uBE14\uB9BF", "Desktop and tablet") };
@@ -1605,20 +1465,34 @@ var GlassShelfSettingTab = class extends import_obsidian4.PluginSettingTab {
         items: [
           ...(() => {
             const move = true;
+            const see = this.plugin.sideSeeThrough();
             const anims = [
-              // 좌우 패널 투명이 켜져 있으면 렌즈는 심플로 보이므로 고를 수 없게 뺀다 (사용자 요청)
-              ...st.sideAcrylic && import_obsidian4.Platform.isWin && !import_obsidian4.Platform.isMobile ? [] : [{ value: "lens", label: tr("\uB80C\uC988", "Lens"), draw: (svg) => drawTabAnim(svg, "lens", move) }],
+              // 좌우 패널 투명이 켜져 있으면 렌즈·위젯은 심플로 보이므로 고를 수 없게 뺀다 (사용자 요청)
+              ...see ? [] : [{ value: "lens", label: tr("\uB80C\uC988", "Lens"), draw: (svg) => drawTabAnim(svg, "lens", move) }],
               { value: "none", label: tr("\uC2EC\uD50C", "Simple"), draw: (svg) => drawTabAnim(svg, "none", move) },
               ...import_obsidian4.Platform.isPhone ? [] : [{ value: "list", label: tr("\uBAA9\uB85D", "List"), draw: (svg) => drawTabAnim(svg, "list", move) }],
-              ...import_obsidian4.Platform.isMobile ? [] : [{ value: "widget", label: tr("\uC704\uC82F", "Widget"), draw: (svg) => drawTabAnim(svg, "widget", move) }]
+              ...import_obsidian4.Platform.isMobile || see ? [] : [{ value: "widget", label: tr("\uC704\uC82F", "Widget"), draw: (svg) => drawTabAnim(svg, "widget", move) }]
             ];
             const opts = Object.fromEntries(anims.map((a) => [a.value, a.label]));
             this.options.set("tabAnimLeft", opts);
             this.options.set("tabAnimRight", opts);
-            const desc = tr("\uB80C\uC988: \uC120\uD0DD \uD45C\uC2DC\uAC00 \uB80C\uC988\uCC98\uB7FC \uBBF8\uB044\uB7EC\uC9C0\uBA70 \uC62E\uACA8 \uAC11\uB2C8\uB2E4. \uC2EC\uD50C: \uD6A8\uACFC \uC5C6\uC774 \uC120\uD0DD\uD55C \uD0ED\uC744 \uAC15\uC870\uC0C9\uC73C\uB85C \uD45C\uC2DC\uD569\uB2C8\uB2E4. \uBAA9\uB85D: \uD0ED\uC744 \uBC84\uD2BC \uC904 \uC544\uB798\uC5D0 \uD55C \uC904\uC5D0 \uD558\uB098\uC529 \uB298\uC5B4\uB193\uACE0, \uC120\uD0DD\uD55C \uD0ED\uC744 \uAC15\uC870\uC0C9\uC73C\uB85C \uD45C\uC2DC\uD569\uB2C8\uB2E4. \uC704\uC82F: \uD0ED \uBB36\uC74C\uB9C8\uB2E4 \uB465\uADFC \uCE74\uB4DC\uAC00 \uB418\uACE0, \uCE74\uB4DC \uC606 \uC810 \uD45C\uC2DC\uB85C \uD0ED\uC744 \uC704\uC544\uB798\uB85C \uB118\uAE41\uB2C8\uB2E4. \uC88C\uC6B0 \uD328\uB110 \uD22C\uBA85\uC774 \uCF1C\uC838 \uC788\uC73C\uBA74 \uB80C\uC988 \uB300\uC2E0 \uC2EC\uD50C\uB85C \uBCF4\uC785\uB2C8\uB2E4. (\uBAA9\uB85D\uC740 \uB370\uC2A4\uD06C\uD1B1, \uD0DC\uBE14\uB9BF, \uC704\uC82F\uC740 \uB370\uC2A4\uD06C\uD1B1)", "Lens: the selection slides over like a lens. Simple: no effect; the selected tab is shown in the accent color. List: tabs are listed one per row below the button row, and the selected tab is shown in the accent color. Widget: each tab group becomes a rounded card; use the page dots beside the card to flip between tabs up and down. With transparent side panels on, Simple is shown instead of Lens. (List: desktop, tablet. Widget: desktop)");
+            const descs = {
+              lens: tr("\uC120\uD0DD \uD45C\uC2DC\uAC00 \uB80C\uC988\uCC98\uB7FC \uBBF8\uB044\uB7EC\uC9C0\uBA70 \uC62E\uACA8 \uAC11\uB2C8\uB2E4.", "The selection slides over like a lens."),
+              none: tr("\uD6A8\uACFC \uC5C6\uC774 \uC120\uD0DD\uD55C \uD0ED\uC744 \uAC15\uC870\uC0C9\uC73C\uB85C \uD45C\uC2DC\uD569\uB2C8\uB2E4.", "No effect; the selected tab is shown in the accent color."),
+              list: tr("\uD0ED\uC744 \uBC84\uD2BC \uC904 \uC544\uB798\uC5D0 \uD55C \uC904\uC5D0 \uD558\uB098\uC529 \uB298\uC5B4\uB193\uACE0, \uC120\uD0DD\uD55C \uD0ED\uC744 \uAC15\uC870\uC0C9\uC73C\uB85C \uD45C\uC2DC\uD569\uB2C8\uB2E4. (\uB370\uC2A4\uD06C\uD1B1, \uD0DC\uBE14\uB9BF)", "Tabs are listed one per row below the button row, and the selected tab is shown in the accent color. (Desktop, tablet)"),
+              widget: tr(
+                "\uD0ED \uBB36\uC74C\uB9C8\uB2E4 \uB465\uADFC \uCE74\uB4DC\uAC00 \uB418\uACE0, \uCE74\uB4DC \uC606 \uC810 \uD45C\uC2DC\uB85C \uD0ED\uC744 \uB118\uAE41\uB2C8\uB2E4. \uD0ED\uC744 \uBC14\uAFB8\uB294 \uBC29\uBC95\uC740 \uC138 \uAC00\uC9C0\uC785\uB2C8\uB2E4: \uC810 \uD45C\uC2DC\uC5D0 \uB9C8\uC6B0\uC2A4\uB97C \uAC00\uC838\uAC00\uBA74 \uB098\uD0C0\uB098\uB294 \uC704\uC544\uB798 \uD654\uC0B4\uD45C \uB204\uB974\uAE30, \uC810 \uD45C\uC2DC\uB97C \uB20C\uB7EC \uD3BC\uCE5C \uD0ED \uC904\uC5D0\uC11C \uD0ED \uACE0\uB974\uAE30, \uC810 \uD45C\uC2DC\uC5D0 \uB9C8\uC6B0\uC2A4\uB97C \uC62C\uB9AC\uACE0 \uD720 \uB3CC\uB9AC\uAE30. (\uB370\uC2A4\uD06C\uD1B1)",
+                "Each tab group becomes a rounded card, with page dots beside it. There are three ways to switch tabs: click the up/down arrows that appear when you hover near the dots, click the dots and pick a tab from the tab bar that opens, or hover over the dots and scroll the wheel. (Desktop)"
+              )
+            };
+            const descOf = (key) => {
+              const raw = st[key];
+              const note = see && (raw === "lens" || raw === "widget") ? tr(" \uC88C\uC6B0 \uD328\uB110 \uD22C\uBA85\uC774 \uCF1C\uC838 \uC788\uC5B4 \uB80C\uC988\xB7\uC704\uC82F \uB300\uC2E0 \uC2EC\uD50C\uB85C \uBCF4\uC785\uB2C8\uB2E4.", " See-through side panels are on, so Simple is shown instead of Lens or Widget.") : "";
+              return (descs[this.getControlValue(key)] || "") + note;
+            };
             return [
-              { name: tr("\uC67C\uCABD \uD328\uB110 \uD0ED \uC804\uD658 \uD6A8\uACFC", "Left panel tab switch effect"), desc, render: (s) => this.pickRow(fresh(s), "tabAnimLeft", anims) },
-              { name: tr("\uC624\uB978\uCABD \uD328\uB110 \uD0ED \uC804\uD658 \uD6A8\uACFC", "Right panel tab switch effect"), desc, render: (s) => this.pickRow(fresh(s), "tabAnimRight", anims) }
+              { name: tr("\uC67C\uCABD \uD328\uB110 \uD0ED \uC804\uD658 \uD6A8\uACFC", "Left panel tab switch effect"), desc: descOf("tabAnimLeft"), render: (s) => this.pickRow(fresh(s), "tabAnimLeft", anims) },
+              { name: tr("\uC624\uB978\uCABD \uD328\uB110 \uD0ED \uC804\uD658 \uD6A8\uACFC", "Right panel tab switch effect"), desc: descOf("tabAnimRight"), render: (s) => this.pickRow(fresh(s), "tabAnimRight", anims) }
             ];
           })()
         ]
@@ -1628,8 +1502,15 @@ var GlassShelfSettingTab = class extends import_obsidian4.PluginSettingTab {
         // 탭 전환 효과와 나누기만 한다 (사용자 요청: 묶음 이름은 두지 않는다)
         items: [
           // 위젯은 탭 줄을 숨기고 늘 넓게 펼쳐 두 패널 다 위젯이면 뺀다 (사용자 요청)
-          toggle("tabWide", tr("\uD0ED \uC904 \uB113\uAC8C", "Wide tab bar"), tr("\uC0AC\uC774\uB4DC\uBC14 \uD0ED\uC744 \uC0AC\uC774\uB4DC\uBC14 \uC88C\uC6B0 \uB05D\uAE4C\uC9C0 \uB113\uD788\uACE0, \uBCF4\uAE30\uC758 \uBC84\uD2BC\uB4E4\uC744 \uD3BC\uCCD0\uC11C \uBCF4\uC5EC \uC90D\uB2C8\uB2E4. \uB9E8 \uC704 \uD0ED \uBB36\uC74C\uC740 \uBC84\uD2BC \uC904 \uC544\uB798\uB85C \uD55C \uC904 \uB0B4\uB824 \uBC30\uCE58\uD569\uB2C8\uB2E4. (\uB370\uC2A4\uD06C\uD1B1, \uD0DC\uBE14\uB9BF)", "Stretches the sidebar tabs across the full sidebar width and shows the view's buttons expanded. The top tab group moves one row down, below the button row. (Desktop, tablet)"), () => !import_obsidian4.Platform.isMobile && !allWidget()),
-          toggle("tabNames", tr("\uD0ED \uC774\uB984 \uD45C\uC2DC", "Show tab names"), tr("\uC0AC\uC774\uB4DC\uBC14 \uD0ED \uC544\uC774\uCF58 \uC606\uC5D0 \uC774\uB984\uC744 \uD45C\uC2DC\uD569\uB2C8\uB2E4. \uD0ED\uC774 \uD558\uB098\uBFD0\uC778 \uBB36\uC74C\uC740 \uC774 \uC124\uC815\uACFC \uAD00\uACC4\uC5C6\uC774 \uC774\uB984\uC744 \uD45C\uC2DC\uD569\uB2C8\uB2E4. (\uB370\uC2A4\uD06C\uD1B1, \uD0DC\uBE14\uB9BF)", "Shows names next to sidebar tab icons. Groups with a single tab always show the name. (Desktop, tablet)"), () => !import_obsidian4.Platform.isMobile && !allWidget())
+          toggle("tabWide", tr("\uD0ED \uC904 \uB113\uAC8C", "Wide tab bar"), tr("\uC0AC\uC774\uB4DC\uBC14 \uD0ED\uC744 \uC0AC\uC774\uB4DC\uBC14 \uC88C\uC6B0 \uB05D\uAE4C\uC9C0 \uB113\uD788\uACE0, \uBCF4\uAE30\uC758 \uBC84\uD2BC\uB4E4\uC744 \uD3BC\uCCD0\uC11C \uBCF4\uC5EC \uC90D\uB2C8\uB2E4. \uB9E8 \uC704 \uD0ED \uBB36\uC74C\uC740 \uBC84\uD2BC \uC904 \uC544\uB798\uB85C \uD55C \uC904 \uB0B4\uB824 \uBC30\uCE58\uD569\uB2C8\uB2E4. (\uB370\uC2A4\uD06C\uD1B1)", "Stretches the sidebar tabs across the full sidebar width and shows the view's buttons expanded. The top tab group moves one row down, below the button row. (Desktop)"), () => !import_obsidian4.Platform.isMobile && !allWidget()),
+          // 탭 표시 방법 (사용자 요청: 예전 "탭 이름 표시" 켜고 끄기). 데스크톱·태블릿. 렌즈·심플 패널이 없으면 뺀다
+          dropdown(
+            "tabLabel",
+            tr("\uD0ED \uD45C\uC2DC \uBC29\uBC95", "Tab labels"),
+            tr("\uC0AC\uC774\uB4DC\uBC14 \uD0ED\uC5D0 \uAE30\uD638\uC640 \uC774\uB984 \uC911 \uBB34\uC5C7\uC744 \uBCF4\uC77C\uC9C0 \uACE0\uB985\uB2C8\uB2E4. \uD0ED\uC774 \uD558\uB098\uBFD0\uC778 \uBB36\uC74C\uC740 \uC774 \uC124\uC815\uACFC \uAD00\uACC4\uC5C6\uC774 \uC774\uB984\uC744 \uD45C\uC2DC\uD569\uB2C8\uB2E4. (\uB370\uC2A4\uD06C\uD1B1, \uD0DC\uBE14\uB9BF)", "Choose whether sidebar tabs show icons, names, or both. Groups with a single tab always show the name. (Desktop, tablet)"),
+            { icon: tr("\uAE30\uD638\uB9CC", "Icons only"), both: tr("\uC774\uB984\uACFC \uAE30\uD638", "Icons and names"), name: tr("\uC774\uB984\uB9CC", "Names only") },
+            () => !import_obsidian4.Platform.isPhone && pillTabs()
+          )
         ]
       },
       {
@@ -1922,9 +1803,11 @@ var coreMethods = {
   },
   // 테마가 켜졌을 때의 준비 (예전 onload 의 본문)
   async startCore() {
+    this.coreStartAt = window.performance.now();
     const raw = await this.loadData() || {};
     migrateGlassLevel(raw);
     migrateTabAnim(raw);
+    migrateTabLabel(raw);
     delete raw.frost;
     delete raw.hoverSize;
     delete raw.activeTabColor;
@@ -1962,8 +1845,18 @@ var coreMethods = {
       let timer = 0;
       const syncRight = () => document.body.toggleClass("lg-right-open", wsEl.hasClass("is-right-sidedock-open"));
       syncRight();
+      let rightWas = wsEl.hasClass("is-right-sidedock-open");
+      let animTimer = 0;
       const obs = new MutationObserver(() => {
         syncRight();
+        const rightNow = wsEl.hasClass("is-right-sidedock-open");
+        if (rightNow !== rightWas || wsEl.hasClass("is-left-sidedock-open") !== open) {
+          this.panelBusyUntil = window.performance.now() + PANEL_ANIM_MS;
+          document.body.addClass("lg-panel-anim");
+          window.clearTimeout(animTimer);
+          animTimer = window.setTimeout(() => document.body.removeClass("lg-panel-anim"), PANEL_ANIM_MS);
+        }
+        rightWas = rightNow;
         const now = wsEl.hasClass("is-left-sidedock-open");
         if (now === open) return;
         open = now;
@@ -1975,6 +1868,11 @@ var coreMethods = {
         ribs.forEach((r) => r.addClass("lg-rib-anim"));
         window.clearTimeout(timer);
         timer = window.setTimeout(() => ribs.forEach((r) => r.removeClass("lg-rib-anim")), 520);
+      });
+      this.register(() => {
+        window.clearTimeout(this.panelBusyTimer);
+        window.clearTimeout(animTimer);
+        document.body.removeClass("lg-panel-anim");
       });
       obs.observe(wsEl, { attributes: true, attributeFilter: ["class"] });
       this.register(() => {
@@ -1994,13 +1892,21 @@ var coreMethods = {
     }
     void this.setupFolderColors(raw);
     const refresh = () => this.requestRefresh();
-    if (!import_obsidian5.Platform.isPhone) this.registerInterval(window.setInterval(() => this.webMiniTick(), WEB_MINI_POLL_MS));
+    if (!import_obsidian5.Platform.isPhone) {
+      this.app.workspace.onLayoutReady(() => this.webMiniSync());
+      this.registerEvent(this.app.workspace.on("layout-change", () => this.webMiniSync()));
+      this.register(() => {
+        window.clearInterval(this.webMiniTimer);
+        this.webMiniTimer = 0;
+      });
+    }
     this.app.workspace.onLayoutReady(refresh);
     this.registerEvent(this.app.workspace.on("layout-change", refresh));
     this.registerEvent(this.app.workspace.on("layout-change", () => {
       for (const doc of this.docs) this.snapTabBars(doc);
     }));
     this.registerEvent(this.app.workspace.on("active-leaf-change", refresh));
+    if (import_obsidian5.Platform.isDesktop) this.registerEvent(this.app.workspace.on("resize", () => this.scFoldSync()));
     this.app.workspace.onLayoutReady(() => this.learnViewIcons());
     if (import_obsidian5.Platform.isDesktop) this.app.workspace.onLayoutReady(() => window.setTimeout(() => this.checkHostDom(), 2e3));
     this.registerEvent(this.app.workspace.on("layout-change", () => this.learnViewIcons()));
@@ -2008,6 +1914,7 @@ var coreMethods = {
     this.registerEvent(this.app.workspace.on("css-change", refresh));
     this.registerEvent(this.app.workspace.on("css-change", () => {
       for (const doc of this.docs) this.applyFolderColor(doc);
+      for (const doc of this.docs) this.applyTintHi(doc);
     }));
     const unMini = (leaf) => {
       const tabs = leaf && leaf.parent && leaf.parent.containerEl;
@@ -2059,13 +1966,15 @@ var coreMethods = {
     const win = doc.defaultView;
     if (!win || import_obsidian5.Platform.isMobile) return;
     const dpr = win.devicePixelRatio || 1;
+    const writes = [];
     doc.querySelectorAll(".workspace-split.mod-sidedock .workspace-tab-header-container-inner").forEach((el) => {
       if (!el.offsetHeight || el.getAnimations().length) return;
       const cur = parseFloat(el.style.getPropertyValue("--lg-snap-y")) || 0;
       const top = Math.round((el.getBoundingClientRect().top - cur) * 64) / 64 * dpr;
       const off = +((Math.round(top) - top) / dpr).toFixed(4);
-      if (Math.abs(off - cur) > 1e-3) el.setCssProps({ "--lg-snap-y": `${off}px` });
+      if (Math.abs(off - cur) > 1e-3) writes.push([el, off]);
     });
+    for (const [el, off] of writes) el.setCssProps({ "--lg-snap-y": `${off}px` });
   },
   // 좌우 패널 아크릴 (Windows 11 22H2 이상, 사용자 요청): 창 바탕을 투명하게 하고 시스템 아크릴 재질을 깐다(Electron 공개 API).
   // 테마는 body.lg-acrylic 에서 body 바탕을 비우고 좌우 패널 바탕만 반투명하게 둔다(편집창은 불투명 그대로).
@@ -2128,12 +2037,12 @@ var coreMethods = {
   tabAnimOf(side) {
     const v = side === "left" ? this.settings.tabAnimLeft : this.settings.tabAnimRight;
     if (v === "list" && import_obsidian5.Platform.isPhone || v === "widget" && import_obsidian5.Platform.isMobile) return "lens";
+    if (v === "widget" && this.sideSeeThrough()) return "none";
     return v === "none" || v === "list" || v === "widget" ? v : "lens";
   },
-  // 좌우 패널 투명을 켤 때 알린다: 렌즈를 쓰던 패널 탭이 심플로 보인다 (사용자 요청). 렌즈를 쓰는 패널이 없으면 알리지 않는다
-  noticeSimpleTabs() {
-    if (this.tabAnimOf("left") !== "lens" && this.tabAnimOf("right") !== "lens") return;
-    new import_obsidian5.Notice(tr("\uC88C\uC6B0 \uD328\uB110 \uD22C\uBA85\uC774 \uCF1C\uC838 \uC788\uC73C\uBA74 \uD0ED \uC804\uD658 \uD6A8\uACFC\uB294 \uB80C\uC988 \uB300\uC2E0 \uC2EC\uD50C\uB85C \uBCF4\uC785\uB2C8\uB2E4.", "With see-through side panels on, the tab switch effect is shown as Simple instead of Lens."));
+  // 설정 "좌우 패널 투명"이 켜져 있는가 (윈도우 데스크톱만 있는 설정)
+  sideSeeThrough() {
+    return !!this.settings.sideAcrylic && import_obsidian5.Platform.isWin && !import_obsidian5.Platform.isMobile;
   },
   vibNudge() {
     window.setTimeout(() => {
@@ -2157,7 +2066,6 @@ var coreMethods = {
       was = now;
       if (this.unloaded) return;
       this.applyAcrylic(true);
-      if (now) this.noticeSimpleTabs();
     });
     this.translucentObs.observe(document.body, { attributes: true, attributeFilter: ["class"] });
   },
@@ -2205,6 +2113,29 @@ var coreMethods = {
   // 라이트는 어두울수록 더 많이 끌어올리고, 다크는 밝을수록 더 많이 끌어내린다 (감마 곡선은 순수한 검정을 그대로 둬서 바꿨다). 테마는 --lg-lift-l·-d 를
   // 알약 흐림 사슬(--lg-haze)에 넣는다. 플러그인이 필터를 넣은 문서에만 변수를 붙인다(없으면 비워 둬 필터 사슬이 깨지지 않게).
   // 모바일은 알약 필터를 꺼 두는 것과 같은 까닭(매 프레임 뒤를 떠 옴)으로 뺀다. 애플 기기는 url() 필터를 못 써 원래 안 걸린다
+  // 틴트 때 위아래 하이라이트 진하기 (테마 --lg-tint-hi-a, 사용자 요청: 편집창 폴더 색 탭 줄과 같은 방식). 하이라이트는 흰색 그대로,
+  // 틴트를 섞은 편집창 위 알약 채움 색의 눈 기준 밝기(OKLab 명도) − 채도(HSV)로 밝을수록 50%, 채도가 높거나 어두울수록 20% 쪽.
+  // 채움 색은 다크·라이트 모드에 따라 달라 모드가 바뀌면(css-change) 다시 정한다
+  applyTintHi(doc) {
+    const b = doc.body;
+    if (!b) return;
+    const s = this.settings;
+    if (s.tint === "none") {
+      b.style.removeProperty("--lg-tint-hi-a");
+      return;
+    }
+    const color = s.tint === "accent" ? "var(--interactive-accent)" : s.tint === "obsidian" ? OBSIDIAN_PURPLE : s.tintColor;
+    const rgb = resolveRgb(doc, `color-mix(in srgb, ${color} ${s.tintLevel * 6}%, var(--lg-glass-bg))`);
+    const lum = rgb ? colorLightness(`rgb(${rgb.join(" ")})`, doc) : null;
+    if (!rgb || lum == null) {
+      b.style.removeProperty("--lg-tint-hi-a");
+      return;
+    }
+    const mx = Math.max(...rgb) / 255;
+    const sat = mx > 0 ? (mx - Math.min(...rgb) / 255) / mx : 0;
+    const k = Math.min(1, Math.max(0, lum - sat));
+    b.style.setProperty("--lg-tint-hi-a", (0.2 + 0.3 * k).toFixed(3));
+  },
   applyLift(doc) {
     const b = doc.body;
     if (!b) return;
@@ -2286,11 +2217,13 @@ var coreMethods = {
     b.classList.toggle("lg-tinted", s.tint !== "none");
     b.style.setProperty("--lg-tint-color", color);
     b.style.setProperty("--lg-tint-p", `${s.tintLevel * 4}%`);
+    this.applyTintHi(doc);
     b.classList.toggle("lg-tint-ink-light", s.tint !== "none" && !!s.tintWhiteInk);
     b.style.removeProperty("--lg-active-tab-color");
     b.classList.remove("lg-tab-plain");
     b.classList.toggle("lg-tab-wide", !!s.tabWide);
-    b.classList.toggle("lg-tab-names", !!s.tabNames);
+    b.classList.toggle("lg-tab-names", s.tabLabel !== "icon");
+    b.classList.toggle("lg-tab-noicon", s.tabLabel === "name");
     b.classList.toggle("lg-ficon-none", s.fileIcons === "none");
     b.classList.toggle("lg-ficon-line", s.fileIcons === "line");
     const line = s.fileIcons === "line" ? this.folderLineUrl() : "";
@@ -2406,6 +2339,15 @@ var coreMethods = {
   // 이벤트가 몰려 와도 한 프레임에 한 번만 갱신
   requestRefresh() {
     if (this.unloaded) return;
+    const wait = (this.panelBusyUntil || 0) - window.performance.now();
+    if (wait > 0) {
+      if (!this.panelBusyTimer)
+        this.panelBusyTimer = window.setTimeout(() => {
+          this.panelBusyTimer = 0;
+          this.requestRefresh();
+        }, wait);
+      return;
+    }
     if (this.frame) return;
     this.frame = window.requestAnimationFrame(() => {
       this.frame = null;
@@ -2490,6 +2432,8 @@ var coreMethods = {
 
 // src/events.ts
 var import_obsidian6 = require("obsidian");
+var SB_DWELL_MS = 350;
+var SB_DWELL_MOVE = 8;
 var eventsMethods = {
   // 별도 창(설정·커뮤니티)의 창 제목을 왼쪽 요소 끝과 창 제어 알약 사이 가운데에 둔다
   placeTitle(doc) {
@@ -2690,6 +2634,62 @@ var eventsMethods = {
       },
       { capture: true, passive: true }
     );
+    if (!import_obsidian6.Platform.isMobile) {
+      let el = null;
+      let timer = 0;
+      let ax = 0;
+      let ay = 0;
+      const off = () => {
+        win.clearTimeout(timer);
+        timer = 0;
+        if (el) el.classList.remove("lg-sb-hover");
+        el = null;
+      };
+      const gutterOf = (e) => {
+        const t = e.target;
+        if (!isEl(t) || t.scrollHeight <= t.clientHeight + 1) return null;
+        const r = t.getBoundingClientRect();
+        return e.clientX > r.left + t.clientLeft + t.clientWidth && e.clientX <= r.right ? t : null;
+      };
+      this.registerDomEvent(
+        doc,
+        "pointermove",
+        (e) => {
+          const t = gutterOf(e);
+          if (t !== el) {
+            off();
+            if (!t) return;
+            el = t;
+          }
+          if (!el || el.classList.contains("lg-sb-hover")) return;
+          if (timer && Math.hypot(e.clientX - ax, e.clientY - ay) <= SB_DWELL_MOVE) return;
+          ax = e.clientX;
+          ay = e.clientY;
+          win.clearTimeout(timer);
+          const target = el;
+          timer = win.setTimeout(() => {
+            timer = 0;
+            if (el === target) target.classList.add("lg-sb-hover");
+          }, SB_DWELL_MS);
+        },
+        { passive: true }
+      );
+      this.registerDomEvent(doc, "pointerdown", (e) => {
+        const t = gutterOf(e);
+        if (t) {
+          if (t !== el) off();
+          el = t;
+          win.clearTimeout(timer);
+          timer = 0;
+          t.classList.add("lg-sb-hover");
+        }
+      }, { capture: true, passive: true });
+      this.registerDomEvent(doc.documentElement, "mouseleave", off);
+      this.register(() => {
+        off();
+        doc.querySelectorAll(".lg-sb-hover").forEach((x) => x.classList.remove("lg-sb-hover"));
+      });
+    }
   },
   // 상태 표시줄 높이를 body 에 알린다
   attachStatusHeight(doc, win) {
@@ -3015,16 +3015,16 @@ var eventsMethods = {
       }
     });
   },
-  // 패널 탭을 누를 때 탭 줄 스크롤 맞추기
+  // 패널 탭을 누를 때 탭 줄 스크롤 맞추기 (태블릿 서랍 보기 전환 알약도)
   attachPanelTabScroll(doc, win) {
     this.registerDomEvent(
       doc,
       "pointerdown",
       (e) => {
         if (e.button !== 0 || !isEl(e.target)) return;
-        const tab = e.target.closest(".mod-left-split .workspace-tab-header, .mod-right-split .workspace-tab-header");
+        const tab = e.target.closest(".mod-left-split .workspace-tab-header, .mod-right-split .workspace-tab-header, .workspace-drawer-tab-options-list > .workspace-tab-header");
         const inner = tab && tab.parentElement;
-        if (!inner || !inner.classList.contains("workspace-tab-header-container-inner")) return;
+        if (!inner || !inner.matches(".workspace-tab-header-container-inner, .workspace-drawer-tab-options-list")) return;
         if (inner.scrollWidth <= inner.clientWidth + 1) return;
         const ir = inner.getBoundingClientRect();
         const tr2 = tab.getBoundingClientRect();
@@ -3172,35 +3172,17 @@ var eventsPressMethods = {
         }
       }
     };
-    let holding = false;
-    let held = [];
+    this.pressHolding = false;
+    this.pressHoldItems = [];
     let slowed = [];
     let heldPlay = [];
     let holdRaf = 0;
     let holdTimer = 0;
-    let before = /* @__PURE__ */ new WeakSet();
-    const holdSpan = (a) => {
-      if (a.id.startsWith("lg-hold-")) {
-        const v = Number(a.id.slice(8));
-        return Number.isFinite(v) ? [v, v] : null;
-      }
-      return hasOffsets(a, 0.34, 0.46) ? [0.34, 0.46] : hasOffsets(a, 0.2, 0.55) ? [0.2, 0.55] : null;
-    };
-    const heldPeak = /* @__PURE__ */ new WeakMap();
-    const hasOffsets = (a, x, y) => {
-      const ef = a.effect;
-      const k = ef && typeof ef.getKeyframes === "function" ? ef.getKeyframes() : [];
-      return k.some((f) => Math.abs((f.offset ?? -1) - x) < 1e-3) && k.some((f) => Math.abs((f.offset ?? -1) - y) < 1e-3);
-    };
     const holdScan = () => {
-      if (!holding) return;
-      for (const a of doc.getAnimations()) {
-        if (a.playState !== "running" || held.includes(a) || heldPlay.includes(a)) continue;
-        if (before.has(a)) continue;
-        const tgt = a.effect?.target;
-        const menuRip = !!tgt && !!tgt.parentElement?.classList.contains("lg-ripple-menu");
-        const span = menuRip ? [RIPPLE_HOLD, RIPPLE_HOLD] : holdSpan(a);
-        if (!span || !a.effect) continue;
+      if (!this.pressHolding) return;
+      for (const { a, span, resume } of this.pressHoldItems) {
+        if (!resume || a.playState !== "running" || heldPlay.includes(a)) continue;
+        if (!a.effect) continue;
         const prog = () => Number(a.effect.getComputedTiming().progress) || 0;
         const p = prog();
         if (p < span[0]) {
@@ -3220,36 +3202,26 @@ var eventsPressMethods = {
           else hi = mid;
         }
         a.currentTime = hi;
-        heldPeak.set(a, span[0]);
-        (menuRip ? heldPlay : held).push(a);
+        heldPlay.push(a);
       }
       holdRaf = win.requestAnimationFrame(holdScan);
     };
     const holdRelease = () => {
-      holding = false;
+      this.pressHolding = false;
       win.cancelAnimationFrame(holdRaf);
       win.clearTimeout(holdTimer);
-      for (const a of held) {
-        try {
-          const ef = a.effect;
-          const target = ef && ef.target;
-          if (!ef || !target || !target.isConnected) {
-            a.cancel();
-            continue;
-          }
-          const kf = ef.getKeyframes();
-          const at = heldPeak.get(a) ?? 0.34;
-          const peak = kf.find((f) => Math.abs((f.offset ?? -1) - at) < 1e-3);
-          const from = {};
-          if (peak) {
-            for (const [k, v] of Object.entries(peak)) if (!["offset", "computedOffset", "easing", "composite"].includes(k)) from[k] = v;
-          }
-          a.cancel();
-          target.animate([{ ...from, offset: 0 }], { duration: HOLD_RETURN_MS, easing: EASE.press, pseudoElement: ef.pseudoElement || void 0 });
-        } catch {
-        }
+      for (const it of this.pressHoldItems || []) {
+        const out = it.out;
+        if (!out) continue;
+        const grow = it.a;
+        const back = (stay) => {
+          if (!out.target.isConnected || grow.playState === "idle" || grow.playbackRate < 0) return;
+          out.target.animate(out.frames, { duration: out.dur, delay: stay, easing: EASE.press, fill: "backwards", pseudoElement: out.pseudo });
+          win.requestAnimationFrame(() => grow.cancel());
+        };
+        if (grow.playState === "finished") back(0);
+        else grow.addEventListener("finish", () => back(out.stay), { once: true });
       }
-      held = [];
       for (const a of heldPlay) {
         try {
           a.updatePlaybackRate(1);
@@ -3265,12 +3237,12 @@ var eventsPressMethods = {
         }
       }
       slowed = [];
+      this.pressHoldItems = [];
     };
     this.registerDomEvent(doc, "pointerdown", (e) => {
       if (e.button !== 0) return;
       holdRelease();
-      holding = true;
-      before = new WeakSet(doc.getAnimations());
+      this.pressHolding = true;
       holdRaf = win.requestAnimationFrame(holdScan);
       holdTimer = win.setTimeout(holdRelease, 5e3);
     }, { capture: true });
@@ -3285,13 +3257,13 @@ var eventsPressMethods = {
     };
     if (import_obsidian7.Platform.isMobile) {
       this.registerDomEvent(doc, "touchmove", (e) => {
-        if (holding && e.touches[0]) followMenu(e.touches[0].clientX, e.touches[0].clientY);
+        if (this.pressHolding && e.touches[0]) followMenu(e.touches[0].clientX, e.touches[0].clientY);
       }, { capture: true, passive: true });
       this.registerDomEvent(doc, "touchend", holdRelease, { capture: true, passive: true });
       this.registerDomEvent(doc, "touchcancel", holdRelease, { capture: true, passive: true });
     }
     this.registerDomEvent(doc, "pointermove", (e) => {
-      if (!holding) return;
+      if (!this.pressHolding) return;
       followMenu(e.clientX, e.clientY);
     }, { capture: true, passive: true });
     this.registerDomEvent(doc, "pointerup", holdRelease, { capture: true });
@@ -3690,7 +3662,7 @@ var SegmentLens = class {
       this.textSig = "";
     }
     const bc = this.header.ownerDocument.body.classList;
-    const sig = tabs.map((t) => t.getAttribute("aria-label") || t.textContent || "").join("") + `|${bc.contains("lg-tab-names") ? 1 : 0}${bc.contains("lg-tab-wide") ? 1 : 0}`;
+    const sig = tabs.map((t) => t.getAttribute("aria-label") || t.textContent || "").join("") + `|${bc.contains("lg-tab-names") ? 1 : 0}${bc.contains("lg-tab-noicon") ? 1 : 0}${bc.contains("lg-tab-wide") ? 1 : 0}`;
     const actSig = tabs.map((t) => t.hasClass("is-active") ? "1" : "0").join("");
     const pairs = (tab, c) => {
       const src = [tab, ...Array.from(tab.querySelectorAll("*"))];
@@ -3779,6 +3751,11 @@ var SegmentLens = class {
   // 탭 하나가 지나는 렌즈 크기들의 지도를 쉬는 틈에 미리 굽는다. 처음 탭을 바꿀 때 매 프레임 새 지도를 굽느라 끊기던 것 (측정 확인)
   prebake(tab) {
     if (!this.plugin.refractOn() || !tab || this.plugin.tabPlain(this.header) || this.header.closest(".lg-tab-list, .lg-tab-widget")) return;
+    const wait = (this.plugin.coreStartAt || 0) + STARTUP_QUIET_MS - window.performance.now();
+    if (wait > 0) {
+      window.setTimeout(() => !this.plugin.unloaded && this.prebake(tab), wait);
+      return;
+    }
     const r = tab.getBoundingClientRect();
     const Hc = this.inner.getBoundingClientRect().height || r.height;
     if (!r.width || !r.height) return;
@@ -3860,7 +3837,7 @@ var SegmentLens = class {
     const hGrow = this.keepH ? b.h * MOBILE_TAB_GROW : Hc * TAB_LENS_H2;
     const h2 = !this.keepH && this.plugin.reduceMotion() ? h1 : hGrow;
     const tabsEl = this.header.closest(".workspace-tabs");
-    const small = !this.keepH && !!tabsEl && !this.plugin.tabWideOf(tabsEl) && !this.plugin.settings.tabNames;
+    const small = !this.keepH && !!tabsEl && !this.plugin.tabWideOf(tabsEl) && this.plugin.settings.tabLabel === "icon";
     const f = small ? TAB_SQUASH_SMALL : 1;
     const SQ = (this.keepH ? MOBILE_TAB_SQUASH : TAB_SQUASH) * f;
     const ST = TAB_STRETCH * f;
@@ -4009,11 +3986,53 @@ var pressMethods = {
       { offset: 0.55, opacity: 0.08 }
     ];
     const g = el.querySelector(":scope > .lg-hover-glass");
-    if (g) return g.animate(frames, opt);
-    return el.animate(frames, { ...opt, pseudoElement: "::before" });
+    if (g) return this.holdable(g.animate(frames, opt), [0.2, 0.55]);
+    return this.holdable(el.animate(frames, { ...opt, pseudoElement: "::before" }), [0.2, 0.55]);
+  },
+  // 누름 효과를 알린다. 누르는 중이면(pressHolding) 두 단계로 나눈다(pressSplit): 커지기만 돌려 가장 큰 모습(span, 진행도)에 머물고, 떼면 돌아온다.
+  // resume(메뉴 흰 빛)은 효과가 끝나거나 지워질 때 빛 요소를 지우는 구조라 나누지 않고, 가장 밝은 자리에서 멈췄다 떼면 이어 돈다(events-press 의 holdScan).
+  // 누르고 있지 않으면(짧은 클릭이 이미 끝남 등) 그대로 둔다. 커지기를 만들었으면 그것을 돌려준다
+  holdable(a, span, resume = false) {
+    if (!a || !this.pressHolding) return a;
+    if (resume) {
+      this.pressHoldItems.push({ a, span, resume });
+      return a;
+    }
+    const grow = this.pressSplit(a, span);
+    return grow ? grow : a;
+  },
+  // 두 단계 누름 (사용자 요청: 누르면 커지고 떼기 전까지 그대로): 받은 한 애니메이션을 지우고 '커지기'(처음 ~ 가장 큰 자리 span[0])만 돌려 그 모습에 머문다.
+  // 떼면 '돌아오기'(가장 큰 자리 끝 span[1] ~ 끝)를 돌린다. 커지기는 원래보다 빠르게(PRESS_GROW_K), 커지기가 끝나기 전에 뗐으면(짧은 클릭)
+  // 커지기가 끝나자마자 곧바로 돌아온다 (사용자 요청). 커지기 애니메이션을 돌려준다. 나눌 수 없는 모양이면 null (받은 애니메이션을 그대로 둔다)
+  pressSplit(a, span) {
+    const ef = a.effect;
+    const target = ef && ef.target;
+    if (!ef || !target) return null;
+    const t = ef.getTiming();
+    const dur = typeof t.duration === "number" ? t.duration : 0;
+    if (!dur) return null;
+    const strip = (f) => {
+      const o = {};
+      for (const [k, v] of Object.entries(f)) if (!["offset", "computedOffset", "easing", "composite"].includes(k)) o[k] = v;
+      return o;
+    };
+    const kf = ef.getKeyframes();
+    const at = (x) => kf.find((f) => Math.abs((f.offset ?? -1) - x) < 1e-3);
+    const peak = at(span[0]);
+    if (!peak) return null;
+    const pseudo = ef.pseudoElement || void 0;
+    const inFrames = kf.filter((f) => (f.offset ?? 0) <= span[0] + 1e-3).map((f) => ({ ...strip(f), offset: Math.min(1, (f.offset ?? 0) / span[0]) }));
+    const tail = kf.filter((f) => (f.offset ?? 0) >= span[1] - 1e-3 && (f.offset ?? 0) < 1);
+    const outFrames = [{ ...strip(peak), offset: 0 }, ...tail.slice(1).map((f) => ({ ...strip(f), offset: ((f.offset ?? 0) - span[1]) / (1 - span[1]) }))];
+    const last = kf[kf.length - 1];
+    if (last && (last.offset ?? 0) >= 0.999) outFrames.push({ ...strip(last), offset: 1 });
+    a.cancel();
+    const grow = target.animate(inFrames, { duration: dur * span[0] * PRESS_GROW_K, easing: EASE.settle, fill: "forwards", pseudoElement: pseudo });
+    this.pressHoldItems.push({ a: grow, span, resume: false, out: { target, frames: outFrames, dur: dur * (1 - span[1]), stay: 0, pseudo } });
+    return grow;
   },
   // 컴팩트 모드(설정)일 때 단독 버튼: 살짝 커졌다 바로 작아지기만 한다, 빛 없음 (사용자 요청. 아니면 흰색으로 크게 커진다).
-  // 누르고 있으면 가장 커진 자리(0.4)에서 멈춘다 (사용자 요청, id 의 lg-hold-0.4 로 알아본다). pseudo: 유리를 그린 의사 요소 (없으면 요소 자체)
+  // 누르고 있으면 가장 커진 자리(0.4)에서 멈춘다 (사용자 요청, holdable). pseudo: 유리를 그린 의사 요소 (없으면 요소 자체)
   clickPop(el, pseudo) {
     const r = el.getBoundingClientRect();
     const k = (1 + Math.min(0.08, 4 / Math.max(r.width, r.height, 1))).toFixed(3);
@@ -4021,8 +4040,7 @@ var pressMethods = {
     const peak = { offset: 0.4 };
     if (pseudo) peak.transform = `scale(${k})`;
     else peak.scale = k;
-    const pop = el.animate([peak], pseudo ? { ...opt, pseudoElement: pseudo } : opt);
-    pop.id = "lg-hold-0.4";
+    const pop = this.holdable(el.animate([peak], pseudo ? { ...opt, pseudoElement: pseudo } : opt), [0.4, 0.4]);
     return [null, pop];
   },
   // 누름 효과가 끝나기 전에 다시 누르면: 하던 효과(누름·꾹 누름에서 돌아오기·호버 유리 옅게)를 지우고 지금 모습을 첫 장면으로 돌려준다.
@@ -4040,19 +4058,22 @@ var pressMethods = {
     own.forEach((a) => a.cancel());
     return from;
   },
-  // k: 가장 클 때 배율 (기본 1.28)
-  pressPop(el, k = 1.28) {
+  // k: 가장 클 때 배율 (기본 PRESS_POP_K)
+  pressPop(el, k = PRESS_POP_K) {
     if (this.pressClick) return this.clickPop(el, "::after");
     try {
       const from = this.pressRestart(el, "::after", [["transform", "transform"], ["backgroundColor", "background-color"]]);
       const hover = this.fadeHover(el, { duration: 500, easing: EASE.press });
-      const pop = el.animate(
-        [
-          ...from ? [from] : [],
-          { offset: 0.34, transform: `scale(${k})`, backgroundColor: PRESS_WHITE, backgroundImage: PRESS_IMG },
-          { offset: 0.46, transform: `scale(${k})`, backgroundColor: PRESS_WHITE, backgroundImage: PRESS_IMG }
-        ],
-        { duration: 500, easing: EASE.press, pseudoElement: "::after" }
+      const pop = this.holdable(
+        el.animate(
+          [
+            ...from ? [from] : [],
+            { offset: 0.34, transform: `scale(${k})`, backgroundColor: PRESS_WHITE, backgroundImage: PRESS_IMG },
+            { offset: 0.46, transform: `scale(${k})`, backgroundColor: PRESS_WHITE, backgroundImage: PRESS_IMG }
+          ],
+          { duration: 500, easing: EASE.press, pseudoElement: "::after" }
+        ),
+        [0.34, 0.46]
       );
       return [hover, pop];
     } catch (err) {
@@ -4061,7 +4082,7 @@ var pressMethods = {
     }
   },
   // pressPop 과 같은 값인데 유리가 요소 자체에 있는 버튼용. 누를 때 작아지는 transform 과 겹치지 않게 scale 속성으로 건다
-  pressPopSelf(el, k = 1.28) {
+  pressPopSelf(el, k = PRESS_POP_K) {
     if (this.pressClick) {
       this.clickPop(el);
       return;
@@ -4069,7 +4090,7 @@ var pressMethods = {
     try {
       this.fadeHover(el, { duration: 500, easing: EASE.press });
       const peak = { scale: String(k), backgroundColor: PRESS_WHITE, backgroundImage: PRESS_IMG };
-      el.animate([{ offset: 0.34, ...peak }, { offset: 0.46, ...peak }], { duration: 500, easing: EASE.press });
+      this.holdable(el.animate([{ offset: 0.34, ...peak }, { offset: 0.46, ...peak }], { duration: 500, easing: EASE.press }), [0.34, 0.46]);
     } catch (err) {
       console.error("[glass-shelf] pop-self", err);
     }
@@ -4116,7 +4137,7 @@ var pressMethods = {
       const group = pill2.matches(PRESS_GROUP);
       const k = 1 + Math.min(0.2, 16 / Math.max(r.width, r.height, 1)) * (tab ? TAB_PRESS_K : group ? GROUP_PRESS_K : 1);
       const opt = { duration: 470, easing: EASE.press };
-      pill2.animate([{ offset: 0.34, scale: k.toFixed(3) }, { offset: 0.46, scale: k.toFixed(3) }], opt);
+      this.holdable(pill2.animate([{ offset: 0.34, scale: k.toFixed(3) }, { offset: 0.46, scale: k.toFixed(3) }], opt), [0.34, 0.46]);
       if (tab) return;
       this.fadeHover(el, opt);
     } catch (err) {
@@ -4133,7 +4154,7 @@ var pressMethods = {
       const r = btn.getBoundingClientRect();
       const k = (1 + Math.min(0.2, 16 / Math.max(r.width, r.height, 1))).toFixed(3);
       const peak = { scale: k, backgroundColor: PRESS_WHITE, backgroundImage: PRESS_IMG };
-      btn.animate([{ offset: 0.34, ...peak }, { offset: 0.46, ...peak }], { duration: 470, easing: EASE.press });
+      this.holdable(btn.animate([{ offset: 0.34, ...peak }, { offset: 0.46, ...peak }], { duration: 470, easing: EASE.press }), [0.34, 0.46]);
     } catch (err) {
       console.error("[glass-shelf] press-pill", err);
     }
@@ -4149,7 +4170,7 @@ var pressMethods = {
         }
         if (!el && t.closest(MOBILE_PRESS_BTN)) return true;
       }
-      let k = 1.28;
+      let k = PRESS_POP_K;
       let white = true;
       let dur = 500;
       if (!el) {
@@ -4172,10 +4193,13 @@ var pressMethods = {
       const peak = { scale: k.toFixed(3) };
       if (white) Object.assign(peak, { backgroundColor: PRESS_WHITE, backgroundImage: PRESS_IMG });
       const from = this.pressRestart(el, void 0, white ? [["scale", "scale"], ["backgroundColor", "background-color"]] : [["scale", "scale"]]);
-      el.animate([...from ? [from] : [], Object.assign({ offset: 0.34 }, peak), Object.assign({ offset: 0.46 }, peak)], {
-        duration: dur,
-        easing: EASE.press
-      });
+      this.holdable(
+        el.animate([...from ? [from] : [], Object.assign({ offset: 0.34 }, peak), Object.assign({ offset: 0.46 }, peak)], {
+          duration: dur,
+          easing: EASE.press
+        }),
+        [0.34, 0.46]
+      );
       return true;
     } catch (err) {
       console.error("[glass-shelf] press-mobile", err);
@@ -4207,7 +4231,7 @@ var pressMethods = {
       const r = el.getBoundingClientRect();
       const k = 1.02;
       const opt = { duration: 470, easing: EASE.press };
-      el.animate([{ offset: 0.34, scale: k.toFixed(3) }, { offset: 0.46, scale: k.toFixed(3) }], opt);
+      this.holdable(el.animate([{ offset: 0.34, scale: k.toFixed(3) }, { offset: 0.46, scale: k.toFixed(3) }], opt), [0.34, 0.46]);
       el.lgPress = { t: performance.now(), k, opt };
       this.pressRipple(el, e, r.height * 4.5, "lg-ripple-field");
     } catch (err) {
@@ -4248,6 +4272,7 @@ var pressMethods = {
       { offset: 1, transform: "translate(-50%, -50%) scale(1)", opacity: 0 }
     ];
     const anim = dot.animate(frames, { duration: 640, easing: EASE.burst });
+    if (cls && cls.split(" ").includes("lg-ripple-menu")) this.holdable(anim, [RIPPLE_HOLD, RIPPLE_HOLD], true);
     const win = doc.defaultView || window;
     const keep = new win.MutationObserver(() => {
       if (!wrap.isConnected) el.prepend(wrap);
@@ -4682,6 +4707,7 @@ var kanbanMethods = {
     let on = !!(row && btn && btn.classList.contains("is-active") && row.style.display !== "none");
     const bar = btn && btn.closest(".bases-toolbar");
     const item = btn && btn.parentElement;
+    if (on && bar && !laidOut(bar)) return;
     if (on && bar && item) {
       const gap = parseFloat(getComputedStyle(bar).columnGap) || 0;
       const others = els(bar.children).filter((x) => x !== item && x.instanceOf(HTMLElement) && x.offsetWidth > 0);
@@ -4735,12 +4761,15 @@ var kanbanMethods = {
       this.fadeHover(btn, { duration: 600, easing: EASE.press });
       const bw = btn.offsetWidth;
       const k = (1 + Math.min(0.1, 8 / Math.max(bw, h, 1))).toFixed(3);
-      btn.animate(
-        [
-          { offset: 0.34, scale: k },
-          { offset: 0.46, scale: k }
-        ],
-        { duration: 600, easing: EASE.press }
+      this.holdable(
+        btn.animate(
+          [
+            { offset: 0.34, scale: k },
+            { offset: 0.46, scale: k }
+          ],
+          { duration: 600, easing: EASE.press }
+        ),
+        [0.34, 0.46]
       );
       const wrap = newEl(doc, "span");
       wrap.className = "lg-ripple";
@@ -4891,14 +4920,14 @@ var kanbanMethods = {
       const peak = { scale: k, backgroundColor: PRESS_WHITE, backgroundImage: PRESS_IMG };
       const accent = win.getComputedStyle(btn).backgroundColor;
       const t0 = win.performance.now();
-      btn.animate([{ offset: 0.34, ...peak }, { offset: 0.46, ...peak }], opt);
+      this.holdable(btn.animate([{ offset: 0.34, ...peak }, { offset: 0.46, ...peak }], opt), [0.34, 0.46]);
       const lane = btn.closest(".kanban-plugin__lane");
       if (!lane) return;
       const obs = new win.MutationObserver(() => {
         const box = lane.querySelector(".kanban-plugin__item-form .kanban-plugin__item-input-wrapper");
         if (!box) return;
         obs.disconnect();
-        const a = box.animate([{ offset: 0, backgroundColor: accent, backgroundImage: "none" }, { offset: 0.34, ...peak }, { offset: 0.46, ...peak }], opt);
+        const a = this.holdable(box.animate([{ offset: 0, backgroundColor: accent, backgroundImage: "none" }, { offset: 0.34, ...peak }, { offset: 0.46, ...peak }], opt), [0.34, 0.46]);
         a.currentTime = Math.min(win.performance.now() - t0, opt.duration);
       });
       obs.observe(lane, { childList: true, subtree: true });
@@ -5167,7 +5196,7 @@ var menusMethods = {
     if (p && since < p.opt.duration) {
       const oy = host.offsetHeight / 2 - (input.offsetTop + input.offsetHeight);
       pop.style.transformOrigin = `${(host.offsetWidth / 2).toFixed(1)}px ${oy.toFixed(1)}px`;
-      const a = pop.animate([{ offset: 0.34, scale: p.k.toFixed(3) }, { offset: 0.46, scale: p.k.toFixed(3) }], p.opt);
+      const a = this.holdable(pop.animate([{ offset: 0.34, scale: p.k.toFixed(3) }, { offset: 0.46, scale: p.k.toFixed(3) }], p.opt), [0.34, 0.46]);
       a.currentTime = since;
     }
     const done = new win.MutationObserver(() => {
@@ -6313,7 +6342,6 @@ var foldersMethods = {
               if (r.target.closest && r.target.closest(".lg-stripes")) continue;
               if (r.type === "childList") {
                 if (els(r.addedNodes).concat(els(r.removedNodes)).every((nd) => nd.classList && nd.classList.contains("lg-stripes"))) continue;
-                this.followStripes(list);
                 return this.requestFolderColors();
               }
               if (r.target.classList.contains("tree-item-self")) this.stripeUnder(list);
@@ -6365,7 +6393,7 @@ var foldersMethods = {
           }
         }
         this.applyGlyphs(doc, list);
-        this.applyStripes(list);
+        this.stripesSoon(list);
       }
     }
   },
@@ -6403,12 +6431,16 @@ var foldersMethods = {
           }
         }
       }
-      if (type) title.dataset.lgType = type;
-      else if (title.dataset.lgType) delete title.dataset.lgType;
+      if (type) {
+        if (title.dataset.lgType !== type) title.dataset.lgType = type;
+      } else if (title.dataset.lgType) delete title.dataset.lgType;
       const has = !!type && urls.has(type);
       title.classList.toggle("lg-glyph", has);
-      if (has) title.style.setProperty("--lg-glyph", `var(--lg-glyph-v-${glyphKey(type)})`);
-      else title.style.removeProperty("--lg-glyph");
+      const glyph = has ? `var(--lg-glyph-v-${glyphKey(type)})` : "";
+      if (title.style.getPropertyValue("--lg-glyph") !== glyph) {
+        if (glyph) title.style.setProperty("--lg-glyph", glyph);
+        else title.style.removeProperty("--lg-glyph");
+      }
     }
   },
   // 배운 아이콘마다 종이 안에 그릴 그림(data URL). 아이콘은 Obsidian 아이콘(getIcon)을 받아 반투명 검정으로 칠한다:
@@ -6550,6 +6582,20 @@ var foldersMethods = {
   // 줄 하이라이트(CSS: 파일 탐색기 .tree-item-self::before)를 줄무늬와 같은 폭으로: 왼쪽은 목록 왼쪽 끝에서 알약 간격(--lg-gap),
   // 오른쪽은 목록 안쪽 끝(스크롤바 칸 왼쪽 끝)까지. 맨 위 단계 줄(가장 넓은 줄)로 잰다 (사용자 요청)
   // 보이는 줄과 그 자리를 돌려준다 (applyStripes 가 같은 측정을 쓴다)
+  // 폴더 색을 칠한 뒤 줄무늬·줄 하이라이트 폭을 맞춘다. 시작한 뒤 STARTUP_QUIET_MS 동안은 쉬는 틈에: 줄 자리를 재느라 화면 전체 스타일을
+  // 한 번 더 계산했다 (사용자 결정, 재시작 측정: 약 66ms). 그동안 줄무늬·줄 하이라이트 폭이 잠깐 늦게 맞는다
+  stripesSoon(list) {
+    if (window.performance.now() >= (this.coreStartAt || 0) + STARTUP_QUIET_MS) return this.applyStripes(list);
+    if (list.lgStripeIdle) return;
+    const win = list.ownerDocument.defaultView || window;
+    const run = () => {
+      list.lgStripeIdle = false;
+      if (!this.unloaded && list.isConnected) this.applyStripes(list);
+    };
+    list.lgStripeIdle = true;
+    if (win.requestIdleCallback) win.requestIdleCallback(run, { timeout: 500 });
+    else win.setTimeout(run, 50);
+  },
   rowExtent(list) {
     const lr = list.getBoundingClientRect();
     const gl = this.rowGapLeft(list);
@@ -7036,6 +7082,7 @@ var sidebarMethods = {
     if (!split || !split.containerEl) return;
     this.markTabList(split, side);
     this.markTabWidget(split, side);
+    this.scFoldSync();
     const groups = split.containerEl.querySelectorAll(".workspace-tabs");
     groups.forEach((tabsEl, i) => {
       this.watchSegments(tabsEl);
@@ -7076,12 +7123,108 @@ var sidebarMethods = {
           lastW = w;
           this.navFoldCheck(tabsEl);
           this.navSearchSync(tabsEl);
+          if (tabsEl.closest(".lg-tab-widget")) this.widgetTitle(tabsEl, this.activeLeafOf(tabsEl));
         });
         ro.observe(header);
         this.register(() => ro.disconnect());
       }
       this.updateNavMore(tabsEl);
     });
+  },
+  // 패널 안 탭 묶음의 자리 (테마 .lg-sb-top 맨 위 줄, .lg-sb-last 맨 아래 줄, .lg-sb-l·.lg-sb-r 패널 왼쪽·오른쪽 끝). 패널 안을 좌우로 나눈 분할(Sidebar Columns 플러그인 등, 사용자 요청으로 호환)
+  // 안의 묶음도 테마가 자리를 알 수 있게 Obsidian 배치 나무를 따라간다: 위아래 분할은 위·아래 끝을 첫째·마지막 칸만, 왼쪽·오른쪽 끝은 모든 칸이 물려받는다.
+  // 좌우 분할은 반대로 왼쪽·오른쪽 끝을 첫째·마지막 칸만, 위·아래 끝은 모든 칸이 물려받는다.
+  // 패널 바로 아래 묶음만 보던 테마 규칙(:nth-child)은 분할 안 묶음을 맨 위·맨 아래로 보지 못했다
+  markSidePos(split) {
+    const mark = (el, cls, on) => {
+      if (el.classList.contains(cls) !== on) el.classList.toggle(cls, on);
+    };
+    const walk = (it, top, last, l, r) => {
+      if (it instanceof import_obsidian13.WorkspaceTabs) {
+        const el = it.containerEl;
+        mark(el, "lg-sb-top", top);
+        mark(el, "lg-sb-last", last);
+        mark(el, "lg-sb-l", l);
+        mark(el, "lg-sb-r", r);
+        return;
+      }
+      const kids = it.children;
+      if (!kids) return;
+      const across = it.direction === "vertical";
+      const open = kids.filter((c) => !(c.containerEl && c.containerEl.classList.contains("lg-sc-fold")));
+      kids.forEach((c, i) => {
+        const at = open.indexOf(c);
+        walk(c, top && (across || i === 0), last && (across || i === kids.length - 1), l && (!across || at === 0), r && (!across || at === open.length - 1));
+      });
+    };
+    walk(split, true, true, true, true);
+  },
+  // Sidebar Columns 플러그인의 접힌 칸 (사용자 요청: 접은 칸 자리를 옆 칸이 다 차지하고, 펼치기 버튼은 옆 칸 오른쪽 위 ··· 왼쪽에).
+  // 그 플러그인은 접은 칸을 32px 줄(.sidebar-columns-rail)로 남기고 그 안에 펼치기 버튼(.sidebar-columns-restore)을 둔다.
+  // 그 요소는 옮기지 않는다: 옆 칸 맨 위 묶음 머리 줄에 우리 버튼(.lg-sc-open)을 따로 달아 누르면 그 펼치기 버튼을 누르고,
+  // 접은 칸은 테마가 자리를 비운다(.lg-sc-fold, --lg-sc-w 는 그 플러그인이 정한 접힌 폭). 우리 버튼을 달았을 때만 .lg-sc-fold 를 붙이므로,
+  // 그 플러그인이 업데이트로 이름·구조를 바꾸면 아무것도 하지 않고 그 플러그인 원래 모습(접힌 줄)이 남는다
+  scFoldSync() {
+    if (import_obsidian13.Platform.isMobile || this.unloaded) return;
+    const ws = this.app.workspace;
+    if (!this.scObs) {
+      const obs = new MutationObserver((recs) => {
+        const flip = recs.some((r) => isEl(r.target) && (r.oldValue || "").split(" ").includes("sidebar-columns-collapsed") !== r.target.classList.contains("sidebar-columns-collapsed"));
+        if (flip) this.scFoldSync();
+      });
+      this.scObs = obs;
+      this.register(() => {
+        obs.disconnect();
+        this.scObs = null;
+      });
+    }
+    for (const sd of [ws.leftSplit, ws.rightSplit]) {
+      const root = sd && sd.containerEl;
+      if (!root) continue;
+      for (const c of els(root.querySelectorAll(".workspace-split.mod-vertical > :is(.workspace-tabs, .workspace-split)"))) {
+        this.scObs.observe(c, { attributes: true, attributeFilter: ["class"], attributeOldValue: true });
+      }
+      const keep = /* @__PURE__ */ new Set();
+      const touched = /* @__PURE__ */ new Set();
+      for (const col of els(root.querySelectorAll(".workspace-split.mod-vertical > .sidebar-columns-collapsed"))) {
+        const restore = col.querySelector(".sidebar-columns-rail .sidebar-columns-restore");
+        const sibs = els(col.parentElement ? col.parentElement.children : []).filter((c) => c.matches(".workspace-tabs, .workspace-split"));
+        const at = sibs.indexOf(col);
+        const open = (c) => !c.classList.contains("sidebar-columns-collapsed");
+        const host = sibs.slice(at + 1).find(open) || sibs.slice(0, at).reverse().find(open) || null;
+        const group = host && (host.matches(".workspace-tabs") ? host : host.querySelector(".workspace-tabs.lg-sb-top") || host.querySelector(".workspace-tabs"));
+        const header = group && group.querySelector(":scope > .workspace-tab-header-container");
+        const ok = !!restore && !!header;
+        if (col.classList.contains("lg-sc-fold") !== ok) col.classList.toggle("lg-sc-fold", ok);
+        if (!ok || !header || !host || !group) continue;
+        const w = `${col.offsetWidth}px`;
+        if (col.style.getPropertyValue("--lg-sc-w") !== w) col.style.setProperty("--lg-sc-w", w);
+        let btn = els(header.querySelectorAll(":scope > .lg-sc-open")).find((b) => b.lgScFor === col) || null;
+        if (!btn) {
+          const icon = sibs.indexOf(host) > at ? "panel-left-open" : "panel-right-open";
+          btn = this.makeButton("lg-sc-open", icon, tr("\uCE78 \uD3BC\uCE58\uAE30", "Expand column"), (_e, el) => {
+            const c = el.lgScFor;
+            const r = c && c.querySelector(".sidebar-columns-rail .sidebar-columns-restore");
+            if (r) r.click();
+          });
+          btn.lgScFor = col;
+          header.insertBefore(btn, header.querySelector(":scope > .lg-nav-more"));
+          touched.add(group);
+        }
+        keep.add(btn);
+      }
+      for (const b of els(root.querySelectorAll(".lg-sc-open"))) {
+        if (keep.has(b)) continue;
+        const g = b.closest(".workspace-tabs");
+        b.remove();
+        if (g) touched.add(g);
+      }
+      for (const c of els(root.querySelectorAll(".lg-sc-fold"))) {
+        if (!c.classList.contains("sidebar-columns-collapsed")) c.classList.remove("lg-sc-fold");
+      }
+      this.markSidePos(sd);
+      touched.forEach((g) => this.balanceSide(g));
+    }
   },
   // 넓게 모드에서 버튼 줄이 탭 줄 폭에 다 들어가지 않으면 줄을 숨기고 ··· 하나로 묶는다 (사용자 요청: 패널을 줄이거나 창이 작아질 때).
   // ··· 은 보기의 버튼을 모두 메뉴로 보인다. 잠깐 펴서 버튼 줄에 필요한 폭과 받은 폭을 잰다(그리기 전이라 화면에는 보이지 않는다)
@@ -7101,7 +7244,7 @@ var sidebarMethods = {
     const more = header.querySelector(":scope > .lg-nav-more");
     const moreRect = was && more ? more.getBoundingClientRect() : null;
     if (was) tabsEl.classList.remove("lg-nav-fold");
-    if (!row.offsetParent) {
+    if (!laidOut(row)) {
       if (was) tabsEl.classList.add("lg-nav-fold");
       return;
     }
@@ -7330,6 +7473,7 @@ var sidebarMethods = {
     const leaf = this.activeLeafOf(tabsEl);
     const root = leaf && leaf.view ? leaf.view.containerEl : null;
     const cur = tabsEl.lgSearchIn || null;
+    if (row && !laidOut(row)) return !!cur;
     const ok = row && root && !this.unloaded && this.tabWideOf(tabsEl) && !tabsEl.classList.contains("lg-nav-fold");
     const p = ok ? els(row.querySelectorAll(".lg-nav-btn:not(.lg-nav-leaving)")).find(
       (x) => x.lgSrc && x.lgSrc.isConnected && root.contains(x.lgSrc) && x.lgSrc.querySelector(".lucide-search")
@@ -7609,11 +7753,12 @@ var sidebarMethods = {
       header.insertBefore(sp, inner);
     }
     if (!header.querySelector(":scope > .lg-ptab-ring")) header.insertBefore(createDiv({ cls: ["lg-ptab-ring", INJECTED] }), inner);
-    const gap = parseFloat(getComputedStyle(header).columnGap) || 0;
+    if (!laidOut(header)) return;
+    const cs = getComputedStyle(header);
+    const gap = parseFloat(cs.columnGap) || 0;
     const kids = els(header.children).filter(
       (c) => c !== sp && c !== inner && !c.classList.contains("lg-seg-indicator") && c.getClientRects().length && getComputedStyle(c).position !== "absolute"
     );
-    const cs = getComputedStyle(header);
     let L = parseFloat(cs.paddingLeft) || 0;
     let R = parseFloat(cs.paddingRight) || 0;
     if (header.closest(".mod-left-split")) {
@@ -7853,6 +7998,194 @@ var sidebarMethods = {
 
 // src/tabs.ts
 var import_obsidian14 = require("obsidian");
+
+// src/web-page.ts
+var isWebView = (v) => !!v && typeof v.getViewType === "function" && v.getViewType() === "webviewer";
+var WEB_KEYS_PASS = /* @__PURE__ */ new Set(["Enter", "Escape", "ArrowUp", "ArrowDown", "Tab"]);
+var WEB_CARD_K = 2;
+var WEB_PAGE_SCRIPT = `(() => {
+  const prevX = window.__lgInset;
+  window.__lgInset = __LG_INSET__;
+  // \uACE0\uC815 \uC694\uC18C\uAC00 \uC0C8 \uC790\uB9AC\uB85C \uC6C0\uC9C1\uC774\uB294 \uC2DC\uAC04(ms). \uD0ED \uC904\uC744 \uC811\uACE0 \uD3BC \uB54C \uB760\uC640 \uAC19\uC774 \uC6C0\uC9C1\uC774\uAC8C \uD55C\uB2E4. \uC774\uBC88\uC5D0 \uB9DE\uCD9C \uB54C\uB9CC \uC4F4\uB2E4
+  window.__lgAnim = __LG_ANIM__;
+  // \uD50C\uB7EC\uADF8\uC778\uC774 \uBCF4\uB0B8 \uC2DC\uAC01. \uD398\uC774\uC9C0\uC5D0 \uB2FF\uAE30\uAE4C\uC9C0 \uAC78\uB9B0 \uC2DC\uAC04\uB9CC\uD07C \uC6C0\uC9C1\uC784\uC744 \uC55E\uB2F9\uACA8 \uB760\uC640 \uB9DE\uCD98\uB2E4: \uADF8\uB9CC\uD07C \uB9C9\uB300\uAC00 \uB760\uBCF4\uB2E4 \uB2A6\uAC8C \uCD9C\uBC1C\uD588\uB2E4 (\uC0AC\uC6A9\uC790 \uC9C0\uC801)
+  window.__lgLate = Math.max(0, Date.now() - __LG_SENT__);
+  // \uB2E4\uC2DC \uB123\uC744 \uB54C(\uD0ED \uC904 \uCD95\uC18C\uB85C \uB760 \uB192\uC774\uAC00 \uBC14\uB01C) \uC704 \uC5EC\uBC31\uC774 \uBC14\uB010 \uB9CC\uD07C \uC2A4\uD06C\uB864\uC744 \uC62E\uACA8, \uC77D\uB358 \uB0B4\uC6A9\uC774 \uC81C\uC790\uB9AC\uC5D0 \uC788\uAC8C \uD55C\uB2E4
+  if (window.__lgGS) { window.__lgGS(); window.__lgAnim = 0; if (prevX != null && scrollY > 0) scrollBy(0, window.__lgInset - prevX); return; }
+  const root = document.documentElement;
+  // \uD654\uBA74 \uC704\uCABD\uC5D0 \uBD99\uB294 \uACE0\uC815\xB7\uC2A4\uD2F0\uD0A4 \uC694\uC18C\uB97C \uC5EC\uBC31\uB9CC\uD07C \uB0B4\uB9B0\uB2E4. \uACE0\uC815 \uC694\uC18C\uB294 \uD0ED \uC904 \uC544\uB798 FIX_BAND(px)\uAE4C\uC9C0 \uCC3E\uB294\uB2E4: \uB9E8 \uC704 \uB760\uB9CC \uBCF4\uBA74
+  // \uC720\uD29C\uBE0C\uCC98\uB7FC \uC0C1\uB2E8 \uBC14 \uBC11\uC5D0 \uBD99\uB294 \uACE0\uC815 \uC694\uC18C(\uC67C\uCABD \uBA54\uB274\xB7\uCE69 \uC904)\uAC00 \uC81C\uC790\uB9AC\uC5D0 \uB0A8\uC544 \uB0B4\uB824\uC628 \uC0C1\uB2E8 \uBC14\uC640 \uACB9\uCCE4\uB2E4 (\uC0AC\uC6A9\uC790 \uC9C0\uC801).
+  // \uD398\uC774\uC9C0 \uC2A4\uD06C\uB9BD\uD2B8\uAC00 \uC9C1\uC811 \uC790\uB9AC\uB97C \uC815\uD558\uB294 \uC694\uC18C(\uC778\uB77C\uC778 top, \uD234\uD301\xB7\uD31D\uC5C5)\uB294 \uAC74\uB4DC\uB9AC\uC9C0 \uC54A\uB294\uB2E4. \uC2A4\uD2F0\uD0A4\uB294 \uD654\uBA74 \uB9E8 \uC704\uC5D0 \uBD99\uC740 \uAC83\uB9CC
+  const FIX_BAND = 300;
+  // \uC694\uC18C e \uC758 top \uC744 v \uB85C \uC62E\uAE34\uB2E4. \uB760\uC640 \uAC19\uC774 \uC6C0\uC9C1\uC77C \uB54C(__lgAnim)\uB294 \uC7A0\uAE50 top \uC804\uD658\uC744 \uAC74\uB2E4(\uC6D0\uB798 \uC778\uB77C\uC778 \uC804\uD658\uC740 \uB05D\uB098\uBA74 \uB418\uB3CC\uB9B0\uB2E4).
+  // \uD398\uC774\uC9C0 \uD2C0(lgPage)\uC740 \uC2A4\uD06C\uB864 \uBCF4\uC815\uACFC \uD568\uAED8 \uBC14\uB85C \uC62E\uAE34\uB2E4: \uCC9C\uCC9C\uD788 \uC62E\uAE30\uBA74 \uBCF4\uC815\uC73C\uB85C \uD55C \uBC88, \uD2C0\uC774 \uC6C0\uC9C1\uC5EC \uB610 \uD55C \uBC88 \uB0B4\uC6A9\uC774 \uB35C\uCEF9\uAC70\uB838\uB2E4 (\uC720\uD29C\uBE0C).
+  // \uCC98\uC74C \uC62E\uAE38 \uB54C(fresh)\uB3C4 \uC0AC\uC774\uD2B8\uAC00 top \uC5D0 \uAC78\uC5B4 \uB454 \uC804\uD658\uC744 \uC7A0\uAE50 \uAEBC \uBC14\uB85C \uC62E\uAE34\uB2E4: \uC0C8 \uD398\uC774\uC9C0\uB9C8\uB2E4 \uB9C9\uB300\uAC00 \uB9E8 \uC704\uC5D0\uC11C \uBBF8\uB044\uB7EC\uC838 \uB0B4\uB824\uC654\uB2E4 (obsidian.md)
+  const put = (e, v, fresh) => {
+    const ms = window.__lgAnim || 0;
+    const page = e.dataset.lgPage !== undefined;
+    if (ms && !page) {
+      if (e.dataset.lgTr === undefined) {
+        e.dataset.lgTr = e.style.getPropertyValue("transition");
+        e.style.setProperty("transition", "top " + ms + "ms cubic-bezier(0.2, 0.8, 0.2, 1) -" + (window.__lgLate || 0) + "ms", "important");
+        setTimeout(() => {
+          if (e.dataset.lgTr === undefined) return;
+          if (e.dataset.lgTr) e.style.setProperty("transition", e.dataset.lgTr); else e.style.removeProperty("transition");
+          delete e.dataset.lgTr;
+        }, ms + 50);
+      }
+      e.style.setProperty("top", v, "important");
+    } else if (fresh || page) {
+      const tr = e.style.getPropertyValue("transition");
+      const pr = e.style.getPropertyPriority("transition");
+      e.style.setProperty("transition", "none", "important");
+      e.style.setProperty("top", v, "important");
+      void e.offsetTop;
+      if (tr) e.style.setProperty("transition", tr, pr); else e.style.removeProperty("transition");
+    } else e.style.setProperty("top", v, "important");
+  };
+  const pageCB = () => getComputedStyle(document.body).position === "static" && getComputedStyle(root).position === "static";
+  // quick: \uC774\uBBF8 \uC62E\uAE34 \uC694\uC18C\uB9CC \uB9DE\uCD98\uB2E4 (\uBB38\uC11C\uAC00 \uBC14\uB010 \uADF8 \uC790\uB9AC\uC5D0\uC11C \uBD80\uB978\uB2E4)
+  const fixTop = (reset, quick) => {
+    const X = window.__lgInset || 0;
+    if (reset) {
+      document.querySelectorAll("[data-lg-top]").forEach((e) => { e.style.removeProperty("top"); delete e.dataset.lgTop; delete e.dataset.lgPage; });
+      return;
+    }
+    if (!X) return;
+    const seen = new Set();
+    // \uC774\uBBF8 \uC62E\uAE34 \uC694\uC18C\uB294 \uC9C0\uAE08 \uC790\uB9AC\uC640 \uC0C1\uAD00\uC5C6\uC774 \uC0C8 \uC5EC\uBC31\uC73C\uB85C \uC62E\uAE34\uB2E4. \uCC0D\uC5B4 \uCC3E\uAE30\uB9CC \uD558\uBA74 \uC5EC\uBC31\uC774 \uCEE4\uC9C8 \uB54C(\uD0ED \uC904\uC744 \uD3BC \uB54C) \uB0AE\uC740 \uC0C1\uB2E8 \uBC14\uAC00
+    // \uCC0D\uB294 \uC790\uB9AC \uC704\uC5D0 \uC788\uC5B4 \uAC78\uB9AC\uC9C0 \uC54A\uC558\uB2E4 (\uC720\uD29C\uBE0C, \uC0AC\uC6A9\uC790 \uC9C0\uC801)
+    for (const e of document.querySelectorAll("[data-lg-top]")) {
+      seen.add(e);
+      // \uC2A4\uD06C\uB864\uC5D0 \uB530\uB77C \uACE0\uC815\uACFC \uC77C\uBC18 \uBC30\uCE58\uB97C \uC624\uAC00\uB294 \uC694\uC18C(\uC720\uD29C\uBE0C \uBD84\uB958 \uCE69 \uC904)\uB294 \uACE0\uC815\uC77C \uB54C\uB9CC \uB0B4\uB9B0\uB2E4. \uC77C\uBC18 \uBC30\uCE58\uB85C \uB3CC\uC544\uC654\uC744 \uB54C top \uC774 \uB0A8\uC544 \uC788\uC73C\uBA74
+      // \uC774\uBBF8 \uB0B4\uB824\uAC04 \uD398\uC774\uC9C0 \uD2C0 \uC548\uC5D0\uC11C \uD55C \uBC88 \uB354 \uB0B4\uB824\uAC14\uB2E4 (\uC0AC\uC6A9\uC790 \uC9C0\uC801)
+      const pos = getComputedStyle(e).position;
+      if (e.dataset.lgPage !== undefined ? pos !== "absolute" : pos !== "fixed" && pos !== "sticky") {
+        if (e.style.getPropertyValue("top")) e.style.removeProperty("top");
+        continue;
+      }
+      const v = (parseFloat(e.dataset.lgTop) + X) + "px";
+      if (e.style.getPropertyValue("top") === v && e.style.getPropertyPriority("top") === "important") continue;
+      put(e, v, false);
+    }
+    if (quick) return;
+    const w = window.innerWidth;
+    const ys = [1, Math.max(1, X - 1)];
+    for (let y = X + 4; y < X + FIX_BAND && y < window.innerHeight; y += 24) ys.push(y);
+    for (const fx of [0.02, 0.15, 0.3, 0.5, 0.7, 0.85, 0.98]) {
+      for (const y of ys) {
+        for (const el of document.elementsFromPoint(w * fx, y)) {
+          for (let e = el; e && e !== root && e !== document.body; e = e.parentElement) {
+            if (seen.has(e)) break;
+            seen.add(e);
+            const cs = getComputedStyle(e);
+            const fixed = cs.position === "fixed";
+            // \uBB38\uC11C \uAE30\uC900 \uC808\uB300 \uC704\uCE58 \uD2C0(body \uBC14\uB85C \uC544\uB798, \uC704\uCE58 \uC7A1\uD78C \uC870\uC0C1 \uC5C6\uC74C)\uC740 html \uC704 \uC5EC\uBC31\uC744 \uB530\uB974\uC9C0 \uC54A\uC544 \uB0B4\uC6A9\uC774 \uD0ED \uC904 \uB4A4\uC5D0 \uB0A8\uC558\uB2E4
+            // (\uC720\uD29C\uBE0C ytd-app, \uC0AC\uC6A9\uC790 \uC9C0\uC801). \uACE0\uC815 \uC694\uC18C\uCC98\uB7FC top \uC5D0 \uC5EC\uBC31\uC744 \uB354\uD55C\uB2E4
+            const page = cs.position === "absolute" && e.parentElement === document.body && pageCB();
+            if (!fixed && !page && cs.position !== "sticky") continue;
+            let fresh = false;
+            if (e.dataset.lgTop === undefined) {
+              if (e.style.top) continue;
+              if (!fixed && !page && y > X) continue;
+              const t = parseFloat(cs.top);
+              if (!isFinite(t)) continue;
+              e.dataset.lgTop = String(t);
+              if (page) e.dataset.lgPage = "";
+              fresh = true;
+            }
+            const v = (parseFloat(e.dataset.lgTop) + X) + "px";
+            // \uAC19\uC740 \uAC12\uC774\uBA74 \uB2E4\uC2DC \uC4F0\uC9C0 \uC54A\uB294\uB2E4 (\uC4F0\uBA74 \uBB38\uC11C \uBCC0\uD654 \uAC10\uC2DC\uAC00 \uB2E4\uC2DC \uBD88\uB824 \uB05D\uC5C6\uC774 \uB3C8\uB2E4)
+            if (e.style.getPropertyValue("top") !== v || e.style.getPropertyPriority("top") !== "important") {
+              put(e, v, fresh);
+            }
+          }
+        }
+      }
+    }
+  };
+  let raf = 0;
+  let timer = 0;
+  const tick = () => { raf = 0; fixTop(false); };
+  const soon = () => { if (!raf) raf = requestAnimationFrame(tick); };
+  const later = () => { clearTimeout(timer); timer = setTimeout(tick, 250); };
+  addEventListener("scroll", soon, { passive: true, capture: true });
+  addEventListener("resize", soon);
+  // \uD398\uC774\uC9C0\uB97C \uADF8\uB9AC\uB294 \uC911(webEarly \uB85C \uC77C\uCC0D \uB123\uC5C8\uC744 \uB54C)\uC5D0\uB294 \uB2E4\uC74C \uD654\uBA74 \uC804\uC5D0 \uBC14\uB85C \uB9DE\uCD98\uB2E4: \uBBF8\uB8E8\uBA74 \uACE0\uC815 \uB9C9\uB300\uAC00 \uB9E8 \uC704\uC5D0 \uADF8\uB824\uC84C\uB2E4\uAC00 \uB0B4\uB824\uC654\uB2E4
+  // \uC774\uBBF8 \uC62E\uAE34 \uC694\uC18C\uB294 \uBB38\uC11C\uAC00 \uBC14\uB010 \uADF8 \uC790\uB9AC(\uB2E4\uC74C \uD654\uBA74 \uC804)\uC5D0\uC11C \uBC14\uB85C \uB9DE\uCD98\uB2E4: \uC0AC\uC774\uD2B8\uAC00 \uACE0\uC815\uC744 \uD480\uAC70\uB098 \uB2E4\uC2DC \uAC78\uBA74 \uD55C \uD654\uBA74 \uB3D9\uC548 \uC5C9\uB6B1\uD55C \uC790\uB9AC\uC5D0 \uADF8\uB824\uC84C\uB2E4 (\uC720\uD29C\uBE0C \uBD84\uB958 \uCE69 \uC904).
+  // \uACE0\uC815\uC744 \uBC14\uAFB8\uB294 \uC18D\uC131\uC740 \uC0AC\uC774\uD2B8\uB9C8\uB2E4 \uB2EC\uB77C(class, style \uC678 \uC0AC\uC6A9\uC790 \uC815\uC758 \uC18D\uC131) \uBAA8\uB4E0 \uC18D\uC131 \uBCC0\uD654\uB97C \uBCF8\uB2E4
+  new MutationObserver(() => { if (window.__lgInset) fixTop(false, true); if (document.readyState === "loading") soon(); else later(); }).observe(root, { childList: true, subtree: true, attributes: true });
+  // \uD398\uC774\uC9C0 \uC2A4\uD06C\uB864\uBC14\uAC00 \uD0ED \uC904 \uB4A4\uAE4C\uC9C0 \uC62C\uB77C\uAC00\uC9C0 \uC54A\uAC8C \uC704 \uB05D\uC744 \uC5EC\uBC31\uB9CC\uD07C \uB0B4\uB9B0\uB2E4 (\uC0AC\uC6A9\uC790 \uC9C0\uC801). \uC2A4\uD06C\uB864\uBC14 \uC704\uCE58\uB294 \uAE30\uBCF8 \uC2A4\uD06C\uB864\uBC14\uC5D0\uC120 \uBABB \uBC14\uAFD4,
+  // \uC0AC\uC774\uD2B8\uAC00 \uB530\uB85C \uAFB8\uBBF8\uC9C0 \uC54A\uC558\uC73C\uBA74 \uC587\uC740 \uBC18\uD22C\uBA85 \uC2A4\uD06C\uB864\uBC14\uB85C \uBC14\uAFBC\uB2E4(:where \uB77C \uC0AC\uC774\uD2B8 \uAFB8\uBC08\uC774 \uC774\uAE34\uB2E4)
+  const sheet = () => {
+    let st = document.getElementById("lg-gs-style");
+    if (!st) { st = document.createElement("style"); st.id = "lg-gs-style"; (document.head || root).appendChild(st); }
+    const X = window.__lgInset || 0;
+    st.textContent = X ? ":where(html)::-webkit-scrollbar{width:12px;height:12px;background:transparent}" +
+      ":where(html)::-webkit-scrollbar-thumb{background-color:rgba(128,128,128,.45);border:3px solid transparent;background-clip:padding-box;border-radius:8px}" +
+      ":where(html)::-webkit-scrollbar-thumb:hover{background-color:rgba(128,128,128,.7)}" +
+      ":where(html)::-webkit-scrollbar-track,:where(html)::-webkit-scrollbar-corner{background:transparent}" +
+      "html::-webkit-scrollbar-track{margin-top:" + X + "px !important}" : "";
+  };
+  window.__lgGS = (reset) => {
+    const X = window.__lgInset || 0;
+    if (X) {
+      root.style.setProperty("padding-top", X + "px", "important");
+      root.style.setProperty("scroll-padding-top", X + "px", "important");
+    } else {
+      root.style.removeProperty("padding-top");
+      root.style.removeProperty("scroll-padding-top");
+    }
+    sheet();
+    // \uC5EC\uBC31\uC774 \uB0A8\uC544 \uC788\uC73C\uBA74 \uCC98\uC74C \uAE30\uC5B5\uD55C \uC6D0\uB798 top \uC5D0 \uC0C8 \uC5EC\uBC31\uB9CC \uB354\uD55C\uB2E4. \uC9C0\uC6B0\uACE0 \uB2E4\uC2DC \uC77D\uC73C\uBA74 \uC0AC\uC774\uD2B8\uAC00 top \uC5D0 \uC804\uD658\uC744 \uAC78\uC5B4 \uB454 \uACBD\uC6B0
+    // \uC544\uC9C1 \uB0B4\uB824\uAC00 \uC788\uB294 \uAC12\uC744 \uC6D0\uB798 \uAC12\uC73C\uB85C \uC77D\uC5B4, \uD0ED \uC904\uC744 \uC811\uACE0 \uD3BC \uB54C\uB9C8\uB2E4 \uACE0\uC815 \uB9C9\uB300\uAC00 \uC810\uC810 \uB0B4\uB824\uAC14\uB2E4 (\uC0AC\uC6A9\uC790 \uC9C0\uC801)
+    if (!X || reset) fixTop(true);
+    if (!reset) tick();
+  };
+  window.__lgGS();
+  window.__lgAnim = 0;
+})();`;
+var WEB_MOUSE_SCRIPT = `(() => {
+  if (window.__lgMouse) return;
+  window.__lgMouse = true;
+  addEventListener("mouseup", (e) => {
+    if (e.button === 3) { e.preventDefault(); window.__lgNavReq = "back"; }
+    else if (e.button === 4) { e.preventDefault(); window.__lgNavReq = "forward"; }
+  }, true);
+})();`;
+var WEB_SCROLL_SCRIPT = "(() => { const n = window.__lgNavReq || ''; window.__lgNavReq = ''; return [(document.scrollingElement || document.documentElement).scrollTop, n]; })()";
+var WEB_MINI_POLL_MS = 120;
+var WEB_COLOR_SCRIPT = `(() => {
+  const root = document.documentElement;
+  // \uBC18\uD22C\uBA85 \uBC30\uACBD\uC740 \uAC74\uB108\uB6F4\uB2E4: \uADF8 \uC0C9\uC744 \uC4F0\uBA74 \uD0ED \uC904 \uBC84\uD2BC\xB7\uAE00\uC790 \uC0C9\uAE4C\uC9C0 \uBC18\uD22C\uBA85\uD574\uC838 \uB9E8 \uC704\uB85C \uC62C\uB838\uC744 \uB54C \uC0AC\uB77C\uC84C\uB2E4 (\uC0AC\uC6A9\uC790 \uC9C0\uC801)
+  const alpha = (c) => {
+    const m = /\\/\\s*([\\d.]+)(%?)\\s*\\)$/.exec(c) || /^rgba\\([^)]*,\\s*([\\d.]+)(%?)\\s*\\)$/.exec(c);
+    return m ? parseFloat(m[1]) / (m[2] ? 100 : 1) : 1;
+  };
+  const clear = (bg) => !bg || bg === "transparent" || alpha(bg) < 0.95;
+  // \uD398\uC774\uC9C0 \uBC30\uACBD\uC0C9: html, \uC5C6\uC73C\uBA74 body \uBC30\uACBD (\uC0AC\uC6A9\uC790 \uC694\uCCAD: \uB300\uD45C \uC0C9(theme-color)\uBCF4\uB2E4 \uC790\uC5F0\uC2A4\uB7FD\uB2E4).
+  // \uB458 \uB2E4 \uD22C\uBA85\uC774\uBA74 \uBE0C\uB77C\uC6B0\uC800 \uAE30\uBCF8 \uBC14\uD0D5(\uB77C\uC774\uD2B8 \uD770\uC0C9, \uB2E4\uD06C \uC0C9 \uCCB4\uACC4\uBA74 Chromium \uAE30\uBCF8 #121212)
+  for (const el of [root, document.body]) {
+    const bg = el && getComputedStyle(el).backgroundColor;
+    if (!clear(bg)) return bg;
+  }
+  const dark = /dark/.test(getComputedStyle(root).colorScheme) && matchMedia("(prefers-color-scheme: dark)").matches;
+  return dark ? "#121212" : "#ffffff";
+})()`;
+var WEB_TINT_POLL_MS = 1e3;
+var webHost = (view) => {
+  const url = view && view.url;
+  try {
+    const u = new URL(url);
+    if (/^https?:$/.test(u.protocol) && u.hostname) return u.hostname.replace(/^www\./, "");
+  } catch {
+  }
+  return view && typeof view.getDisplayText === "function" && view.getDisplayText() || "";
+};
+var WEB_DARK_DIM = 0.5;
+var WEB_DARK_DIM_FROM = 0.6;
+
+// src/tabs.ts
 var ACT_SRC = /* @__PURE__ */ new WeakMap();
 var ACT_KEY = /* @__PURE__ */ new WeakMap();
 var ACT_LIST = /* @__PURE__ */ new WeakMap();
@@ -8048,6 +8381,7 @@ var tabsMethods = {
   actionRoom(tools) {
     const header = tools.parentElement;
     if (!header) return ACT_MAX;
+    if (!laidOut(header)) return header.lgActRoom ?? ACT_MAX;
     const hs = getComputedStyle(header);
     const ts = getComputedStyle(tools);
     const w = header.clientWidth - parseFloat(hs.paddingLeft) - parseFloat(hs.paddingRight);
@@ -8059,7 +8393,7 @@ var tabsMethods = {
     const acts = tools.querySelectorAll(":scope > .lg-act-btn").length;
     const base = tools.offsetWidth - acts * per;
     const free = (w - center) / 2 - gap - base;
-    return Math.max(0, Math.min(ACT_MAX, Math.floor(free / per)));
+    return header.lgActRoom = Math.max(0, Math.min(ACT_MAX, Math.floor(free / per)));
   },
   // 퍼즐 버튼 메뉴: 묶인 버튼마다 항목 하나. 이름은 원래 버튼 이름의 첫 줄, 기호는 원래 버튼 기호. 누르면 원래 버튼을 누른다
   openActionMenu(anchor) {
@@ -8259,30 +8593,24 @@ var tabsMethods = {
   },
   // 탭 줄(트랙)이 편집창 가운데 오도록, 왼쪽(뒤로·앞으로)과 오른쪽(읽기·+·목록·창 제어 자리) 폭 차이만큼
   // 좁은 쪽에 빈칸을 둔다. 빈칸은 탭이 많아 자리가 모자라면 먼저 줄어든다 (CSS: .lg-tab-balance)
-  // 편집창 탭이 많아 줄어들 때 선택 탭은 최소 폭(테마, 기본 탭 폭의 0.6배)을 갖고, 나머지 탭은 남은 자리를 똑같이 나눈 몫(--lg-tab-share)을
+  // 편집창 탭이 많아 줄어들 때 선택 탭은 최소 폭(테마, 기본 탭 폭의 0.6배)을 갖고, 나머지 탭은 남은 자리를 똑같이 나눈 몫을
   // 최소 폭으로 갖는다 (사용자 요청). 선택이 바뀌면 전 탭은 선택 폭 → 몫, 새 탭은 몫 → 선택 폭으로 같은 구간을 같은 전환으로 오가
   // 나머지 탭이 넓어졌다 줄어들지 않는다. 몫 없이 최소 폭 0 에서 오가면 두 탭이 실제로 변하기 시작하는 시점이 달라 나머지가 출렁였다 (사용자 지적).
-  // 탭 수가 바뀌면 몫이 바뀌고 나머지 탭도 같은 전환으로 옮겨 간다. 자리가 넉넉하면 몫은 기본 폭(경로 표시면 똑같이 나눈 폭)이라 아무 차이가 없다
+  // 몫은 테마가 탭 줄 폭의 백분율로 계산하고, 여기서는 탭 수(--lg-tab-n)와 탭 사이 간격 합(--lg-tab-gaps)만 넣는다(탭을 열고 닫을 때만 바뀐다).
+  // 예전엔 몫을 픽셀로 재서 넣어, 좌우 패널을 여닫는 동안 편집창 폭이 바뀔 때마다 상속되는 변수가 매 프레임 바뀌고 탭 줄 전체 스타일을 다시 계산해
+  // 프레임이 끊겼다 (사용자 지적, 측정: 이것만 끄면 여닫기 8번에 끊긴 프레임 10 → 0)
   tabShare(tabsEl, inner) {
-    if (tabsEl.classList.contains("mod-stacked") || !tabsEl.closest(".mod-root")) {
-      inner.style.removeProperty("--lg-tab-share");
-      return;
-    }
-    const tabs = els(inner.querySelectorAll(":scope > .workspace-tab-header:not(.lg-tab-leaving)"));
-    const n = tabs.length;
+    const n = tabsEl.classList.contains("mod-stacked") || !tabsEl.closest(".mod-root") ? 0 : inner.querySelectorAll(":scope > .workspace-tab-header:not(.lg-tab-leaving)").length;
     if (n < 2) {
-      inner.style.removeProperty("--lg-tab-share");
+      if (inner.style.getPropertyValue("--lg-tab-n")) {
+        inner.style.removeProperty("--lg-tab-n");
+        inner.style.removeProperty("--lg-tab-gaps");
+      }
       return;
     }
-    const cs = getComputedStyle(inner);
-    const tw = parseFloat(cs.getPropertyValue("--lg-tab-w")) || 320;
-    const gap = (parseFloat(cs.columnGap) || 0) * (n - 1);
-    const avail = inner.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0) - gap;
-    const natural = this.settings.showPath && !import_obsidian14.Platform.isPhone ? avail / n : tw;
-    const active = Math.min(tw * 0.6, avail);
-    const share = Math.max(0, Math.min(natural, (avail - Math.max(active, natural)) / (n - 1), (avail - active) / (n - 1)) - 0.5);
-    const v = `${share.toFixed(1)}px`;
-    if (inner.style.getPropertyValue("--lg-tab-share") !== v) inner.style.setProperty("--lg-tab-share", v);
+    if (inner.style.getPropertyValue("--lg-tab-n") === String(n)) return;
+    const gap = parseFloat(getComputedStyle(inner).columnGap) || 0;
+    inner.setCssProps({ "--lg-tab-n": String(n), "--lg-tab-gaps": `${(gap * (n - 1)).toFixed(1)}px` });
   },
   balanceTabs(tabsEl) {
     const header = tabsEl.querySelector(":scope > .workspace-tab-header-container");
@@ -8308,8 +8636,13 @@ var tabsMethods = {
     header.lgBalanceAt = now;
     this.tabShare(tabsEl, inner);
     if (Math.abs(header.clientWidth - (header.lgFitW || 0)) > 8) {
-      header.lgFitW = header.clientWidth;
-      this.requestRefresh();
+      const win = header.ownerDocument.defaultView || window;
+      win.clearTimeout(header.lgFitTimer);
+      header.lgFitTimer = win.setTimeout(() => {
+        if (this.unloaded || !header.isConnected) return;
+        header.lgFitW = header.clientWidth;
+        this.requestRefresh();
+      }, FIT_SETTLE_MS);
     }
     const hr = header.getBoundingClientRect();
     const cs = getComputedStyle(header);
@@ -8495,13 +8828,6 @@ var tabsMethods = {
       parent.insertBefore(node, next && next.parentElement === parent ? next : null);
     }
   },
-  // 보기의 버튼 줄 (Bases 툴바, Kanban 보드 버튼 줄). 없거나 숨어 있으면 null
-  viewBar(view) {
-    const type = view.getViewType();
-    const sel = type === "bases" ? ":scope > .view-content > .bases-header" : type === "kanban" ? ":scope > .view-header" : null;
-    const el = sel ? view.containerEl.querySelector(sel) : null;
-    return el && el.getClientRects().length ? el : null;
-  },
   // 경로 알약이 첫 줄에 보이는지 (경로 표시를 켰거나 탭 쌓기 모드, 휴대폰 제외)
   pathShown(tabsEl) {
     return !import_obsidian14.Platform.isPhone && (tabsEl.classList.contains("mod-stacked") || !!this.settings.showPath);
@@ -8554,8 +8880,6 @@ var tabsMethods = {
       void slab.offsetWidth;
       slab.classList.remove("lg-no-tr");
     }
-    const bar = view && !import_obsidian14.Platform.isMobile ? this.viewBar(view) : null;
-    tabsEl.classList.toggle("lg-slab-ext", !!bar);
     const isMd = view instanceof import_obsidian14.MarkdownView;
     mode.classList.remove(HIDDEN);
     mode.classList.toggle("lg-mode-off", !isMd && !isWeb);
@@ -8590,6 +8914,16 @@ var webMethods = {
   // 웹 뷰어 탭 줄 축소 (사용자 요청): 보이는 웹 탭의 페이지 스크롤 위치를 물어 편집창과 같은 판단(miniFeed)에 넣는다.
   // 같은 질문으로 마우스 옆 버튼 요청(WEB_MOUSE_SCRIPT)도 받는다.
   // 앞 질문이 끝나기 전엔 다시 묻지 않는다. 여백을 다시 맞춘 직후(lgMiniSkip)는 그 때문에 옮긴 스크롤을 기준으로만 삼는다
+  // 페이지 스크롤 묻기(webMiniTick)는 웹 뷰어 탭이 하나라도 있을 때만 돌린다 (검토 지적: 웹 뷰어가 없어도 WEB_MINI_POLL_MS 마다 깨어났다).
+  // 탭을 열고 닫으면 레이아웃이 바뀌어 다시 맞춘다
+  webMiniSync() {
+    const want = !this.unloaded && this.app.workspace.getLeavesOfType("webviewer").length > 0;
+    if (want && !this.webMiniTimer) this.webMiniTimer = window.setInterval(() => this.webMiniTick(), WEB_MINI_POLL_MS);
+    else if (!want && this.webMiniTimer) {
+      window.clearInterval(this.webMiniTimer);
+      this.webMiniTimer = 0;
+    }
+  },
   webMiniTick() {
     if (this.unloaded || document.hidden) return;
     this.app.workspace.getLeavesOfType("webviewer").forEach((leaf) => {
@@ -9058,6 +9392,20 @@ var webMethods = {
     const k = L0 == null ? 0 : WEB_DARK_DIM * Math.min(1, Math.max(0, (L0 - WEB_DARK_DIM_FROM) / (1 - WEB_DARK_DIM_FROM)));
     return k > 0 ? colorDim(c, k, doc) : c;
   },
+  // 태블릿 상태 표시줄 자리(시계·배터리 줄)도 맨 위 탭 줄 유리판 색으로 (사용자 요청). Obsidian 은 모바일에서 편집창 칸(.mod-root)에
+  // 안전 영역만큼 위 여백을 두고 시스템 상태 표시줄 색으로 칠해, 탭 줄 색이 바뀌어도 그 줄은 그대로였다. 유리판은 탭 묶음이 넘침을 잘라
+  // 위로 늘릴 수 없어, 맨 위 줄 탭 묶음(여럿이면 지금 묶음)의 색을 편집창 칸에 옮겨 단다(테마 .lg-status-tinted, --lg-status-tint)
+  statusTint() {
+    const root = this.app.workspace.rootSplit && this.app.workspace.rootSplit.containerEl;
+    if (!root) return;
+    const tops = Array.from(root.querySelectorAll(".workspace-tabs.mod-top"));
+    const top = tops.find((t) => t.classList.contains("mod-active")) || tops[0];
+    const c = root.ownerDocument.body.classList.contains("is-tablet") && top && top.classList.contains("lg-web-tinted") ? top.style.getPropertyValue("--lg-web-tint") : "";
+    root.classList.toggle("lg-status-tinted", !!c);
+    if (c) {
+      if (root.style.getPropertyValue("--lg-status-tint") !== c) root.style.setProperty("--lg-status-tint", c);
+    } else root.style.removeProperty("--lg-status-tint");
+  },
   // 탭 줄 유리판·버튼을 한 색으로 칠한다(웹 페이지 대표 색, 폴더 색 탭 줄). c 가 비면 되돌린다.
   // folder: 폴더 색이면 .lg-folder-tinted. 그 위 버튼은 기본 유리라 유리 세트를 섞지 않는다 (사용자 요청).
   // 버튼 유리 채움은 기본 유리 바탕(--lg-glass-bg)을 폴더 색에 소프트 라이트로 섞은 색(--lg-folder-fill, 테마가 채움에 쓴다):
@@ -9086,7 +9434,18 @@ var webMethods = {
       if (L != null) header.setCssProps({ "--lg-glass-t": String(t) });
       else header.style.removeProperty("--lg-glass-t");
       header.classList.toggle("lg-glass-dk", L != null && t >= 0.5);
+      const fill = tabs.style.getPropertyValue("--lg-folder-fill");
+      const rgb = fill ? resolveRgb(tabs.ownerDocument, fill) : null;
+      const lum = fill ? colorLightness(fill, tabs.ownerDocument) : null;
+      if (rgb && lum != null) {
+        const mx = Math.max(...rgb) / 255;
+        const mn = Math.min(...rgb) / 255;
+        const sat = mx > 0 ? (mx - mn) / mx : 0;
+        const k = Math.min(1, Math.max(0, lum - sat));
+        header.setCssProps({ "--lg-folder-hi-a": (0.2 + 0.3 * k).toFixed(3) });
+      } else header.style.removeProperty("--lg-folder-hi-a");
     }
+    this.statusTint();
   },
   // 색을 칠한 웹 탭 줄에서 연 메뉴·주소 카드·주소 제안도 같은 색 유리로 (사용자 요청). from 이 그 탭 줄이나 이미 칠한 팝업 안에 있으면
   // 탭 줄의 색(--lg-web-tint)과 유리 섞기 비율(--lg-glass-t)을 el 에 옮긴다. 팝업은 body 에 붙어 탭 줄 변수를 물려받지 못한다
@@ -9242,6 +9601,7 @@ var WG_BAR_IDLE_MS = 2500;
 var WG_DRAG_NEAR = 40;
 var WG_POP_MS = 200;
 var WG_ARROW_NEAR = 40;
+var WG_SHORT_H = 240;
 var WG_WHEEL_STEP = 100;
 var WG_WHEEL_IDLE_MS = 180;
 var widgetMethods = {
@@ -9254,13 +9614,31 @@ var widgetMethods = {
     if (!on) {
       el.querySelectorAll(".lg-wg-dots, .lg-wg-title").forEach((d) => d.remove());
       el.querySelectorAll(".lg-wg-open").forEach((t) => t.classList.remove("lg-wg-open"));
+      el.querySelectorAll(".lg-wg-short").forEach((t) => t.classList.remove("lg-wg-short"));
       return;
     }
     this.widgetDragWire();
     if (el.lgWgWired) return;
     el.lgWgWired = true;
-    this.registerDomEvent(el, "pointermove", (e) => this.widgetHover(el, e));
-    this.registerDomEvent(el, "pointerleave", () => this.widgetHover(el, null));
+    let frame = 0;
+    let last = null;
+    this.registerDomEvent(el, "pointermove", (e) => {
+      last = e;
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        if (!this.unloaded) this.widgetHover(el, last);
+      });
+    });
+    this.registerDomEvent(el, "pointerleave", () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      frame = 0;
+      this.widgetHover(el, null);
+    });
+    this.register(() => {
+      if (frame) window.cancelAnimationFrame(frame);
+      frame = 0;
+    });
   },
   // 위젯 방식 패널이 하나라도 있으면 편집창 툴바를 좌우 끝까지 쓴다 (사용자 요청, 테마 body.lg-wg-bar): 편집창 맨 위 줄의 탭 묶음 중 왼쪽 끝 묶음은 왼쪽 패널 폭만큼,
   // 오른쪽 끝 묶음은 오른쪽 패널 폭만큼 툴바를 늘리고(.lg-wg-xl/xr, --lg-wg-xl/xr), 패널은 툴바 아래에서 시작한다(--lg-wg-tbh, 툴바 높이).
@@ -9273,10 +9651,12 @@ var widgetMethods = {
     const on = (wl || wr) && !this.unloaded;
     doc.body.classList.toggle("lg-wg-bar", on);
     doc.body.classList.toggle("lg-wg-r", on && wr);
+    doc.body.classList.toggle("lg-wg-l", on && wl);
     const rootEl = ws.rootSplit && ws.rootSplit.containerEl;
     const groups = rootEl ? els(rootEl.querySelectorAll(".workspace-tabs")) : [];
     if (!on || !rootEl) {
       groups.forEach((t) => t.classList.remove("lg-wg-xl", "lg-wg-xr", "lg-wg-full", "lg-wg-fl", "lg-wg-fr"));
+      if (rootEl) rootEl.querySelectorAll(".lg-wg-ptgl").forEach((b) => b.remove());
       doc.body.style.removeProperty("--lg-wg-tbh");
       this.wgAllFull = false;
       return;
@@ -9319,6 +9699,8 @@ var widgetMethods = {
       put(header, "--lg-wg-xl", `${xl}px`);
       put(header, "--lg-wg-xr", `${xr}px`);
       put(header, "--lg-wg-y", `${rr.top}px`);
+      this.widgetPanelBtn(header, "left", atL && wl);
+      this.widgetPanelBtn(header, "right", atR && wr);
       if (top && !t.classList.contains("lg-mini")) tbh = Math.max(tbh, header.offsetHeight);
     }
     if (tbh) put(doc.body, "--lg-wg-tbh", `${tbh}px`);
@@ -9331,6 +9713,31 @@ var widgetMethods = {
       const ro = this.wgToolbarRo;
       this.register(() => ro.disconnect());
     }
+  },
+  // 위젯 패널의 열기·닫기 버튼 (사용자 요청): 위젯 안에 두지 않고 편집창 툴바 맨 왼쪽·오른쪽에 패널이 열려 있든 닫혀 있든 늘 둔다.
+  // 패널을 닫으면 Obsidian 이 같은 자리에 제 토글을 띄우지만, 버튼이 바뀌며 깜빡이지 않게 그것은 숨기고(테마) 이 버튼 하나로 여닫는다.
+  // 기호는 Obsidian 토글의 것을 그대로 옮겨 그린다
+  widgetPanelBtn(header, side, want) {
+    const cls = side === "left" ? "lg-wg-ptgl-l" : "lg-wg-ptgl-r";
+    const had = header.querySelector(`:scope > .${cls}`);
+    if (!want || had) {
+      if (!want && had) had.remove();
+      return;
+    }
+    const ws = this.app.workspace;
+    const split = side === "left" ? ws.leftSplit : ws.rightSplit;
+    const label = side === "left" ? tr("\uC67C\uCABD \uD328\uB110 \uC5F4\uAE30\xB7\uB2EB\uAE30", "Toggle left sidebar") : tr("\uC624\uB978\uCABD \uD328\uB110 \uC5F4\uAE30\xB7\uB2EB\uAE30", "Toggle right sidebar");
+    const btn = this.makeButton("lg-panel-toggle", side === "left" ? "panel-left" : "panel-right", label, () => split.collapsed ? split.expand() : split.collapse());
+    btn.classList.add("lg-wg-ptgl", cls);
+    if (side === "left") btn.classList.add("lg-panel-toggle-left");
+    const svg = header.ownerDocument.querySelector(`.sidebar-toggle-button.mod-${side} svg`);
+    const own = btn.querySelector("svg");
+    if (svg && own) own.replaceWith(svg.cloneNode(true));
+    if (side === "left") {
+      const band = header.querySelector(":scope > .lg-drag-band");
+      if (band) band.after(btn);
+      else header.prepend(btn);
+    } else header.appendChild(btn);
   },
   // 위젯 방식에서 창 제어 알약(오른쪽 위)을 그 아래 툴바 알약과 같은 바탕으로 (사용자 요청): 오른쪽 끝 툴바가 폴더 색으로 칠해져 있으면
   // 그 알약 채움 바탕(--lg-folder-fill)을 옮겨 단다(테마 .lg-wg-wc, --lg-wc-bg). 창 제어 알약은 편집창 밖 요소라 변수를 물려받지 못한다
@@ -9346,7 +9753,7 @@ var widgetMethods = {
     } else wc.style.removeProperty("--lg-wc-bg");
   },
   // 탭 끌기(Obsidian 탭은 브라우저 끌어 놓기를 쓴다): 끄는 동안에는 마우스 이동이 오지 않아 탭 줄이 반응 없음으로 접혔다 (사용자 지적).
-  // 끄는 동안은 접지 않고, 끈 채 조절 표시 근처(WG_DRAG_NEAR)에 오면 그 묶음의 탭 줄을 펼친다 (다른 패널의 탭을 옮겨 넣을 때). 끝나면 다시 접기를 센다
+  // 끄는 동안은 접지 않고, 끈 채 조절 표시 근처(WG_DRAG_NEAR)에 오면 그 묶음의 탭 줄을 펼친다 (다른 패널의 탭을 옮겨 넣을 때). 끝나면 바로 접는다
   widgetDragWire() {
     if (this.wgDragWired) return;
     this.wgDragWired = true;
@@ -9355,7 +9762,7 @@ var widgetMethods = {
     const check = () => {
       frame = 0;
       if (!at || !this.wgDragging) return;
-      for (const tabsEl of els(document.querySelectorAll(".lg-tab-widget > .workspace-tabs"))) {
+      for (const tabsEl of els(document.querySelectorAll(".lg-tab-widget .workspace-tabs"))) {
         const dots = tabsEl.querySelector(":scope > .lg-wg-dots");
         if (!dots) continue;
         const r = dots.getBoundingClientRect();
@@ -9367,7 +9774,7 @@ var widgetMethods = {
       this.wgDragging = true;
       window.setTimeout(() => {
         if (!this.wgDragging) return;
-        document.querySelectorAll(".lg-tab-widget > .workspace-tabs.lg-wg-open").forEach((t) => t.classList.add("lg-wg-drag"));
+        document.querySelectorAll(".lg-tab-widget .workspace-tabs.lg-wg-open").forEach((t) => t.classList.add("lg-wg-drag"));
       }, 0);
     });
     this.registerDomEvent(
@@ -9384,8 +9791,8 @@ var widgetMethods = {
       if (!this.wgDragging) return;
       this.wgDragging = false;
       at = null;
-      document.querySelectorAll(".lg-tab-widget > .workspace-tabs.lg-wg-drag").forEach((t) => t.classList.remove("lg-wg-drag"));
-      document.querySelectorAll(".lg-tab-widget > .workspace-tabs.lg-wg-open").forEach((t) => this.widgetIdle(t));
+      document.querySelectorAll(".lg-tab-widget .workspace-tabs.lg-wg-drag").forEach((t) => t.classList.remove("lg-wg-drag"));
+      document.querySelectorAll(".lg-tab-widget .workspace-tabs.lg-wg-open").forEach((t) => this.widgetBar(t, false));
     };
     this.registerDomEvent(document, "dragend", end);
     this.registerDomEvent(document, "drop", () => window.setTimeout(end, 0));
@@ -9399,6 +9806,18 @@ var widgetMethods = {
     const group = leaf && leaf.parent && "children" in leaf.parent ? leaf.parent.children : null;
     this.widgetTitle(tabsEl, leaf);
     this.widgetDots(tabsEl, group, leaf);
+    if (!tabsEl.lgWgRo) {
+      let lastH = -1;
+      const ro = new ResizeObserver(() => {
+        const h = tabsEl.clientHeight;
+        if (h === lastH) return;
+        lastH = h;
+        if (!this.unloaded && tabsEl.closest(".lg-tab-widget")) this.widgetTitle(tabsEl, this.activeLeafOf(tabsEl));
+      });
+      ro.observe(tabsEl);
+      tabsEl.lgWgRo = ro;
+      this.register(() => ro.disconnect());
+    }
     const prev = tabsEl.lgWgLeaf;
     tabsEl.lgWgLeaf = leaf;
     const stepped = tabsEl.lgWgDir;
@@ -9422,6 +9841,14 @@ var widgetMethods = {
     }
     const name = leaf ? leaf.getDisplayText() : "";
     if (text.textContent !== name) text.setText(name);
+    if (!laidOut(header)) return;
+    const frame = tabsEl.querySelector(":scope > .workspace-tab-container");
+    const short = !!frame && frame.clientHeight < WG_SHORT_H;
+    tabsEl.classList.toggle("lg-wg-short", short);
+    if (short) {
+      tabsEl.classList.toggle("lg-wg-title-up", !!name);
+      return;
+    }
     const room = t.offsetLeft + text.offsetLeft + text.offsetWidth + 8;
     const leftOf = (el) => {
       let x = 0;
@@ -9536,7 +9963,7 @@ var widgetMethods = {
   },
   // 탭 줄이 떠 있는 동안 마우스가 조절 표시·탭 줄 위에 있으면 두고, 벗어나면 조금 뒤 접는다
   widgetHover(split, e) {
-    for (const dots of els(split.querySelectorAll(":scope > .workspace-tabs > .lg-wg-dots"))) {
+    for (const dots of els(split.querySelectorAll(".workspace-tabs > .lg-wg-dots"))) {
       let near = false;
       if (e) {
         const r = dots.getBoundingClientRect();
@@ -9544,7 +9971,7 @@ var widgetMethods = {
       }
       if (dots.classList.contains("lg-wg-near") !== near) dots.classList.toggle("lg-wg-near", near);
     }
-    for (const tabsEl of els(split.querySelectorAll(":scope > .workspace-tabs.lg-wg-open"))) {
+    for (const tabsEl of els(split.querySelectorAll(".workspace-tabs.lg-wg-open"))) {
       const dots = tabsEl.querySelector(":scope > .lg-wg-dots");
       const inner = tabsEl.querySelector(":scope > .workspace-tab-header-container > .workspace-tab-header-container-inner");
       const over = !!e && isEl(e.target) && [dots, inner].some((x) => !!x && x.contains(e.target));
