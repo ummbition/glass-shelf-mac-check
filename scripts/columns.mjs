@@ -46,8 +46,9 @@ await step("setup", async () => {
     // 오른쪽 패널: 위 묶음 [개요, 나가는 링크], 아래 묶음 [백링크] — 아래 묶음을 좌우로 나눈다
     let ol = app.workspace.getLeavesOfType("outline")[0]; if (!ol) { ol = app.workspace.getRightLeaf(false); await ol.setViewState({ type: "outline" }); }
     if (!app.workspace.getLeavesOfType("outgoing-link").length) { const l = app.workspace.createLeafInParent(ol.parent, ol.parent.children.length); await l.setViewState({ type: "outgoing-link", active: false }); }
-    let bl = app.workspace.getLeavesOfType("backlink")[0];
-    if (!bl) { bl = app.workspace.createLeafBySplit(ol, "horizontal"); await bl.setViewState({ type: "backlink" }); }
+    // 아래 묶음: 오른쪽 패널에 새 묶음을 만들어 백링크를 연다 (같은 묶음에 이미 있으면 닫고 다시)
+    for (const l of app.workspace.getLeavesOfType("backlink")) l.detach();
+    const bl = app.workspace.getRightLeaf(true); await bl.setViewState({ type: "backlink" });
     app.workspace.leftSplit.expand(); app.workspace.rightSplit.expand(); app.workspace.revealLeaf(fe); app.workspace.revealLeaf(ol);
     window.__pl = pl;
     const sc = app.plugins.plugins["sidebar-columns"];
@@ -55,14 +56,17 @@ await step("setup", async () => {
   await sleep(1200);
   // 아래 묶음(백링크)을 오른쪽으로 나누고, 새 칸에 태그 보기를 연다
   note("split", await ev(`const bl = app.workspace.getLeavesOfType("backlink")[0]; app.workspace.setActiveLeaf(bl, { focus: true }); await new Promise((r) => setTimeout(r, 400));
-    const ok = app.commands.executeCommandById("sidebar-columns:split-right"); await new Promise((r) => setTimeout(r, 2500));
+    let ok = app.commands.executeCommandById("sidebar-columns:split-right"); await new Promise((r) => setTimeout(r, 2000));
+    // 시험한 적 없는 Obsidian 판이면 묻는다: 시험 보관함이라 허용하고 다시 나눈다
+    const allow = [...document.querySelectorAll(".modal-container button")].find((b) => /Allow experimental use/i.test(b.textContent));
+    const allowed = !!allow; if (allow) { allow.click(); await new Promise((r) => setTimeout(r, 1200)); app.workspace.setActiveLeaf(bl, { focus: true }); await new Promise((r) => setTimeout(r, 300)); ok = app.commands.executeCommandById("sidebar-columns:split-right"); await new Promise((r) => setTimeout(r, 2500)); }
     const notices = [...document.querySelectorAll(".notice")].map((n) => n.textContent);
     const modal = [...document.querySelectorAll(".modal-container")].map((m) => m.textContent.slice(0, 200));
     const tree = (it) => ({ t: it.type, d: it.direction, kids: (it.children || []).filter((c) => c.type !== "leaf").map(tree), leaves: (it.children || []).filter((c) => c.type === "leaf").map((l) => l.view && l.view.getViewType()) });
     const empty = app.workspace.getLeavesOfType("empty").find((l) => l.getRoot() === app.workspace.rightSplit);
     if (empty) await empty.setViewState({ type: "tag" });
     await new Promise((r) => setTimeout(r, 1200));
-    return { ok, notices, modal, tree: tree(app.workspace.rightSplit) };`));
+    return { ok, allowed, notices, modal, tree: tree(app.workspace.rightSplit) };`));
 });
 
 const MEASURE = `const s = app.workspace.rightSplit; const R = s.containerEl.getBoundingClientRect();
